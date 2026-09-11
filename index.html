@@ -168,9 +168,39 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* AUTH SCREEN */
+    .auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
+    .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 360px; max-width: 90vw; }
+    .auth-logo { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-light); margin-bottom: 4px; text-align: center; }
+    .auth-logo-sub { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 24px; }
+    .auth-error { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--red); color: var(--red); font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; display: none; }
+    .auth-btn { width: 100%; padding: 10px 16px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 4px; }
+    .auth-btn:hover { background: var(--accent-light); }
+    .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auth-switch { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+    .auth-switch a { color: var(--accent-light); cursor: pointer; text-decoration: none; }
+    .logout-btn { margin: 0 20px 16px; padding: 8px 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 12px; cursor: pointer; text-align: left; }
+    .logout-btn:hover { border-color: var(--red); color: var(--red); }
   </style>
 </head>
 <body>
+
+<!-- ÉCRAN DE CONNEXION -->
+<div class="auth-overlay" id="authOverlay" style="display:none;">
+  <div class="auth-box">
+    <div class="auth-logo">ASSISTANT IA</div>
+    <div class="auth-logo-sub">Analyse de dossiers immobiliers</div>
+    <div class="auth-error" id="authError"></div>
+    <input class="modal-input" type="email" id="authEmail" placeholder="Email" />
+    <input class="modal-input" type="password" id="authPassword" placeholder="Mot de passe" style="margin-bottom:16px;" />
+    <button class="auth-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">Se connecter</button>
+    <div class="auth-switch">
+      <span id="authSwitchText">Pas encore de compte ?</span>
+      <a onclick="toggleAuthMode()" id="authSwitchLink">Créer un compte</a>
+    </div>
+  </div>
+</div>
 
 <!-- OVERLAY GLISSER-DÉPOSER GLOBAL -->
 <div class="global-drop-overlay" id="globalDropOverlay" style="display:none;">
@@ -192,6 +222,7 @@
     <div class="dossiers-label">Dossiers récents</div>
     <div id="dossiersList"></div>
   </div>
+  <button class="logout-btn" onclick="handleLogout()">↩ Se déconnecter</button>
 </aside>
 
 <!-- MAIN -->
@@ -270,6 +301,7 @@
 <!-- INPUT CACHÉ POUR L'AJOUT DE DOCUMENTS AU DOSSIER EN COURS -->
 <input type="file" id="addFileInput" multiple accept=".pdf" onchange="handleAdditionalFiles(this.files)" />
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   // ==========================================
   // CONFIG — URLs des webhooks n8n
@@ -277,10 +309,108 @@
   const WEBHOOK_UPLOAD = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
   const WEBHOOK_QUESTION = 'https://n8n.srv1960518.hstgr.cloud/webhook/reponses-questions';
   // ==========================================
+  // CONFIG — SUPABASE (remplace par tes vraies valeurs)
+  // Trouvables dans Supabase : Project Settings → API
+  // ==========================================
+  const SUPABASE_URL = 'https://zpvxifqbunhaoldkubqn.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_FiihlCJaPsQi9mUThPTf7w_LhRwR4mt';
+  // ==========================================
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let currentSession = null;
+  let authMode = 'login'; // 'login' ou 'signup'
 
   let dossiers = JSON.parse(localStorage.getItem('dossiers') || '[]');
   let currentDossier = null;
   let selectedFiles = [];
+
+  // ==========================================
+  // AUTHENTIFICATION
+  // ==========================================
+  async function initAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    currentSession = session;
+
+    if (session) {
+      showApp();
+    } else {
+      showAuthScreen();
+    }
+
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      currentSession = session;
+      if (session) {
+        showApp();
+      } else {
+        showAuthScreen();
+      }
+    });
+  }
+
+  function showAuthScreen() {
+    document.getElementById('authOverlay').style.display = 'flex';
+  }
+
+  function showApp() {
+    document.getElementById('authOverlay').style.display = 'none';
+    renderDossiers();
+  }
+
+  function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    document.getElementById('authSubmitBtn').textContent = authMode === 'login' ? 'Se connecter' : 'Créer le compte';
+    document.getElementById('authSwitchText').textContent = authMode === 'login' ? 'Pas encore de compte ?' : 'Déjà un compte ?';
+    document.getElementById('authSwitchLink').textContent = authMode === 'login' ? 'Créer un compte' : 'Se connecter';
+    document.getElementById('authError').style.display = 'none';
+  }
+
+  async function handleAuthSubmit() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const errorBox = document.getElementById('authError');
+    const btn = document.getElementById('authSubmitBtn');
+
+    errorBox.style.display = 'none';
+
+    if (!email || !password) {
+      errorBox.textContent = 'Merci de remplir email et mot de passe.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    try {
+      const { data, error } = authMode === 'login'
+        ? await supabaseClient.auth.signInWithPassword({ email, password })
+        : await supabaseClient.auth.signUp({ email, password });
+
+      if (error) throw error;
+
+      if (authMode === 'signup' && !data.session) {
+        errorBox.textContent = 'Compte créé. Vérifiez votre email pour confirmer, puis connectez-vous.';
+        errorBox.style.display = 'block';
+        toggleAuthMode();
+      }
+      // Si session présente, onAuthStateChange bascule automatiquement vers showApp()
+    } catch (err) {
+      errorBox.textContent = err.message || 'Une erreur est survenue.';
+      errorBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = authMode === 'login' ? 'Se connecter' : 'Créer le compte';
+    }
+  }
+
+  async function handleLogout() {
+    await supabaseClient.auth.signOut();
+    currentDossier = null;
+  }
+
+  function getAccessToken() {
+    return currentSession?.access_token || '';
+  }
 
   // RECONNAISSANCE VOCALE
   let recognition = null;
@@ -475,7 +605,10 @@
     try {
       const res = await fetch(WEBHOOK_QUESTION, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getAccessToken()
+        },
         body: JSON.stringify({
           dossier_id: currentDossier.id,
           message: msg
@@ -543,6 +676,7 @@
 
         const reponse = await fetch(WEBHOOK_UPLOAD, {
           method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getAccessToken() },
           body: formData
         });
 
@@ -640,6 +774,7 @@
 
         const reponse = await fetch(WEBHOOK_UPLOAD, {
           method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getAccessToken() },
           body: formData
         });
 
@@ -737,7 +872,7 @@
   });
 
   // INIT
-  renderDossiers();
+  initAuth();
 </script>
 </body>
 </html>
