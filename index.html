@@ -731,6 +731,7 @@
 
     try {
       let texteReponse = '';
+      let data = {};
 
       for (const file of selectedFiles) {
         const formData = new FormData();
@@ -753,6 +754,12 @@
         texteReponse = await reponse.text();
 
         console.log("RÉPONSE N8N :", texteReponse);
+      
+        try {
+          data = JSON.parse(texteReponse);
+        } catch {
+          data = { message: texteReponse };
+        }
       }
 
       dossiers.unshift(dossier);
