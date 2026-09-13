@@ -517,19 +517,9 @@
   }
 
   function renderMessage(m) {
-    if (m.role === 'user') {
-      return `
-        <div class="message user">
-          <div class="avatar user">👤</div>
-          <div class="bubble">${m.content}</div>
-        </div>`;
-    }
-
-    return `
-      <div class="message ai">
-        <div class="avatar ai">✦</div>
-        <div class="bubble">${formatResponse(m.content)}</div>
-      </div>`;
+    const contenu = m.content.replace(/\n/g, '<br>');
+    if (m.role === 'user') return `<div class="message user"><div class="avatar user">👤</div><div class="bubble">${contenu}</div></div>`;
+    return `<div class="message ai"><div class="avatar ai">✦</div><div class="bubble">${formatResponse(contenu)}</div></div>`;
   }
 
   function formatResponse(text) {
@@ -771,7 +761,14 @@
       closeModal();
       openDossier(id);
 
-      addMessage('ai', texteReponse);
+      const synthese = data.synthese || data.reponse || data.message || '';
+      const msg = synthese
+        ? synthese.replace(/\\n/g, '\n')
+        : (selectedFiles.length > 0
+          ? `✅ ${selectedFiles.length} document(s) reçu(s) et indexé(s).\n\nVous pouvez maintenant poser vos questions.`
+          : `✅ Dossier ${name} créé. Ajoutez des documents pour démarrer l'analyse.`);
+
+      addMessage('ai', msg);
 
     } catch (error) {
       console.error(error);
