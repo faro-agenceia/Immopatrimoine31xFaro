@@ -59,6 +59,16 @@
 
     .upload-btn { padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; }
     .upload-btn:hover { border-color: var(--accent); background: var(--surface); }
+    .expand-btn { padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; margin-left: 8px; }
+    .expand-btn:hover { border-color: var(--accent-light); background: var(--surface); }
+
+    /* MODE PLEIN ÉCRAN ANALYSE */
+    .fullscreen-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; padding: 40px; overflow-y: auto; }
+    .fullscreen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-shrink: 0; }
+    .fullscreen-title { font-size: 18px; font-weight: 700; color: var(--accent-light); }
+    .fullscreen-close { padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; cursor: pointer; transition: border-color 0.15s; }
+    .fullscreen-close:hover { border-color: var(--red); color: var(--red); }
+    .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); white-space: pre-wrap; }
 
     .docs-strip { padding: 12px 28px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; overflow-x: auto; background: var(--surface); }
     .doc-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; white-space: nowrap; color: var(--text-muted); }
@@ -217,9 +227,12 @@
         <div class="dossier-title" id="currentDossierName">—</div>
         <div class="docs-count" id="docsCount">0 document</div>
       </div>
-      <button class="upload-btn" onclick="openUpload()">
-        <span>📎</span> Ajouter des documents
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="expand-btn" onclick="openFullscreen()">⛶ Agrandir</button>
+        <button class="upload-btn" onclick="openUpload()">
+          <span>📎</span> Ajouter des documents
+        </button>
+      </div>
     </div>
     <div class="docs-strip" id="docsStrip"></div>
     <div class="chat-area" id="chatArea"></div>
@@ -265,6 +278,15 @@
 </div>
 
 <input type="file" id="addFileInput" multiple accept=".pdf" onchange="handleAdditionalFiles(this.files)" />
+
+<!-- OVERLAY PLEIN ÉCRAN -->
+<div class="fullscreen-overlay" id="fullscreenOverlay" style="display:none;">
+  <div class="fullscreen-header">
+    <div class="fullscreen-title" id="fullscreenTitle">—</div>
+    <button class="fullscreen-close" onclick="closeFullscreen()">✕ Fermer</button>
+  </div>
+  <div class="fullscreen-content" id="fullscreenContent"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -588,6 +610,20 @@
   }
 
   function saveDossiers() { localStorage.setItem('dossiers', JSON.stringify(dossiers)); }
+
+  function openFullscreen() {
+    if (!currentDossier || !currentDossier.messages) return;
+    const msgs = currentDossier.messages.filter(m => m.role === 'ai');
+    if (msgs.length === 0) return;
+    const dernierMsg = msgs[msgs.length - 1];
+    document.getElementById('fullscreenTitle').textContent = currentDossier.name;
+    document.getElementById('fullscreenContent').innerHTML = formatResponse(dernierMsg.content.replace(/\n/g, '<br>'));
+    document.getElementById('fullscreenOverlay').style.display = 'flex';
+  }
+
+  function closeFullscreen() {
+    document.getElementById('fullscreenOverlay').style.display = 'none';
+  }
 
   let dragCounter = 0;
   const globalOverlay = document.getElementById('globalDropOverlay');
