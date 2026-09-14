@@ -62,7 +62,6 @@
     .expand-btn { padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; margin-left: 8px; }
     .expand-btn:hover { border-color: var(--accent-light); background: var(--surface); }
 
-    /* MODE PLEIN ÉCRAN ANALYSE */
     .fullscreen-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; padding: 40px; overflow-y: auto; }
     .fullscreen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-shrink: 0; }
     .fullscreen-title { font-size: 18px; font-weight: 700; color: var(--accent-light); }
@@ -279,7 +278,6 @@
 
 <input type="file" id="addFileInput" multiple accept=".pdf" onchange="handleAdditionalFiles(this.files)" />
 
-<!-- OVERLAY PLEIN ÉCRAN -->
 <div class="fullscreen-overlay" id="fullscreenOverlay" style="display:none;">
   <div class="fullscreen-header">
     <div class="fullscreen-title" id="fullscreenTitle">—</div>
@@ -417,7 +415,6 @@
     area.scrollTop = area.scrollHeight;
   }
 
-  // ✅ CORRECTION 2 : \n convertis en <br> avant affichage
   function renderMessage(m) {
     const contenu = m.content.replace(/\n/g, '<br>');
     if (m.role === 'user') {
@@ -604,7 +601,6 @@
       openDossier(id);
       removeTyping();
 
-      // ✅ CORRECTION 1 : extraction synthese + conversion \n en vrais sauts de ligne
       if (dernierData) {
         const synthese = dernierData.synthese || dernierData.reponse || dernierData.message || '';
         const msg = synthese
