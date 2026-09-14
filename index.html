@@ -518,11 +518,11 @@
       saveDossiers();
       updateDocsStrip();
       removeTyping();
-      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) et analysé(s) avec succès.`);
+      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) avec succès et indexé(s) dans la base de données.\n\nVous pouvez maintenant poser vos questions sur l'ensemble du dossier, ou taper "Refais l'analyse complète" pour obtenir une nouvelle synthèse intégrant ce document.`);
     } catch (error) {
       console.error(error);
       removeTyping();
-      alert("Erreur lors de l'ajout des documents.");
+      addMessage('ai', "Erreur lors de l'ajout des documents. Vérifiez votre connexion.");
     } finally {
       document.getElementById('addFileInput').value = '';
     }
