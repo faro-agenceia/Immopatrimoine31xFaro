@@ -441,18 +441,31 @@
     renderMessages();
   }
 
-  function addTyping() {
+  let typingTimer = null;
+  let typingSeconds = 0;
+
+  function addTyping(label) {
     const area = document.getElementById('chatArea');
     if (!area) return;
+    typingSeconds = 0;
     const div = document.createElement('div');
     div.className = 'message ai';
     div.id = 'typingIndicator';
-    div.innerHTML = `<div class="avatar ai">✦</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label || 'Analyse en cours...') + ' 0s</span></div></div>';
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
+    typingTimer = setInterval(() => {
+      typingSeconds++;
+      const el = document.getElementById('typingLabel');
+      if (el) el.textContent = (label || 'Analyse en cours...') + ' ' + typingSeconds + 's';
+    }, 1000);
   }
 
-  function removeTyping() { document.getElementById('typingIndicator')?.remove(); }
+  function removeTyping() {
+    clearInterval(typingTimer);
+    typingTimer = null;
+    document.getElementById('typingIndicator')?.remove();
+  }
 
   async function sendMessage() {
     const input = document.getElementById('chatInput');
@@ -461,7 +474,7 @@
     input.value = '';
     input.style.height = 'auto';
     addMessage('user', msg);
-    addTyping();
+    addTyping('Recherche en cours...');
     document.getElementById('sendBtn').disabled = true;
     try {
       const res = await fetch(WEBHOOK_QUESTION, {
@@ -505,7 +518,7 @@
     if (!currentDossier || files.length === 0) return;
     const validFiles = Array.from(files).filter(f => f.type === 'application/pdf');
     if (validFiles.length === 0) return;
-    addTyping();
+    addTyping('Indexation en cours...');
     try {
       for (const file of validFiles) {
         const formData = new FormData();
@@ -551,6 +564,7 @@
     const btn = document.getElementById('createBtn');
     btn.disabled = true;
     btn.textContent = 'Analyse en cours…';
+    addTyping('Analyse en cours...');
 
     const id = 'dossier_' + Date.now();
     const dossier = {
@@ -588,6 +602,7 @@
       saveDossiers();
       closeModal();
       openDossier(id);
+      removeTyping();
 
       // ✅ CORRECTION 1 : extraction synthese + conversion \n en vrais sauts de ligne
       if (dernierData) {
