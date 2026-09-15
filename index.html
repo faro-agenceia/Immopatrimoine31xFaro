@@ -517,18 +517,25 @@
     if (validFiles.length === 0) return;
     addTyping('Indexation en cours...');
     try {
+      let dernierData = null;
       for (const file of validFiles) {
         const formData = new FormData();
         formData.append('dossier_id', currentDossier.id);
         formData.append('nom_dossier', currentDossier.name);
         formData.append('data', file);
-        await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getAccessToken() }, body: formData });
+        const reponse = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getAccessToken() }, body: formData });
+        dernierData = await reponse.json();
         if (!currentDossier.docs.includes(file.name)) { currentDossier.docs.push(file.name); }
       }
       saveDossiers();
       updateDocsStrip();
       removeTyping();
-      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) avec succès et indexé(s) dans la base de données.\n\nVous pouvez maintenant poser vos questions sur l'ensemble du dossier, ou taper "Refais l'analyse complète" pour obtenir une nouvelle synthèse intégrant ce document.`);
+
+      const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
+      const msg = synthese
+        ? synthese.replace(/\\n/g, '\n')
+        : `✅ ${validFiles.length} document(s) ajouté(s) avec succès et indexé(s) dans la base de données.`;
+      addMessage('ai', msg);
     } catch (error) {
       console.error(error);
       removeTyping();
