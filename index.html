@@ -203,6 +203,17 @@
   </div>
 </div>
 
+<div class="auth-overlay" id="recoveryOverlay" style="display:none;">
+  <div class="auth-box">
+    <div class="auth-logo">ASSISTANT IA</div>
+    <div class="auth-logo-sub">Choisissez votre nouveau mot de passe</div>
+    <div class="auth-error" id="recoveryError"></div>
+    <input class="modal-input" type="password" id="recoveryPassword" placeholder="Nouveau mot de passe" />
+    <input class="modal-input" type="password" id="recoveryPasswordConfirm" placeholder="Confirmez le mot de passe" style="margin-bottom:16px;" />
+    <button class="auth-btn" id="recoverySubmitBtn" onclick="handleRecoverySubmit()">Valider le nouveau mot de passe</button>
+  </div>
+</div>
+
 <div class="global-drop-overlay" id="globalDropOverlay" style="display:none;">
   <div class="global-drop-icon" id="globalDropIcon"></div>
   <div class="global-drop-text">Déposez vos fichiers PDF ici</div>
@@ -330,12 +341,48 @@
     if (session) { showApp(); } else { showAuthScreen(); }
     supabaseClient.auth.onAuthStateChange((event, session) => {
       currentSession = session;
+      if (event === 'PASSWORD_RECOVERY') {
+        showRecoveryScreen();
+        return;
+      }
       if (session) { showApp(); } else { showAuthScreen(); }
     });
   }
 
-  function showAuthScreen() { document.getElementById('authOverlay').style.display = 'flex'; }
-  function showApp() { document.getElementById('authOverlay').style.display = 'none'; renderDossiers(); }
+  function showAuthScreen() {
+    document.getElementById('recoveryOverlay').style.display = 'none';
+    document.getElementById('authOverlay').style.display = 'flex';
+  }
+  function showRecoveryScreen() {
+    document.getElementById('authOverlay').style.display = 'none';
+    document.getElementById('recoveryOverlay').style.display = 'flex';
+  }
+  function showApp() {
+    document.getElementById('authOverlay').style.display = 'none';
+    document.getElementById('recoveryOverlay').style.display = 'none';
+    renderDossiers();
+  }
+
+  async function handleRecoverySubmit() {
+    const pwd = document.getElementById('recoveryPassword').value;
+    const pwdConfirm = document.getElementById('recoveryPasswordConfirm').value;
+    const errorBox = document.getElementById('recoveryError');
+    const btn = document.getElementById('recoverySubmitBtn');
+    errorBox.style.display = 'none';
+    if (!pwd || pwd.length < 6) { errorBox.textContent = 'Le mot de passe doit contenir au moins 6 caractères.'; errorBox.style.display = 'block'; return; }
+    if (pwd !== pwdConfirm) { errorBox.textContent = 'Les deux mots de passe ne correspondent pas.'; errorBox.style.display = 'block'; return; }
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const { error } = await supabaseClient.auth.updateUser({ password: pwd });
+      if (error) throw error;
+      showApp();
+    } catch (err) {
+      errorBox.textContent = err.message || 'Une erreur est survenue.';
+      errorBox.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe';
+    }
+  }
 
   async function handleAuthSubmit() {
     const email = document.getElementById('authEmail').value.trim();
