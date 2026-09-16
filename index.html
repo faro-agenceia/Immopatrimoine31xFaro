@@ -48,9 +48,17 @@
     .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
     .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); text-align: center; padding: 40px; }
-    .empty-icon { font-size: 48px; opacity: 0.4; }
+    .empty-icon { opacity: 0.4; display: flex; align-items: center; justify-content: center; }
     .empty-title { font-size: 18px; font-weight: 600; color: var(--text); }
     .empty-sub { font-size: 14px; max-width: 320px; line-height: 1.6; }
+
+    .dossier-delete svg, .doc-chip-icon svg, .avatar svg, .expand-btn svg, .upload-btn svg,
+    .mic-btn svg, .fullscreen-close svg, .logout-btn svg, .file-item svg { display: block; }
+    .expand-btn span, .upload-btn span, .fullscreen-close span, .logout-btn span { display: flex; align-items: center; }
+    .dossier-delete { display: flex; align-items: center; justify-content: center; }
+    .doc-chip-icon { display: flex; align-items: center; }
+    .logout-btn { display: flex; align-items: center; gap: 8px; }
+    .fullscreen-close { display: flex; align-items: center; gap: 8px; }
 
     .dossier-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .dossier-header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
@@ -129,7 +137,7 @@
     .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 24px; text-align: center; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 16px; }
     .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(79, 110, 247, 0.05); }
 
-    .drop-icon { font-size: 28px; margin-bottom: 6px; }
+    .drop-icon { margin-bottom: 8px; display: flex; align-items: center; justify-content: center; }
     .drop-text { font-size: 13px; }
     .drop-sub { font-size: 11px; margin-top: 4px; color: var(--text-muted); opacity: 0.7; }
 
@@ -140,15 +148,18 @@
 
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
     .btn-cancel { padding: 9px 18px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 13px; cursor: pointer; }
-    .btn-create { padding: 9px 18px; background: var(--accent); border: none; color: white; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
-    .btn-create:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-create { padding: 9px 18px; background: var(--accent); border: none; color: white; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-create:disabled { opacity: 0.7; cursor: not-allowed; }
+    .spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .global-drop-overlay {
       position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
       z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center;
       gap: 16px; color: var(--text); border: 3px dashed var(--accent); pointer-events: none;
     }
-    .global-drop-icon { font-size: 64px; }
+    .global-drop-icon { display: flex; align-items: center; justify-content: center; color: var(--accent-light); }
+    .global-drop-icon svg { width: 56px; height: 56px; }
     .global-drop-text { font-size: 20px; font-weight: 600; }
     .global-drop-sub { font-size: 14px; color: var(--text-muted); }
 
@@ -193,7 +204,7 @@
 </div>
 
 <div class="global-drop-overlay" id="globalDropOverlay" style="display:none;">
-  <div class="global-drop-icon">📁</div>
+  <div class="global-drop-icon" id="globalDropIcon"></div>
   <div class="global-drop-text">Déposez vos fichiers PDF ici</div>
   <div class="global-drop-sub" id="globalDropSub">Ils seront ajoutés directement à l'analyse</div>
 </div>
@@ -210,12 +221,12 @@
     <div class="dossiers-label">Dossiers récents</div>
     <div id="dossiersList"></div>
   </div>
-  <button class="logout-btn" onclick="handleLogout()">↩ Se déconnecter</button>
+  <button class="logout-btn" onclick="handleLogout()"><span id="logoutIcon"></span> Se déconnecter</button>
 </aside>
 
 <main class="main" id="main">
   <div class="empty-state" id="emptyState">
-    <div class="empty-icon">🏢</div>
+    <div class="empty-icon" id="emptyIcon"></div>
     <div class="empty-title">Aucun dossier ouvert</div>
     <div class="empty-sub">Créez un nouveau dossier ou glissez-déposez un fichier n'importe où pour démarrer.</div>
   </div>
@@ -227,9 +238,9 @@
         <div class="docs-count" id="docsCount">0 document</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button class="expand-btn" onclick="openFullscreen()">⛶ Agrandir</button>
+        <button class="expand-btn" onclick="openFullscreen()"><span id="expandIcon"></span> Agrandir</button>
         <button class="upload-btn" onclick="openUpload()">
-          <span>📎</span> Ajouter des documents
+          <span id="uploadIcon"></span> Ajouter des documents
         </button>
       </div>
     </div>
@@ -245,7 +256,7 @@
           onkeydown="handleKey(event)"
           oninput="autoResize(this)"
         ></textarea>
-        <button class="mic-btn" id="micBtn" onclick="toggleSpeech()" title="Dictée vocale (Français)">🎙️</button>
+        <button class="mic-btn" id="micBtn" onclick="toggleSpeech()" title="Dictée vocale (Français)"></button>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -263,7 +274,7 @@
     <input class="modal-input" type="text" id="dossierNameInput" placeholder="Nom du dossier (ex: Appartement Paris 11e)" />
     <textarea class="modal-input" id="dossierNotesInput" placeholder="Texte, notes ou instructions complémentaires (optionnel)…"></textarea>
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <div class="drop-icon">📄</div>
+      <div class="drop-icon" id="dropIcon"></div>
       <div class="drop-text">Déposez vos PDF ici ou cliquez pour sélectionner</div>
       <div class="drop-sub">Formats acceptés : PDF</div>
     </div>
@@ -281,7 +292,7 @@
 <div class="fullscreen-overlay" id="fullscreenOverlay" style="display:none;">
   <div class="fullscreen-header">
     <div class="fullscreen-title" id="fullscreenTitle">—</div>
-    <button class="fullscreen-close" onclick="closeFullscreen()">✕ Fermer</button>
+    <button class="fullscreen-close" onclick="closeFullscreen()"><span id="fsCloseIcon"></span> Fermer</button>
   </div>
   <div class="fullscreen-content" id="fullscreenContent"></div>
 </div>
@@ -381,7 +392,7 @@
           <div class="dossier-name">${d.name}</div>
           <div class="dossier-meta">${d.docs.length} doc${d.docs.length > 1 ? 's' : ''} · ${d.date}</div>
         </div>
-        <button class="dossier-delete" onclick="deleteDossier(event, '${d.id}')" title="Supprimer le dossier">🗑️</button>
+        <button class="dossier-delete" onclick="deleteDossier(event, '${d.id}')" title="Supprimer le dossier">${iconTrash}</button>
       </div>
     `).join('');
   }
@@ -415,14 +426,14 @@
     const count = document.getElementById('docsCount');
     const docs = currentDossier.docs || [];
     count.textContent = `${docs.length} document${docs.length > 1 ? 's' : ''}`;
-    strip.innerHTML = docs.map(d => `<div class="doc-chip"><span class="doc-chip-icon">📄</span>${d}</div>`).join('') || '<span style="font-size:12px;color:var(--text-muted)">Aucun document</span>';
+    strip.innerHTML = docs.map(d => `<div class="doc-chip"><span class="doc-chip-icon">${iconDoc}</span>${d}</div>`).join('') || '<span style="font-size:12px;color:var(--text-muted)">Aucun document</span>';
   }
 
   function renderMessages() {
     const area = document.getElementById('chatArea');
     const msgs = currentDossier.messages || [];
     if (msgs.length === 0) {
-      area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="font-size:28px;margin-bottom:12px">💬</div>Posez une question sur ce dossier</div>`;
+      area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="margin-bottom:12px;display:flex;justify-content:center;opacity:0.5">${iconChat}</div>Posez une question sur ce dossier</div>`;
       return;
     }
     area.innerHTML = msgs.map(m => renderMessage(m)).join('');
@@ -432,9 +443,9 @@
   function renderMessage(m) {
     const contenu = m.content.replace(/\n/g, '<br>');
     if (m.role === 'user') {
-      return `<div class="message user"><div class="avatar user">👤</div><div class="bubble">${contenu}</div></div>`;
+      return `<div class="message user"><div class="avatar user">${iconUser}</div><div class="bubble">${contenu}</div></div>`;
     }
-    return `<div class="message ai"><div class="avatar ai">✦</div><div class="bubble">${formatResponse(contenu)}</div></div>`;
+    return `<div class="message ai"><div class="avatar ai">${iconSparkle}</div><div class="bubble">${formatResponse(contenu)}</div></div>`;
   }
 
   function formatResponse(text) {
@@ -570,7 +581,7 @@
 
   function renderFilesList() {
     document.getElementById('filesList').innerHTML = selectedFiles.map((f, i) => `
-      <div class="file-item"><span>📄</span><span>${f.name}</span><span class="file-remove" onclick="removeFile(${i})">×</span></div>
+      <div class="file-item"><span style="color:var(--accent-light);display:flex">${iconDoc}</span><span>${f.name}</span><span class="file-remove" onclick="removeFile(${i})">×</span></div>
     `).join('');
   }
 
@@ -583,7 +594,13 @@
 
     const btn = document.getElementById('createBtn');
     btn.disabled = true;
-    btn.textContent = 'Analyse en cours…';
+    btn.innerHTML = '<span class="spinner"></span><span id="btnCreateLabel">Analyse en cours… 0s</span>';
+    let btnSeconds = 0;
+    const btnTimer = setInterval(() => {
+      btnSeconds++;
+      const lbl = document.getElementById('btnCreateLabel');
+      if (lbl) lbl.textContent = 'Analyse en cours… ' + btnSeconds + 's';
+    }, 1000);
     addTyping('Analyse en cours...');
 
     const id = 'dossier_' + Date.now();
@@ -636,10 +653,29 @@
 
     } catch (error) {
       console.error(error);
+      removeTyping();
       alert("Erreur lors de l'envoi des documents. Vérifiez la connexion au serveur.");
     } finally {
+      clearInterval(btnTimer);
       btn.disabled = false;
       btn.textContent = 'Créer et analyser';
+    }
+  }
+
+  function injectIcons() {
+    const map = {
+      micBtn: iconMic,
+      emptyIcon: iconBuilding,
+      globalDropIcon: iconFolder,
+      dropIcon: iconDocBig,
+      expandIcon: iconExpand,
+      uploadIcon: iconPaperclip,
+      fsCloseIcon: iconClose,
+      logoutIcon: iconLogout
+    };
+    for (const [id, svg] of Object.entries(map)) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = svg;
     }
   }
 
@@ -695,6 +731,7 @@
   dropZone?.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
   dropZone?.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
 
+  injectIcons();
   initAuth();
 </script>
 </body>
