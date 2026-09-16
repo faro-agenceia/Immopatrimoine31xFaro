@@ -360,7 +360,37 @@
   function showApp() {
     document.getElementById('authOverlay').style.display = 'none';
     document.getElementById('recoveryOverlay').style.display = 'none';
+    loadDossiersFromSupabase();
+  }
+
+  async function loadDossiersFromSupabase() {
+    if (!currentSession) return;
+    const { data, error } = await supabaseClient
+      .from('dossiers')
+      .select('*')
+      .eq('user_id', currentSession.user.id)
+      .order('date_creation', { ascending: false });
+    if (error) { console.error(error); renderDossiers(); return; }
+    dossiers = (data || []).map(row => ({
+      id: row.dossier_id,
+      name: row.nom,
+      date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
+      docs: [],
+      messages: null,
+      _loaded: false
+    }));
     renderDossiers();
+  }
+
+  async function loadDossierDetails(dossier) {
+    if (dossier._loaded) return;
+    const [docsRes, convRes] = await Promise.all([
+      supabaseClient.from('documents').select('nom').eq('dossier_id', dossier.id),
+      supabaseClient.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true })
+    ]);
+    dossier.docs = (docsRes.data || []).map(d => d.nom);
+    dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
+    dossier._loaded = true;
   }
 
   async function handleRecoverySubmit() {
@@ -444,7 +474,7 @@
     `).join('');
   }
 
-  function deleteDossier(event, id) {
+  async function deleteDossier(event, id) {
     event.stopPropagation();
     if (!confirm('Voulez-vous vraiment supprimer ce dossier ?')) return;
     dossiers = dossiers.filter(d => d.id !== id);
@@ -455,9 +485,11 @@
       document.getElementById('emptyState').style.display = 'flex';
     }
     renderDossiers();
+    const { error } = await supabaseClient.from('dossiers').delete().eq('dossier_id', id);
+    if (error) console.error('Suppression Supabase échouée :', error);
   }
 
-  function openDossier(id) {
+  async function openDossier(id) {
     currentDossier = dossiers.find(d => d.id === id);
     if (!currentDossier) return;
     document.getElementById('emptyState').style.display = 'none';
@@ -466,6 +498,13 @@
     updateDocsStrip();
     renderMessages();
     renderDossiers();
+    if (!currentDossier._loaded) {
+      await loadDossierDetails(currentDossier);
+      if (currentDossier === dossiers.find(d => d.id === id)) {
+        updateDocsStrip();
+        renderMessages();
+      }
+    }
   }
 
   function updateDocsStrip() {
