@@ -735,7 +735,7 @@
       dossiers.unshift(dossier);
       saveDossiers();
       closeModal();
-      openDossier(id);
+      await openDossier(id);
       removeTyping();
 
       if (dernierData) {
