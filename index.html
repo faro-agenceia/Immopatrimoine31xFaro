@@ -13,6 +13,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
+    /* SIDEBAR */
     .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
     .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
     .logo { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-light); margin-bottom: 4px; }
@@ -24,42 +25,43 @@
     .dossier-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; }
     .dossier-item:hover { background: var(--surface2); }
     .dossier-item.active { background: var(--surface2); border-left: 3px solid var(--accent); }
-    .dossier-info { overflow: hidden; }
+    .dossier-info { overflow: hidden; flex: 1; }
     .dossier-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .dossier-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    .dossier-delete { opacity: 0; color: var(--text-muted); border: none; background: none; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; transition: opacity 0.15s, color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; }
+    .dossier-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+    .dossier-status { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+    .status-ready { background: rgba(16,185,129,0.15); color: var(--green); }
+    .status-processing { background: rgba(79,70,229,0.15); color: var(--accent-light); }
+    .status-error { background: rgba(239,68,68,0.15); color: var(--red); }
+    .dossier-delete { opacity: 0; color: var(--text-muted); border: none; background: none; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; transition: opacity 0.15s, color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .dossier-item:hover .dossier-delete { opacity: 1; }
     .dossier-delete:hover { color: var(--red); background: rgba(239,68,68,0.15); }
 
+    /* MAIN */
     .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); text-align: center; padding: 40px; }
-    .empty-icon { opacity: 0.4; font-size: 48px; }
+    .empty-icon { font-size: 48px; opacity: 0.4; }
     .empty-title { font-size: 18px; font-weight: 600; color: var(--text); }
     .empty-sub { font-size: 14px; max-width: 320px; line-height: 1.6; }
 
+    /* DOSSIER VIEW */
     .dossier-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .dossier-header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+    .dossier-header { padding: 16px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
     .dossier-title { font-size: 16px; font-weight: 600; }
     .docs-count { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .upload-btn { padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; }
-    .upload-btn:hover { border-color: var(--accent); background: var(--surface); }
-    .expand-btn { padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; margin-left: 8px; }
-    .expand-btn:hover { border-color: var(--accent-light); background: var(--surface); }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-icon { padding: 8px 14px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; }
+    .btn-icon:hover { border-color: var(--accent); background: var(--surface); }
+    .btn-icon.expand:hover { border-color: var(--accent-light); }
 
-    .fullscreen-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; padding: 40px; overflow-y: auto; }
-    .fullscreen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-shrink: 0; }
-    .fullscreen-title { font-size: 18px; font-weight: 700; color: var(--accent-light); }
-    .fullscreen-close { padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: border-color 0.15s; }
-    .fullscreen-close:hover { border-color: var(--red); color: var(--red); }
-    .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); }
+    /* DOCS STRIP */
+    .docs-strip { padding: 10px 28px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; overflow-x: auto; background: var(--surface); min-height: 44px; align-items: center; }
+    .doc-chip { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; white-space: nowrap; color: var(--text-muted); }
 
-    .docs-strip { padding: 12px 28px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; overflow-x: auto; background: var(--surface); }
-    .doc-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; white-space: nowrap; color: var(--text-muted); }
-
+    /* CHAT */
     .chat-area { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
     .message { display: flex; gap: 12px; max-width: 760px; }
     .message.user { flex-direction: row-reverse; align-self: flex-end; }
-    .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
     .avatar.ai { background: var(--accent); color: white; }
     .avatar.user { background: var(--surface2); }
     .bubble { padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.7; max-width: 600px; }
@@ -67,19 +69,21 @@
     .message.user .bubble { background: var(--accent); color: white; border-top-right-radius: 4px; }
 
     .response-section { margin-top: 12px; padding: 12px 16px; border-radius: 8px; font-size: 13px; }
-    .section-critical { background: rgba(247,85,85,0.08); border-left: 3px solid var(--red); }
-    .section-warning { background: rgba(247,168,85,0.08); border-left: 3px solid var(--orange); }
-    .section-ok { background: rgba(79,204,138,0.08); border-left: 3px solid var(--green); }
+    .section-critical { background: rgba(239,68,68,0.08); border-left: 3px solid var(--red); }
+    .section-warning { background: rgba(249,115,22,0.08); border-left: 3px solid var(--orange); }
+    .section-ok { background: rgba(16,185,129,0.08); border-left: 3px solid var(--green); }
     .section-sources { background: var(--surface2); border-left: 3px solid var(--accent); }
-    .section-title { font-weight: 600; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .section-title { font-weight: 600; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
     .section-critical .section-title { color: var(--red); }
     .section-warning .section-title { color: var(--orange); }
     .section-ok .section-title { color: var(--green); }
     .section-sources .section-title { color: var(--accent-light); }
 
-    .input-area { padding: 20px 28px; border-top: 1px solid var(--border); background: var(--surface); }
+    /* INPUT */
+    .input-area { padding: 16px 28px; border-top: 1px solid var(--border); background: var(--surface); }
     .input-wrap { display: flex; gap: 10px; align-items: flex-end; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; transition: border-color 0.15s; }
     .input-wrap:focus-within { border-color: var(--accent); }
+    .input-wrap.disabled { opacity: 0.5; pointer-events: none; }
     .chat-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; resize: none; outline: none; line-height: 1.5; max-height: 120px; font-family: inherit; }
     .chat-input::placeholder { color: var(--text-muted); }
     .mic-btn, .send-btn { width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
@@ -89,47 +93,56 @@
     .send-btn { background: var(--accent); color: white; }
     .send-btn:hover { background: var(--accent-light); }
     .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
+    /* MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
     .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 480px; max-width: 90vw; }
     .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
-    .modal-input { width: 100%; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; margin-bottom: 12px; }
+    .modal-input { width: 100%; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; margin-bottom: 12px; transition: border-color 0.15s; }
     .modal-input:focus { border-color: var(--accent); }
-    .modal-input:disabled { opacity: 0.5; cursor: not-allowed; }
+    .modal-input:disabled { opacity: 0.45; cursor: not-allowed; }
     textarea.modal-input { resize: vertical; min-height: 70px; }
     .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 24px; text-align: center; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 16px; }
-    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,110,247,0.05); }
+    .drop-zone:hover:not(.disabled), .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,70,229,0.05); }
     .drop-zone.disabled { opacity: 0.4; pointer-events: none; }
-    .drop-icon { font-size: 28px; margin-bottom: 6px; }
+    .drop-icon { font-size: 28px; margin-bottom: 8px; }
     .drop-text { font-size: 13px; }
-    .drop-sub { font-size: 11px; margin-top: 4px; color: var(--text-muted); opacity: 0.7; }
+    .drop-sub { font-size: 11px; margin-top: 4px; opacity: 0.7; }
     .files-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; max-height: 120px; overflow-y: auto; }
     .file-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; font-size: 13px; }
     .file-remove { margin-left: auto; cursor: pointer; color: var(--text-muted); font-size: 16px; line-height: 1; }
     .file-remove:hover { color: var(--red); }
+    .file-remove.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
     .btn-cancel { padding: 9px 18px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .btn-cancel:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-create { padding: 9px 18px; background: var(--accent); border: none; color: white; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
     .btn-create:disabled { opacity: 0.7; cursor: not-allowed; }
     .spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* GLOBAL DROP */
     .global-drop-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.85); backdrop-filter: blur(8px); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text); border: 3px dashed var(--accent); pointer-events: none; }
     .global-drop-text { font-size: 20px; font-weight: 600; }
     .global-drop-sub { font-size: 14px; color: var(--text-muted); }
 
+    /* TYPING */
     .typing { display: flex; gap: 4px; padding: 6px 0; }
     .typing span { width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%; animation: bounce 1.2s infinite; }
     .typing span:nth-child(2) { animation-delay: 0.2s; }
     .typing span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-6px); opacity: 1; } }
+    @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-6px); opacity: 1; } }
 
-    input[type="file"] { display: none; }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    /* FULLSCREEN */
+    .fullscreen-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; padding: 40px; overflow-y: auto; }
+    .fullscreen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-shrink: 0; }
+    .fullscreen-title { font-size: 18px; font-weight: 700; color: var(--accent-light); }
+    .fullscreen-close { padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: border-color 0.15s; }
+    .fullscreen-close:hover { border-color: var(--red); color: var(--red); }
+    .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); }
 
+    /* AUTH */
     .auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
     .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 360px; max-width: 90vw; }
     .auth-logo { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-light); margin-bottom: 4px; text-align: center; }
@@ -140,13 +153,19 @@
     .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .logout-btn { margin: 0 20px 16px; padding: 8px 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
     .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+    input[type="file"] { display: none; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   </style>
 </head>
 <body>
 
+<!-- AUTH -->
 <div class="auth-overlay" id="authOverlay" style="display:none;">
   <div class="auth-box">
-    <div class="auth-logo">ASSISTANT IA</div>
+    <div class="auth-logo">🏢 ASSISTANT IA</div>
     <div class="auth-logo-sub">Analyse de dossiers immobiliers</div>
     <div class="auth-error" id="authError"></div>
     <input class="modal-input" type="email" id="authEmail" placeholder="Email" />
@@ -155,9 +174,10 @@
   </div>
 </div>
 
+<!-- RECOVERY -->
 <div class="auth-overlay" id="recoveryOverlay" style="display:none;">
   <div class="auth-box">
-    <div class="auth-logo">ASSISTANT IA</div>
+    <div class="auth-logo">🏢 ASSISTANT IA</div>
     <div class="auth-logo-sub">Choisissez votre nouveau mot de passe</div>
     <div class="auth-error" id="recoveryError"></div>
     <input class="modal-input" type="password" id="recoveryPassword" placeholder="Nouveau mot de passe" />
@@ -166,48 +186,50 @@
   </div>
 </div>
 
+<!-- GLOBAL DROP -->
 <div class="global-drop-overlay" id="globalDropOverlay" style="display:none;">
   <div style="font-size:56px;">📁</div>
   <div class="global-drop-text">Déposez vos fichiers PDF ici</div>
   <div class="global-drop-sub" id="globalDropSub">Ils seront ajoutés directement à l'analyse</div>
 </div>
 
+<!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div class="logo">ASSISTANT IA</div>
+    <div class="logo">🏢 ASSISTANT IA</div>
     <div class="logo-sub">Analyse de dossiers immobiliers</div>
   </div>
-  <button class="new-dossier-btn" onclick="openModal()">
-    <span>+</span> Nouveau dossier
-  </button>
+  <button class="new-dossier-btn" onclick="openModal()">➕ Nouveau dossier</button>
   <div class="dossiers-list">
     <div class="dossiers-label">Dossiers récents</div>
     <div id="dossiersList"></div>
   </div>
-  <button class="logout-btn" onclick="handleLogout()">↩ Se déconnecter</button>
+  <button class="logout-btn" onclick="handleLogout()">↩️ Se déconnecter</button>
 </aside>
 
+<!-- MAIN -->
 <main class="main" id="main">
   <div class="empty-state" id="emptyState">
     <div class="empty-icon">🏢</div>
     <div class="empty-title">Aucun dossier ouvert</div>
     <div class="empty-sub">Créez un nouveau dossier ou glissez-déposez un fichier n'importe où pour démarrer.</div>
   </div>
+
   <div class="dossier-view" id="dossierView" style="display:none;">
     <div class="dossier-header">
       <div>
         <div class="dossier-title" id="currentDossierName">—</div>
         <div class="docs-count" id="docsCount">0 document</div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button class="expand-btn" onclick="openFullscreen()">⛶ Agrandir</button>
-        <button class="upload-btn" onclick="openUpload()">📎 Ajouter des documents</button>
+      <div class="header-actions">
+        <button class="btn-icon expand" onclick="openFullscreen()">⛶ Agrandir</button>
+        <button class="btn-icon" onclick="openUpload()">📎 Ajouter des documents</button>
       </div>
     </div>
     <div class="docs-strip" id="docsStrip"></div>
     <div class="chat-area" id="chatArea"></div>
     <div class="input-area">
-      <div class="input-wrap">
+      <div class="input-wrap" id="inputWrap">
         <textarea class="chat-input" id="chatInput" placeholder="Posez une question sur le dossier…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <button class="mic-btn" id="micBtn" onclick="toggleSpeech()" title="Dictée vocale (Français)">🎙️</button>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">
@@ -221,12 +243,13 @@
   </div>
 </main>
 
+<!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" style="display:none;">
   <div class="modal">
-    <div class="modal-title">Nouveau dossier</div>
+    <div class="modal-title">📁 Nouveau dossier</div>
     <input class="modal-input" type="text" id="dossierNameInput" placeholder="Nom du dossier (ex: Appartement Paris 11e)" />
-    <textarea class="modal-input" id="dossierNotesInput" placeholder="Texte, notes ou instructions complémentaires (optionnel)…"></textarea>
-    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <textarea class="modal-input" id="dossierNotesInput" placeholder="Notes ou instructions complémentaires (optionnel)…"></textarea>
+    <div class="drop-zone" id="dropZone" onclick="triggerFileInput()">
       <div class="drop-icon">📄</div>
       <div class="drop-text">Déposez vos PDF ici ou cliquez pour sélectionner</div>
       <div class="drop-sub">Formats acceptés : PDF</div>
@@ -242,6 +265,7 @@
 
 <input type="file" id="addFileInput" multiple accept=".pdf" onchange="handleAdditionalFiles(this.files)" />
 
+<!-- FULLSCREEN -->
 <div class="fullscreen-overlay" id="fullscreenOverlay" style="display:none;">
   <div class="fullscreen-header">
     <div class="fullscreen-title" id="fullscreenTitle">—</div>
@@ -258,24 +282,41 @@
   // ⚠️ Remplace par ta clé anon (eyJ...) depuis Supabase → Settings → API → anon public
   const SUPABASE_ANON_KEY = 'REMPLACE_PAR_CLÉ_ANON_eyJ';
 
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  let currentSession = null;
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let session = null;
   let dossiers = [];
   let currentDossier = null;
   let selectedFiles = [];
   let creationEnCours = false;
+  let analyseEnCours = false;
+
+  // ==========================================
+  // UTILITAIRES
+  // ==========================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function getToken() { return session?.access_token || ''; }
+
+  async function fetchJson(url, options = {}) {
+    const res = await fetch(url, options);
+    if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
+    return res.json();
+  }
 
   // ==========================================
   // AUTH
   // ==========================================
   async function initAuth() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    currentSession = session;
-    if (session) { showApp(); } else { showAuthScreen(); }
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      currentSession = session;
+    const { data: { session: s } } = await sb.auth.getSession();
+    session = s;
+    if (s) showApp(); else showAuthScreen();
+    sb.auth.onAuthStateChange((event, s) => {
+      session = s;
       if (event === 'PASSWORD_RECOVERY') { showRecoveryScreen(); return; }
-      if (session) { showApp(); } else { showAuthScreen(); }
+      if (s) showApp(); else showAuthScreen();
     });
   }
 
@@ -292,78 +333,74 @@
   function showApp() {
     document.getElementById('authOverlay').style.display = 'none';
     document.getElementById('recoveryOverlay').style.display = 'none';
-    loadDossiersFromSupabase();
+    loadDossiers();
   }
 
   async function handleAuthSubmit() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
-    const errorBox = document.getElementById('authError');
+    const errBox = document.getElementById('authError');
     const btn = document.getElementById('authSubmitBtn');
-    errorBox.style.display = 'none';
-    if (!email || !password) { errorBox.textContent = 'Merci de remplir email et mot de passe.'; errorBox.style.display = 'block'; return; }
+    errBox.style.display = 'none';
+    if (!email || !password) { errBox.textContent = 'Merci de remplir email et mot de passe.'; errBox.style.display = 'block'; return; }
     btn.disabled = true; btn.textContent = '…';
     try {
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
-    } catch (err) {
-      errorBox.textContent = err.message || 'Une erreur est survenue.';
-      errorBox.style.display = 'block';
-    } finally { btn.disabled = false; btn.textContent = 'Se connecter'; }
+    } catch (err) { errBox.textContent = err.message || 'Erreur de connexion.'; errBox.style.display = 'block'; }
+    finally { btn.disabled = false; btn.textContent = 'Se connecter'; }
   }
 
   async function handleRecoverySubmit() {
     const pwd = document.getElementById('recoveryPassword').value;
-    const pwdConfirm = document.getElementById('recoveryPasswordConfirm').value;
-    const errorBox = document.getElementById('recoveryError');
+    const pwdC = document.getElementById('recoveryPasswordConfirm').value;
+    const errBox = document.getElementById('recoveryError');
     const btn = document.getElementById('recoverySubmitBtn');
-    errorBox.style.display = 'none';
-    if (!pwd || pwd.length < 6) { errorBox.textContent = 'Le mot de passe doit contenir au moins 6 caractères.'; errorBox.style.display = 'block'; return; }
-    if (pwd !== pwdConfirm) { errorBox.textContent = 'Les deux mots de passe ne correspondent pas.'; errorBox.style.display = 'block'; return; }
+    errBox.style.display = 'none';
+    if (!pwd || pwd.length < 6) { errBox.textContent = 'Minimum 6 caractères.'; errBox.style.display = 'block'; return; }
+    if (pwd !== pwdC) { errBox.textContent = 'Les mots de passe ne correspondent pas.'; errBox.style.display = 'block'; return; }
     btn.disabled = true; btn.textContent = '…';
     try {
-      const { error } = await supabaseClient.auth.updateUser({ password: pwd });
+      const { error } = await sb.auth.updateUser({ password: pwd });
       if (error) throw error;
       showApp();
-    } catch (err) {
-      errorBox.textContent = err.message || 'Une erreur est survenue.';
-      errorBox.style.display = 'block';
-    } finally { btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe'; }
+    } catch (err) { errBox.textContent = err.message || 'Une erreur est survenue.'; errBox.style.display = 'block'; }
+    finally { btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe'; }
   }
 
   async function handleLogout() {
-    await supabaseClient.auth.signOut();
-    currentDossier = null; dossiers = [];
+    await sb.auth.signOut();
+    session = null; currentDossier = null; dossiers = [];
     document.getElementById('dossierView').style.display = 'none';
     document.getElementById('emptyState').style.display = 'flex';
     renderDossiers();
   }
-  function getAccessToken() { return currentSession?.access_token || ''; }
 
   // ==========================================
-  // SUPABASE — CHARGEMENT DOSSIERS
+  // CHARGEMENT DOSSIERS (Supabase = source unique)
   // ==========================================
-  async function loadDossiersFromSupabase() {
-    if (!currentSession) return;
-    const { data, error } = await supabaseClient
-      .from('dossiers')
-      .select('*')
-      .eq('user_id', currentSession.user.id)
-      .order('date_creation', { ascending: false });
-    if (error) { console.error('Erreur chargement dossiers :', error); renderDossiers(); return; }
+  async function loadDossiers() {
+    if (!session) return;
+    const { data, error } = await sb.from('dossiers').select('*').eq('user_id', session.user.id).order('date_creation', { ascending: false });
+    if (error) { console.error('Chargement dossiers :', error); renderDossiers(); return; }
+
+    // Compter les docs pour chaque dossier en une passe
+    const ids = (data || []).map(r => r.dossier_id);
+    let countMap = {};
+    if (ids.length > 0) {
+      const { data: docsData } = await sb.from('documents').select('dossier_id').in('dossier_id', ids);
+      (docsData || []).forEach(d => { countMap[d.dossier_id] = (countMap[d.dossier_id] || 0) + 1; });
+    }
+
     dossiers = (data || []).map(row => ({
       id: row.dossier_id,
       name: row.nom,
       date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
-      docsCount: 0,
+      docsCount: countMap[row.dossier_id] || 0,
+      status: row.statut || 'ready',
       docs: [],
       messages: null,
       _loaded: false
-    }));
-    // Charger le nombre de documents pour chaque dossier (pour la sidebar)
-    await Promise.all(dossiers.map(async (d) => {
-      const { count } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('dossier_id', d.id);
-      d.docsCount = count || 0;
     }));
     renderDossiers();
   }
@@ -371,9 +408,11 @@
   async function loadDossierDetails(dossier) {
     if (dossier._loaded) return;
     const [docsRes, convRes] = await Promise.all([
-      supabaseClient.from('documents').select('nom').eq('dossier_id', dossier.id),
-      supabaseClient.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true })
+      sb.from('documents').select('nom').eq('dossier_id', dossier.id),
+      sb.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true })
     ]);
+    if (docsRes.error) console.error('Docs :', docsRes.error);
+    if (convRes.error) console.error('Conv :', convRes.error);
     dossier.docs = (docsRes.data || []).map(d => d.nom);
     dossier.docsCount = dossier.docs.length;
     dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
@@ -403,35 +442,41 @@
   }
 
   // ==========================================
-  // DOSSIERS — AFFICHAGE
+  // DOSSIERS — SIDEBAR
   // ==========================================
+  function statusLabel(status) {
+    if (status === 'processing') return '<span class="dossier-status status-processing">⏳ En cours</span>';
+    if (status === 'error') return '<span class="dossier-status status-error">⚠️ Erreur</span>';
+    return '<span class="dossier-status status-ready">✅ Prêt</span>';
+  }
+
   function renderDossiers() {
     const list = document.getElementById('dossiersList');
     if (dossiers.length === 0) { list.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Aucun dossier</div>'; return; }
     list.innerHTML = dossiers.map(d => {
       const nb = d._loaded ? d.docs.length : d.docsCount;
+      const isActive = currentDossier?.id === d.id;
       return `
-        <div class="dossier-item ${currentDossier?.id === d.id ? 'active' : ''}" onclick="openDossier('${d.id}')">
+        <div class="dossier-item ${isActive ? 'active' : ''}" onclick="toggleDossier('${d.id}')">
           <div class="dossier-info">
-            <div class="dossier-name">${d.name}</div>
-            <div class="dossier-meta">${nb} doc${nb !== 1 ? 's' : ''} · ${d.date}</div>
+            <div class="dossier-name">${escapeHtml(d.name)}</div>
+            <div class="dossier-meta">${nb} doc${nb !== 1 ? 's' : ''} · ${d.date} ${statusLabel(d.status)}</div>
           </div>
           <button class="dossier-delete" onclick="deleteDossier(event, '${d.id}')" title="Supprimer">🗑️</button>
         </div>`;
     }).join('');
   }
 
-  async function deleteDossier(event, id) {
-    event.stopPropagation();
-    if (!confirm('Voulez-vous vraiment supprimer ce dossier ?')) return;
-    dossiers = dossiers.filter(d => d.id !== id);
+  // Clic sur un dossier actif → désélectionne. Sinon → ouvre.
+  async function toggleDossier(id) {
     if (currentDossier?.id === id) {
       currentDossier = null;
       document.getElementById('dossierView').style.display = 'none';
       document.getElementById('emptyState').style.display = 'flex';
+      renderDossiers();
+      return;
     }
-    renderDossiers();
-    await supabaseClient.from('dossiers').delete().eq('dossier_id', id);
+    await openDossier(id);
   }
 
   async function openDossier(id) {
@@ -445,10 +490,33 @@
     renderDossiers();
     if (!currentDossier._loaded) {
       await loadDossierDetails(currentDossier);
-      updateDocsStrip();
-      renderMessages();
-      renderDossiers(); // Met à jour le compteur dans la sidebar après chargement
+      if (currentDossier === dossiers.find(d => d.id === id)) {
+        updateDocsStrip();
+        renderMessages();
+        renderDossiers();
+      }
     }
+  }
+
+  async function deleteDossier(event, id) {
+    event.stopPropagation();
+    if (!confirm('Supprimer ce dossier définitivement ?')) return;
+
+    // Supprimer d'abord dans Supabase, ensuite de l'interface
+    const { error } = await sb.from('dossiers').delete().eq('dossier_id', id);
+    if (error) {
+      console.error('Suppression échouée :', error);
+      alert('❌ La suppression a échoué. Veuillez réessayer.');
+      return;
+    }
+
+    dossiers = dossiers.filter(d => d.id !== id);
+    if (currentDossier?.id === id) {
+      currentDossier = null;
+      document.getElementById('dossierView').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'flex';
+    }
+    renderDossiers();
   }
 
   function updateDocsStrip() {
@@ -457,7 +525,8 @@
     const docs = currentDossier.docs || [];
     const nb = currentDossier._loaded ? docs.length : currentDossier.docsCount;
     count.textContent = `${nb} document${nb !== 1 ? 's' : ''}`;
-    strip.innerHTML = docs.map(d => `<div class="doc-chip">📄 ${d}</div>`).join('') || '<span style="font-size:12px;color:var(--text-muted)">Aucun document</span>';
+    strip.innerHTML = docs.map(d => `<div class="doc-chip">📄 ${escapeHtml(d)}</div>`).join('')
+      || '<span style="font-size:12px;color:var(--text-muted)">Aucun document</span>';
   }
 
   // ==========================================
@@ -489,11 +558,31 @@
   }
 
   function addMessage(role, content) {
+    if (!currentDossier) return;
     if (!currentDossier.messages) currentDossier.messages = [];
     currentDossier.messages.push({ role, content });
     renderMessages();
-    supabaseClient.from('conversations').insert({ dossier_id: currentDossier.id, role, content, timestamp: new Date().toISOString() })
-      .then(({ error }) => { if (error) console.error('Erreur save conversation :', error); });
+    // Sauvegarde async sans bloquer l'affichage
+    sb.from('conversations').insert({ dossier_id: currentDossier.id, role, content, timestamp: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.error('Save conv :', error); });
+  }
+
+  // ==========================================
+  // CHAT DÉSACTIVÉ PENDANT ANALYSE
+  // ==========================================
+  function setChatEnabled(enabled) {
+    const wrap = document.getElementById('inputWrap');
+    const btn = document.getElementById('sendBtn');
+    const input = document.getElementById('chatInput');
+    if (enabled) {
+      wrap.classList.remove('disabled');
+      btn.disabled = false;
+      input.placeholder = 'Posez une question sur le dossier…';
+    } else {
+      wrap.classList.add('disabled');
+      btn.disabled = true;
+      input.placeholder = 'Analyse en cours, veuillez patienter…';
+    }
   }
 
   // ==========================================
@@ -509,13 +598,13 @@
     typingSeconds = 0;
     const div = document.createElement('div');
     div.className = 'message ai'; div.id = 'typingIndicator';
-    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label || 'Analyse en cours...') + ' 0s</span></div></div>';
+    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' 0s</span></div></div>';
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
     typingTimer = setInterval(() => {
       typingSeconds++;
       const el = document.getElementById('typingLabel');
-      if (el) el.textContent = (label || 'Analyse en cours...') + ' ' + typingSeconds + 's';
+      if (el) el.textContent = (label||'Analyse en cours...') + ' ' + typingSeconds + 's';
     }, 1000);
   }
 
@@ -530,24 +619,23 @@
   async function sendMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
-    if (!msg || !currentDossier) return;
+    if (!msg || !currentDossier || analyseEnCours) return;
     input.value = ''; input.style.height = 'auto';
     addMessage('user', msg);
     addTyping('Recherche en cours...');
     document.getElementById('sendBtn').disabled = true;
     try {
-      const res = await fetch(WEBHOOK_QUESTION, {
+      const data = await fetchJson(WEBHOOK_QUESTION, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getAccessToken() },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ dossier_id: currentDossier.id, message: msg })
       });
-      const data = await res.json();
       removeTyping();
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
       addMessage('ai', reponse.replace(/\\n/g, '\n'));
-    } catch {
+    } catch(err) {
       removeTyping();
-      addMessage('ai', "Une erreur s'est produite. Vérifiez votre connexion.");
+      addMessage('ai', "❌ Une erreur s'est produite. Vérifiez votre connexion et réessayez.");
     } finally { document.getElementById('sendBtn').disabled = false; }
   }
 
@@ -555,20 +643,21 @@
   function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
   // ==========================================
-  // MODAL — VERROUILLAGE PENDANT CRÉATION
+  // MODAL
   // ==========================================
-  function lockModal() {
-    document.getElementById('dossierNameInput').disabled = true;
-    document.getElementById('dossierNotesInput').disabled = true;
-    document.getElementById('dropZone').classList.add('disabled');
-    document.getElementById('fileInput').disabled = true;
+  function lockModal(lock) {
+    const inputs = ['dossierNameInput', 'dossierNotesInput', 'fileInput'];
+    inputs.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = lock; });
+    const dz = document.getElementById('dropZone');
+    if (dz) dz.classList.toggle('disabled', lock);
+    document.getElementById('cancelBtn').disabled = lock;
+    // Les boutons supprimer fichier
+    document.querySelectorAll('.file-remove').forEach(el => el.classList.toggle('disabled', lock));
   }
 
-  function unlockModal() {
-    document.getElementById('dossierNameInput').disabled = false;
-    document.getElementById('dossierNotesInput').disabled = false;
-    document.getElementById('dropZone').classList.remove('disabled');
-    document.getElementById('fileInput').disabled = false;
+  function triggerFileInput() {
+    if (creationEnCours) return;
+    document.getElementById('fileInput').click();
   }
 
   function openModal() {
@@ -577,28 +666,30 @@
     document.getElementById('dossierNameInput').focus();
     selectedFiles = [];
     renderFilesList();
-    unlockModal();
+    lockModal(false);
   }
 
   function closeModal() {
-    if (creationEnCours) return; // Empêche la fermeture pendant la création
+    if (creationEnCours) return;
     document.getElementById('modalOverlay').style.display = 'none';
     document.getElementById('dossierNameInput').value = '';
     document.getElementById('dossierNotesInput').value = '';
     selectedFiles = [];
     renderFilesList();
-    unlockModal();
   }
 
   function openUpload() { document.getElementById('addFileInput').click(); }
 
   // ==========================================
-  // AJOUT DOCUMENTS AU DOSSIER EN COURS
+  // AJOUT DOCS AU DOSSIER EN COURS
   // ==========================================
   async function handleAdditionalFiles(files) {
     if (!currentDossier || files.length === 0) return;
     const validFiles = Array.from(files).filter(f => f.type === 'application/pdf');
     if (validFiles.length === 0) return;
+
+    analyseEnCours = true;
+    setChatEnabled(false);
     addTyping('Indexation en cours...');
     try {
       for (const file of validFiles) {
@@ -606,19 +697,24 @@
         formData.append('dossier_id', currentDossier.id);
         formData.append('nom_dossier', currentDossier.name);
         formData.append('data', file);
-        await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getAccessToken() }, body: formData });
+        const res = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         if (!currentDossier.docs.includes(file.name)) { currentDossier.docs.push(file.name); }
       }
       currentDossier.docsCount = currentDossier.docs.length;
       updateDocsStrip();
       renderDossiers();
       removeTyping();
-      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) et indexé(s) avec succès.\n\nVous pouvez poser vos questions ou taper "Refais l'analyse complète" pour une nouvelle synthèse.`);
-    } catch (error) {
-      console.error(error);
+      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) et indexé(s) avec succès.\n\nVous pouvez poser vos questions ou taper "Refais l'analyse complète" pour une nouvelle synthèse intégrant ce document.`);
+    } catch (err) {
+      console.error(err);
       removeTyping();
-      addMessage('ai', "Erreur lors de l'ajout des documents. Vérifiez votre connexion.");
-    } finally { document.getElementById('addFileInput').value = ''; }
+      addMessage('ai', "❌ L'ajout du document a échoué. Vérifiez votre connexion et réessayez.");
+    } finally {
+      analyseEnCours = false;
+      setChatEnabled(true);
+      document.getElementById('addFileInput').value = '';
+    }
   }
 
   function handleFiles(files) {
@@ -631,7 +727,11 @@
 
   function renderFilesList() {
     document.getElementById('filesList').innerHTML = selectedFiles.map((f, i) => `
-      <div class="file-item"><span>📄</span><span>${f.name}</span><span class="file-remove" onclick="removeFile(${i})">×</span></div>
+      <div class="file-item">
+        <span>📄</span>
+        <span>${escapeHtml(f.name)}</span>
+        <span class="file-remove ${creationEnCours ? 'disabled' : ''}" onclick="removeFile(${i})">×</span>
+      </div>
     `).join('');
   }
 
@@ -649,19 +749,13 @@
     if (!name) { alert("Veuillez saisir un nom de dossier."); return; }
 
     creationEnCours = true;
-    lockModal();
+    lockModal(true);
 
     const btn = document.getElementById('createBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
     btn.disabled = true;
-    cancelBtn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span><span id="btnCreateLabel">Analyse en cours… 0s</span>';
-    let btnSeconds = 0;
-    const btnTimer = setInterval(() => {
-      btnSeconds++;
-      const lbl = document.getElementById('btnCreateLabel');
-      if (lbl) lbl.textContent = 'Analyse en cours… ' + btnSeconds + 's';
-    }, 1000);
+    btn.innerHTML = '<span class="spinner"></span><span id="btnLbl">Analyse en cours… 0s</span>';
+    let sec = 0;
+    const timer = setInterval(() => { sec++; const l = document.getElementById('btnLbl'); if (l) l.textContent = 'Analyse en cours… ' + sec + 's'; }, 1000);
 
     const id = 'dossier_' + Date.now();
     const dossier = {
@@ -669,11 +763,25 @@
       date: new Date().toLocaleDateString('fr-FR'),
       docs: selectedFiles.map(f => f.name),
       docsCount: selectedFiles.length,
+      status: 'processing',
       messages: [],
       _loaded: true
     };
 
     if (notes) dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
+
+    // Ouvre le dossier tout de suite (avant même le fetch)
+    dossiers.unshift(dossier);
+    currentDossier = dossier;
+    document.getElementById('modalOverlay').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('dossierView').style.display = 'flex';
+    document.getElementById('currentDossierName').textContent = dossier.name;
+    updateDocsStrip();
+    renderMessages();
+    renderDossiers();
+    setChatEnabled(false);
+    addTyping('Analyse en cours...');
 
     try {
       let dernierData = null;
@@ -683,58 +791,40 @@
         formData.append('nom_dossier', name);
         if (notes) formData.append('notes', notes);
         formData.append('data', file);
-        const reponse = await fetch(WEBHOOK_UPLOAD, {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + getAccessToken() },
-          body: formData
-        });
-        dernierData = await reponse.json();
-        console.log("RÉPONSE N8N :", dernierData);
+        const res = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        dernierData = await res.json();
+        console.log('RÉPONSE N8N :', dernierData);
       }
 
-      dossiers.unshift(dossier);
-      document.getElementById('modalOverlay').style.display = 'none';
-      selectedFiles = [];
-
-      // Ouvre le dossier et affiche l'indicateur
-      currentDossier = dossier;
-      document.getElementById('emptyState').style.display = 'none';
-      document.getElementById('dossierView').style.display = 'flex';
-      document.getElementById('currentDossierName').textContent = dossier.name;
-      updateDocsStrip();
-      renderMessages();
-      renderDossiers();
-      addTyping('Analyse en cours...');
-
-      // Affiche la synthèse
+      // Mise à jour statut
+      dossier.status = 'ready';
       removeTyping();
-      if (dernierData) {
-        const synthese = dernierData.synthese || dernierData.reponse || dernierData.message || '';
-        const msg = synthese
-          ? synthese.replace(/\\n/g, '\n')
-          : `✅ ${dossier.docs.length} document(s) reçu(s) et indexé(s) avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
-        addMessage('ai', msg);
-      } else if (dossier.docs.length === 0) {
-        addMessage('ai', `✅ Dossier "${name}" créé. Ajoutez des documents pour démarrer l'analyse.`);
-      } else {
-        addMessage('ai', `✅ ${dossier.docs.length} document(s) reçu(s) et indexé(s) avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`);
-      }
 
-      // Recharge depuis Supabase pour avoir les données propres
-      await loadDossiersFromSupabase();
-      renderDossiers();
+      const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
+      const msg = synthese
+        ? synthese.replace(/\\n/g, '\n')
+        : selectedFiles.length > 0
+          ? `✅ ${selectedFiles.length} document(s) reçu(s) et indexé(s) avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`
+          : `✅ Dossier "${name}" créé. Ajoutez des documents pour démarrer l'analyse.`;
+      addMessage('ai', msg);
 
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
+      dossier.status = 'error';
       removeTyping();
-      alert("Erreur lors de l'envoi des documents. Vérifiez la connexion au serveur.");
+      addMessage('ai', "❌ L'analyse n'a pas pu être terminée. Les documents ont bien été reçus, mais un problème est survenu. Réessayez en posant une question ou en ajoutant à nouveau un document.");
     } finally {
-      clearInterval(btnTimer);
+      clearInterval(timer);
       creationEnCours = false;
-      unlockModal();
       btn.disabled = false;
-      cancelBtn.disabled = false;
       btn.textContent = 'Créer et analyser';
+      selectedFiles = [];
+      setChatEnabled(true);
+      renderDossiers();
+
+      // Recharge Supabase en arrière-plan pour synchroniser
+      loadDossiers().then(() => { renderDossiers(); });
     }
   }
 
@@ -745,43 +835,44 @@
     if (!currentDossier?.messages) return;
     const msgs = currentDossier.messages.filter(m => m.role === 'ai');
     if (msgs.length === 0) return;
-    const dernierMsg = msgs[msgs.length - 1];
+    const last = msgs[msgs.length - 1];
     document.getElementById('fullscreenTitle').textContent = currentDossier.name;
-    document.getElementById('fullscreenContent').innerHTML = formatResponse(dernierMsg.content.replace(/\n/g, '<br>'));
+    document.getElementById('fullscreenContent').innerHTML = formatResponse(last.content.replace(/\n/g, '<br>'));
     document.getElementById('fullscreenOverlay').style.display = 'flex';
   }
   function closeFullscreen() { document.getElementById('fullscreenOverlay').style.display = 'none'; }
 
   // ==========================================
-  // DRAG & DROP GLOBAL
+  // DRAG & DROP
   // ==========================================
   let dragCounter = 0;
   const globalOverlay = document.getElementById('globalDropOverlay');
   const globalSub = document.getElementById('globalDropSub');
 
-  window.addEventListener('dragenter', (e) => {
+  window.addEventListener('dragenter', e => {
     e.preventDefault(); dragCounter++;
     if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
       globalSub.textContent = currentDossier ? `Ajouter au dossier « ${currentDossier.name} »` : "Créer un nouveau dossier avec ces fichiers";
       globalOverlay.style.display = 'flex';
     }
   });
-  window.addEventListener('dragover', (e) => { e.preventDefault(); });
-  window.addEventListener('dragleave', (e) => {
+  window.addEventListener('dragover', e => { e.preventDefault(); });
+  window.addEventListener('dragleave', e => {
     e.preventDefault(); dragCounter--;
     if (dragCounter <= 0) { dragCounter = 0; globalOverlay.style.display = 'none'; }
   });
-  window.addEventListener('drop', (e) => {
+  window.addEventListener('drop', e => {
     e.preventDefault(); dragCounter = 0; globalOverlay.style.display = 'none';
     const files = e.dataTransfer.files;
     if (files?.length > 0) {
-      if (currentDossier) { handleAdditionalFiles(files); } else { openModal(); handleFiles(files); }
+      if (currentDossier) handleAdditionalFiles(files);
+      else { openModal(); handleFiles(files); }
     }
   });
 
   const dropZone = document.getElementById('dropZone');
   dropZone?.addEventListener('dragover', e => { e.preventDefault(); if (!creationEnCours) dropZone.classList.add('drag-over'); });
-  dropZone?.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
+  dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
   dropZone?.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (!creationEnCours) handleFiles(e.dataTransfer.files); });
 
   initAuth();
