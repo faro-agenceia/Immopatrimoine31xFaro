@@ -6,19 +6,10 @@
   <title>Assistant IA - Analyse de dossiers immobiliers</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --surface2: #334155;
-      --border: #475569;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #4f46e5;
-      --accent-light: #818cf8;
-      --red: #ef4444;
-      --orange: #f97316;
-      --green: #10b981;
+      --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --border: #475569;
+      --text: #f8fafc; --text-muted: #94a3b8; --accent: #4f46e5; --accent-light: #818cf8;
+      --red: #ef4444; --orange: #f97316; --green: #10b981;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
@@ -26,45 +17,30 @@
     .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
     .logo { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-light); margin-bottom: 4px; }
     .logo-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.03em; }
-
     .new-dossier-btn { margin: 16px 20px; padding: 10px 16px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; width: calc(100% - 40px); text-align: left; display: flex; align-items: center; gap: 8px; transition: background 0.15s; }
     .new-dossier-btn:hover { background: var(--accent-light); }
-
     .dossiers-list { flex: 1; overflow-y: auto; padding: 8px 12px; }
     .dossiers-label { font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 8px 6px; }
-
     .dossier-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; }
     .dossier-item:hover { background: var(--surface2); }
     .dossier-item.active { background: var(--surface2); border-left: 3px solid var(--accent); }
-
     .dossier-info { overflow: hidden; }
     .dossier-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .dossier-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-
-    .dossier-delete { opacity: 0; color: var(--text-muted); border: none; background: none; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; transition: opacity 0.15s, color 0.15s, background 0.15s; }
+    .dossier-delete { opacity: 0; color: var(--text-muted); border: none; background: none; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; transition: opacity 0.15s, color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; }
     .dossier-item:hover .dossier-delete { opacity: 1; }
-    .dossier-delete:hover { color: var(--red); background: rgba(239, 68, 68, 0.15); }
+    .dossier-delete:hover { color: var(--red); background: rgba(239,68,68,0.15); }
 
     .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
     .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); text-align: center; padding: 40px; }
-    .empty-icon { opacity: 0.4; display: flex; align-items: center; justify-content: center; }
+    .empty-icon { opacity: 0.4; font-size: 48px; }
     .empty-title { font-size: 18px; font-weight: 600; color: var(--text); }
     .empty-sub { font-size: 14px; max-width: 320px; line-height: 1.6; }
-
-    .dossier-delete svg, .doc-chip-icon svg, .avatar svg, .expand-btn svg, .upload-btn svg,
-    .mic-btn svg, .fullscreen-close svg, .logout-btn svg, .file-item svg { display: block; }
-    .expand-btn span, .upload-btn span, .fullscreen-close span, .logout-btn span { display: flex; align-items: center; }
-    .dossier-delete { display: flex; align-items: center; justify-content: center; }
-    .doc-chip-icon { display: flex; align-items: center; }
-    .logout-btn { display: flex; align-items: center; gap: 8px; }
-    .fullscreen-close { display: flex; align-items: center; gap: 8px; }
 
     .dossier-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .dossier-header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
     .dossier-title { font-size: 16px; font-weight: 600; }
     .docs-count { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-
     .upload-btn { padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; }
     .upload-btn:hover { border-color: var(--accent); background: var(--surface); }
     .expand-btn { padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; margin-left: 8px; }
@@ -73,32 +49,28 @@
     .fullscreen-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; padding: 40px; overflow-y: auto; }
     .fullscreen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-shrink: 0; }
     .fullscreen-title { font-size: 18px; font-weight: 700; color: var(--accent-light); }
-    .fullscreen-close { padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; cursor: pointer; transition: border-color 0.15s; }
+    .fullscreen-close { padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: border-color 0.15s; }
     .fullscreen-close:hover { border-color: var(--red); color: var(--red); }
-    .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); white-space: pre-wrap; }
+    .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); }
 
     .docs-strip { padding: 12px 28px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; overflow-x: auto; background: var(--surface); }
     .doc-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; white-space: nowrap; color: var(--text-muted); }
-    .doc-chip-icon { color: var(--accent-light); }
 
     .chat-area { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
     .message { display: flex; gap: 12px; max-width: 760px; }
     .message.user { flex-direction: row-reverse; align-self: flex-end; }
-
     .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
     .avatar.ai { background: var(--accent); color: white; }
     .avatar.user { background: var(--surface2); }
-
     .bubble { padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.7; max-width: 600px; }
     .message.ai .bubble { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 4px; }
     .message.user .bubble { background: var(--accent); color: white; border-top-right-radius: 4px; }
 
     .response-section { margin-top: 12px; padding: 12px 16px; border-radius: 8px; font-size: 13px; }
-    .section-critical { background: rgba(247, 85, 85, 0.08); border-left: 3px solid var(--red); }
-    .section-warning { background: rgba(247, 168, 85, 0.08); border-left: 3px solid var(--orange); }
-    .section-ok { background: rgba(79, 204, 138, 0.08); border-left: 3px solid var(--green); }
+    .section-critical { background: rgba(247,85,85,0.08); border-left: 3px solid var(--red); }
+    .section-warning { background: rgba(247,168,85,0.08); border-left: 3px solid var(--orange); }
+    .section-ok { background: rgba(79,204,138,0.08); border-left: 3px solid var(--green); }
     .section-sources { background: var(--surface2); border-left: 3px solid var(--accent); }
-
     .section-title { font-weight: 600; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
     .section-critical .section-title { color: var(--red); }
     .section-warning .section-title { color: var(--orange); }
@@ -108,44 +80,34 @@
     .input-area { padding: 20px 28px; border-top: 1px solid var(--border); background: var(--surface); }
     .input-wrap { display: flex; gap: 10px; align-items: flex-end; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; transition: border-color 0.15s; }
     .input-wrap:focus-within { border-color: var(--accent); }
-
     .chat-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; resize: none; outline: none; line-height: 1.5; max-height: 120px; font-family: inherit; }
     .chat-input::placeholder { color: var(--text-muted); }
-
     .mic-btn, .send-btn { width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
     .mic-btn { background: transparent; color: var(--text-muted); font-size: 16px; }
     .mic-btn:hover { background: var(--surface); color: var(--text); }
     .mic-btn.recording { background: var(--red); color: white; animation: pulse 1s infinite; }
-
     .send-btn { background: var(--accent); color: white; }
     .send-btn:hover { background: var(--accent-light); }
     .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
     .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 480px; max-width: 90vw; }
     .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
     .modal-input { width: 100%; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; margin-bottom: 12px; }
     .modal-input:focus { border-color: var(--accent); }
+    .modal-input:disabled { opacity: 0.5; cursor: not-allowed; }
     textarea.modal-input { resize: vertical; min-height: 70px; }
-
     .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 24px; text-align: center; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 16px; }
-    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(79, 110, 247, 0.05); }
-
-    .drop-icon { margin-bottom: 8px; display: flex; align-items: center; justify-content: center; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,110,247,0.05); }
+    .drop-zone.disabled { opacity: 0.4; pointer-events: none; }
+    .drop-icon { font-size: 28px; margin-bottom: 6px; }
     .drop-text { font-size: 13px; }
     .drop-sub { font-size: 11px; margin-top: 4px; color: var(--text-muted); opacity: 0.7; }
-
     .files-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; max-height: 120px; overflow-y: auto; }
     .file-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; font-size: 13px; }
     .file-remove { margin-left: auto; cursor: pointer; color: var(--text-muted); font-size: 16px; line-height: 1; }
     .file-remove:hover { color: var(--red); }
-
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
     .btn-cancel { padding: 9px 18px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 13px; cursor: pointer; }
     .btn-create { padding: 9px 18px; background: var(--accent); border: none; color: white; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
@@ -153,13 +115,7 @@
     .spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .global-drop-overlay {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
-      z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 16px; color: var(--text); border: 3px dashed var(--accent); pointer-events: none;
-    }
-    .global-drop-icon { display: flex; align-items: center; justify-content: center; color: var(--accent-light); }
-    .global-drop-icon svg { width: 56px; height: 56px; }
+    .global-drop-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.85); backdrop-filter: blur(8px); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text); border: 3px dashed var(--accent); pointer-events: none; }
     .global-drop-text { font-size: 20px; font-weight: 600; }
     .global-drop-sub { font-size: 14px; color: var(--text-muted); }
 
@@ -167,11 +123,7 @@
     .typing span { width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%; animation: bounce 1.2s infinite; }
     .typing span:nth-child(2) { animation-delay: 0.2s; }
     .typing span:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes bounce {
-      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-      40% { transform: translateY(-6px); opacity: 1; }
-    }
+    @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-6px); opacity: 1; } }
 
     input[type="file"] { display: none; }
     ::-webkit-scrollbar { width: 4px; }
@@ -182,11 +134,11 @@
     .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 360px; max-width: 90vw; }
     .auth-logo { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-light); margin-bottom: 4px; text-align: center; }
     .auth-logo-sub { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 24px; }
-    .auth-error { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--red); color: var(--red); font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; display: none; }
+    .auth-error { background: rgba(239,68,68,0.1); border: 1px solid var(--red); color: var(--red); font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; display: none; }
     .auth-btn { width: 100%; padding: 10px 16px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 4px; }
     .auth-btn:hover { background: var(--accent-light); }
     .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .logout-btn { margin: 0 20px 16px; padding: 8px 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 12px; cursor: pointer; text-align: left; }
+    .logout-btn { margin: 0 20px 16px; padding: 8px 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
     .logout-btn:hover { border-color: var(--red); color: var(--red); }
   </style>
 </head>
@@ -215,7 +167,7 @@
 </div>
 
 <div class="global-drop-overlay" id="globalDropOverlay" style="display:none;">
-  <div class="global-drop-icon" id="globalDropIcon"></div>
+  <div style="font-size:56px;">📁</div>
   <div class="global-drop-text">Déposez vos fichiers PDF ici</div>
   <div class="global-drop-sub" id="globalDropSub">Ils seront ajoutés directement à l'analyse</div>
 </div>
@@ -232,16 +184,15 @@
     <div class="dossiers-label">Dossiers récents</div>
     <div id="dossiersList"></div>
   </div>
-  <button class="logout-btn" onclick="handleLogout()"><span id="logoutIcon"></span> Se déconnecter</button>
+  <button class="logout-btn" onclick="handleLogout()">↩ Se déconnecter</button>
 </aside>
 
 <main class="main" id="main">
   <div class="empty-state" id="emptyState">
-    <div class="empty-icon" id="emptyIcon"></div>
+    <div class="empty-icon">🏢</div>
     <div class="empty-title">Aucun dossier ouvert</div>
     <div class="empty-sub">Créez un nouveau dossier ou glissez-déposez un fichier n'importe où pour démarrer.</div>
   </div>
-
   <div class="dossier-view" id="dossierView" style="display:none;">
     <div class="dossier-header">
       <div>
@@ -249,25 +200,16 @@
         <div class="docs-count" id="docsCount">0 document</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button class="expand-btn" onclick="openFullscreen()"><span id="expandIcon"></span> Agrandir</button>
-        <button class="upload-btn" onclick="openUpload()">
-          <span id="uploadIcon"></span> Ajouter des documents
-        </button>
+        <button class="expand-btn" onclick="openFullscreen()">⛶ Agrandir</button>
+        <button class="upload-btn" onclick="openUpload()">📎 Ajouter des documents</button>
       </div>
     </div>
     <div class="docs-strip" id="docsStrip"></div>
     <div class="chat-area" id="chatArea"></div>
     <div class="input-area">
       <div class="input-wrap">
-        <textarea
-          class="chat-input"
-          id="chatInput"
-          placeholder="Posez une question sur le dossier…"
-          rows="1"
-          onkeydown="handleKey(event)"
-          oninput="autoResize(this)"
-        ></textarea>
-        <button class="mic-btn" id="micBtn" onclick="toggleSpeech()" title="Dictée vocale (Français)"></button>
+        <textarea class="chat-input" id="chatInput" placeholder="Posez une question sur le dossier…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="mic-btn" id="micBtn" onclick="toggleSpeech()" title="Dictée vocale (Français)">🎙️</button>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -285,14 +227,14 @@
     <input class="modal-input" type="text" id="dossierNameInput" placeholder="Nom du dossier (ex: Appartement Paris 11e)" />
     <textarea class="modal-input" id="dossierNotesInput" placeholder="Texte, notes ou instructions complémentaires (optionnel)…"></textarea>
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <div class="drop-icon" id="dropIcon"></div>
+      <div class="drop-icon">📄</div>
       <div class="drop-text">Déposez vos PDF ici ou cliquez pour sélectionner</div>
       <div class="drop-sub">Formats acceptés : PDF</div>
     </div>
     <input type="file" id="fileInput" multiple accept=".pdf" onchange="handleFiles(this.files)" />
     <div class="files-list" id="filesList"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-cancel" id="cancelBtn" onclick="closeModal()">Annuler</button>
       <button class="btn-create" id="createBtn" onclick="createDossier()">Créer et analyser</button>
     </div>
   </div>
@@ -303,48 +245,36 @@
 <div class="fullscreen-overlay" id="fullscreenOverlay" style="display:none;">
   <div class="fullscreen-header">
     <div class="fullscreen-title" id="fullscreenTitle">—</div>
-    <button class="fullscreen-close" onclick="closeFullscreen()"><span id="fsCloseIcon"></span> Fermer</button>
+    <button class="fullscreen-close" onclick="closeFullscreen()">✕ Fermer</button>
   </div>
   <div class="fullscreen-content" id="fullscreenContent"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-  const WEBHOOK_UPLOAD = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
+  const WEBHOOK_UPLOAD   = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
   const WEBHOOK_QUESTION = 'https://n8n.srv1960518.hstgr.cloud/webhook/reponses-questions';
-  const SUPABASE_URL = 'https://zpvxifqbunhaoldkubqn.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_FiihlCJaPsQi9mUThPTf7w_LhRwR4mt';
+  const SUPABASE_URL      = 'https://zpvxifqbunhaoldkubqn.supabase.co';
+  // ⚠️ Remplace par ta clé anon (eyJ...) depuis Supabase → Settings → API → anon public
+  const SUPABASE_ANON_KEY = 'REMPLACE_PAR_CLÉ_ANON_eyJ';
 
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let currentSession = null;
-  let dossiers = JSON.parse(localStorage.getItem('dossiers') || '[]');
+  let dossiers = [];
   let currentDossier = null;
   let selectedFiles = [];
+  let creationEnCours = false;
 
-  const iconTrash = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
-  const iconMic = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>';
-  const iconPaperclip = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>';
-  const iconFolder = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path></svg>';
-  const iconDoc = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
-  const iconDocBig = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
-  const iconUser = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a7 7 0 0 1 14 0v1"></path></svg>';
-  const iconSparkle = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.8L20 10l-6.1 2.2L12 18l-1.9-5.8L4 10l6.1-2.2L12 2z"></path></svg>';
-  const iconExpand = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>';
-  const iconClose = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-  const iconBuilding = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 9h1"></path><path d="M14 9h1"></path><path d="M9 13h1"></path><path d="M14 13h1"></path><path d="M9 21v-4h6v4"></path></svg>';
-  const iconChat = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>';
-  const iconLogout = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
-
+  // ==========================================
+  // AUTH
+  // ==========================================
   async function initAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentSession = session;
     if (session) { showApp(); } else { showAuthScreen(); }
     supabaseClient.auth.onAuthStateChange((event, session) => {
       currentSession = session;
-      if (event === 'PASSWORD_RECOVERY') {
-        showRecoveryScreen();
-        return;
-      }
+      if (event === 'PASSWORD_RECOVERY') { showRecoveryScreen(); return; }
       if (session) { showApp(); } else { showAuthScreen(); }
     });
   }
@@ -354,7 +284,6 @@
     document.getElementById('authOverlay').style.display = 'flex';
     document.getElementById('dossierView').style.display = 'none';
     document.getElementById('emptyState').style.display = 'flex';
-    document.getElementById('currentDossierName').textContent = '—';
   }
   function showRecoveryScreen() {
     document.getElementById('authOverlay').style.display = 'none';
@@ -366,34 +295,21 @@
     loadDossiersFromSupabase();
   }
 
-  async function loadDossiersFromSupabase() {
-    if (!currentSession) return;
-    const { data, error } = await supabaseClient
-      .from('dossiers')
-      .select('*')
-      .eq('user_id', currentSession.user.id)
-      .order('date_creation', { ascending: false });
-    if (error) { console.error(error); renderDossiers(); return; }
-    dossiers = (data || []).map(row => ({
-      id: row.dossier_id,
-      name: row.nom,
-      date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
-      docs: [],
-      messages: null,
-      _loaded: false
-    }));
-    renderDossiers();
-  }
-
-  async function loadDossierDetails(dossier) {
-    if (dossier._loaded) return;
-    const [docsRes, convRes] = await Promise.all([
-      supabaseClient.from('documents').select('nom').eq('dossier_id', dossier.id),
-      supabaseClient.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true })
-    ]);
-    dossier.docs = (docsRes.data || []).map(d => d.nom);
-    dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
-    dossier._loaded = true;
+  async function handleAuthSubmit() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const errorBox = document.getElementById('authError');
+    const btn = document.getElementById('authSubmitBtn');
+    errorBox.style.display = 'none';
+    if (!email || !password) { errorBox.textContent = 'Merci de remplir email et mot de passe.'; errorBox.style.display = 'block'; return; }
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } catch (err) {
+      errorBox.textContent = err.message || 'Une erreur est survenue.';
+      errorBox.style.display = 'block';
+    } finally { btn.disabled = false; btn.textContent = 'Se connecter'; }
   }
 
   async function handleRecoverySubmit() {
@@ -412,92 +328,110 @@
     } catch (err) {
       errorBox.textContent = err.message || 'Une erreur est survenue.';
       errorBox.style.display = 'block';
-    } finally {
-      btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe';
-    }
-  }
-
-  async function handleAuthSubmit() {
-    const email = document.getElementById('authEmail').value.trim();
-    const password = document.getElementById('authPassword').value;
-    const errorBox = document.getElementById('authError');
-    const btn = document.getElementById('authSubmitBtn');
-    errorBox.style.display = 'none';
-    if (!email || !password) { errorBox.textContent = 'Merci de remplir email et mot de passe.'; errorBox.style.display = 'block'; return; }
-    btn.disabled = true; btn.textContent = '…';
-    try {
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    } catch (err) {
-      errorBox.textContent = err.message || 'Une erreur est survenue.';
-      errorBox.style.display = 'block';
-    } finally {
-      btn.disabled = false; btn.textContent = 'Se connecter';
-    }
+    } finally { btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe'; }
   }
 
   async function handleLogout() {
     await supabaseClient.auth.signOut();
-    currentDossier = null;
-    dossiers = [];
+    currentDossier = null; dossiers = [];
     document.getElementById('dossierView').style.display = 'none';
     document.getElementById('emptyState').style.display = 'flex';
-    document.getElementById('currentDossierName').textContent = '—';
     renderDossiers();
   }
   function getAccessToken() { return currentSession?.access_token || ''; }
 
-  let recognition = null;
-  let isListening = false;
+  // ==========================================
+  // SUPABASE — CHARGEMENT DOSSIERS
+  // ==========================================
+  async function loadDossiersFromSupabase() {
+    if (!currentSession) return;
+    const { data, error } = await supabaseClient
+      .from('dossiers')
+      .select('*')
+      .eq('user_id', currentSession.user.id)
+      .order('date_creation', { ascending: false });
+    if (error) { console.error('Erreur chargement dossiers :', error); renderDossiers(); return; }
+    dossiers = (data || []).map(row => ({
+      id: row.dossier_id,
+      name: row.nom,
+      date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
+      docsCount: 0,
+      docs: [],
+      messages: null,
+      _loaded: false
+    }));
+    // Charger le nombre de documents pour chaque dossier (pour la sidebar)
+    await Promise.all(dossiers.map(async (d) => {
+      const { count } = await supabaseClient.from('documents').select('*', { count: 'exact', head: true }).eq('dossier_id', d.id);
+      d.docsCount = count || 0;
+    }));
+    renderDossiers();
+  }
 
+  async function loadDossierDetails(dossier) {
+    if (dossier._loaded) return;
+    const [docsRes, convRes] = await Promise.all([
+      supabaseClient.from('documents').select('nom').eq('dossier_id', dossier.id),
+      supabaseClient.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true })
+    ]);
+    dossier.docs = (docsRes.data || []).map(d => d.nom);
+    dossier.docsCount = dossier.docs.length;
+    dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
+    dossier._loaded = true;
+  }
+
+  // ==========================================
+  // VOCAL
+  // ==========================================
+  let recognition = null, isListening = false;
   if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.lang = 'fr-FR';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      const input = document.getElementById('chatInput');
-      input.value = (input.value ? input.value + ' ' : '') + transcript;
-      autoResize(input);
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.lang = 'fr-FR'; recognition.continuous = false; recognition.interimResults = false;
+    recognition.onresult = (e) => {
+      const t = e.results[0][0].transcript;
+      const inp = document.getElementById('chatInput');
+      inp.value = (inp.value ? inp.value + ' ' : '') + t;
+      autoResize(inp);
     };
     recognition.onend = () => { isListening = false; document.getElementById('micBtn').classList.remove('recording'); };
     recognition.onerror = () => { isListening = false; document.getElementById('micBtn').classList.remove('recording'); };
   }
-
   function toggleSpeech() {
-    if (!recognition) { alert("La reconnaissance vocale n'est pas supportée sur ce navigateur."); return; }
+    if (!recognition) { alert("Reconnaissance vocale non supportée."); return; }
     if (isListening) { recognition.stop(); } else { recognition.start(); isListening = true; document.getElementById('micBtn').classList.add('recording'); }
   }
 
+  // ==========================================
+  // DOSSIERS — AFFICHAGE
+  // ==========================================
   function renderDossiers() {
     const list = document.getElementById('dossiersList');
     if (dossiers.length === 0) { list.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Aucun dossier</div>'; return; }
-    list.innerHTML = dossiers.map(d => `
-      <div class="dossier-item ${currentDossier?.id === d.id ? 'active' : ''}" onclick="openDossier('${d.id}')">
-        <div class="dossier-info">
-          <div class="dossier-name">${d.name}</div>
-          <div class="dossier-meta">${d.docs.length} doc${d.docs.length > 1 ? 's' : ''} · ${d.date}</div>
-        </div>
-        <button class="dossier-delete" onclick="deleteDossier(event, '${d.id}')" title="Supprimer le dossier">${iconTrash}</button>
-      </div>
-    `).join('');
+    list.innerHTML = dossiers.map(d => {
+      const nb = d._loaded ? d.docs.length : d.docsCount;
+      return `
+        <div class="dossier-item ${currentDossier?.id === d.id ? 'active' : ''}" onclick="openDossier('${d.id}')">
+          <div class="dossier-info">
+            <div class="dossier-name">${d.name}</div>
+            <div class="dossier-meta">${nb} doc${nb !== 1 ? 's' : ''} · ${d.date}</div>
+          </div>
+          <button class="dossier-delete" onclick="deleteDossier(event, '${d.id}')" title="Supprimer">🗑️</button>
+        </div>`;
+    }).join('');
   }
 
   async function deleteDossier(event, id) {
     event.stopPropagation();
     if (!confirm('Voulez-vous vraiment supprimer ce dossier ?')) return;
     dossiers = dossiers.filter(d => d.id !== id);
-    saveDossiers();
-    if (currentDossier && currentDossier.id === id) {
+    if (currentDossier?.id === id) {
       currentDossier = null;
       document.getElementById('dossierView').style.display = 'none';
       document.getElementById('emptyState').style.display = 'flex';
     }
     renderDossiers();
-    const { error } = await supabaseClient.from('dossiers').delete().eq('dossier_id', id);
-    if (error) console.error('Suppression Supabase échouée :', error);
+    await supabaseClient.from('dossiers').delete().eq('dossier_id', id);
   }
 
   async function openDossier(id) {
@@ -511,10 +445,9 @@
     renderDossiers();
     if (!currentDossier._loaded) {
       await loadDossierDetails(currentDossier);
-      if (currentDossier === dossiers.find(d => d.id === id)) {
-        updateDocsStrip();
-        renderMessages();
-      }
+      updateDocsStrip();
+      renderMessages();
+      renderDossiers(); // Met à jour le compteur dans la sidebar après chargement
     }
   }
 
@@ -522,15 +455,19 @@
     const strip = document.getElementById('docsStrip');
     const count = document.getElementById('docsCount');
     const docs = currentDossier.docs || [];
-    count.textContent = `${docs.length} document${docs.length > 1 ? 's' : ''}`;
-    strip.innerHTML = docs.map(d => `<div class="doc-chip"><span class="doc-chip-icon">${iconDoc}</span>${d}</div>`).join('') || '<span style="font-size:12px;color:var(--text-muted)">Aucun document</span>';
+    const nb = currentDossier._loaded ? docs.length : currentDossier.docsCount;
+    count.textContent = `${nb} document${nb !== 1 ? 's' : ''}`;
+    strip.innerHTML = docs.map(d => `<div class="doc-chip">📄 ${d}</div>`).join('') || '<span style="font-size:12px;color:var(--text-muted)">Aucun document</span>';
   }
 
+  // ==========================================
+  // MESSAGES
+  // ==========================================
   function renderMessages() {
     const area = document.getElementById('chatArea');
     const msgs = currentDossier.messages || [];
     if (msgs.length === 0) {
-      area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="margin-bottom:12px;display:flex;justify-content:center;opacity:0.5">${iconChat}</div>Posez une question sur ce dossier</div>`;
+      area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="font-size:28px;margin-bottom:12px">💬</div>Posez une question sur ce dossier</div>`;
       return;
     }
     area.innerHTML = msgs.map(m => renderMessage(m)).join('');
@@ -539,10 +476,8 @@
 
   function renderMessage(m) {
     const contenu = m.content.replace(/\n/g, '<br>');
-    if (m.role === 'user') {
-      return `<div class="message user"><div class="avatar user">${iconUser}</div><div class="bubble">${contenu}</div></div>`;
-    }
-    return `<div class="message ai"><div class="avatar ai">${iconSparkle}</div><div class="bubble">${formatResponse(contenu)}</div></div>`;
+    if (m.role === 'user') return `<div class="message user"><div class="avatar user">👤</div><div class="bubble">${contenu}</div></div>`;
+    return `<div class="message ai"><div class="avatar ai">✦</div><div class="bubble">${formatResponse(contenu)}</div></div>`;
   }
 
   function formatResponse(text) {
@@ -556,12 +491,15 @@
   function addMessage(role, content) {
     if (!currentDossier.messages) currentDossier.messages = [];
     currentDossier.messages.push({ role, content });
-    saveDossiers();
     renderMessages();
+    supabaseClient.from('conversations').insert({ dossier_id: currentDossier.id, role, content, timestamp: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.error('Erreur save conversation :', error); });
   }
 
-  let typingTimer = null;
-  let typingSeconds = 0;
+  // ==========================================
+  // TYPING INDICATOR
+  // ==========================================
+  let typingTimer = null, typingSeconds = 0;
 
   function addTyping(label) {
     const area = document.getElementById('chatArea');
@@ -570,9 +508,8 @@
     document.getElementById('typingIndicator')?.remove();
     typingSeconds = 0;
     const div = document.createElement('div');
-    div.className = 'message ai';
-    div.id = 'typingIndicator';
-    div.innerHTML = '<div class="avatar ai">' + iconSparkle + '</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label || 'Analyse en cours...') + ' 0s</span></div></div>';
+    div.className = 'message ai'; div.id = 'typingIndicator';
+    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label || 'Analyse en cours...') + ' 0s</span></div></div>';
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
     typingTimer = setInterval(() => {
@@ -583,17 +520,18 @@
   }
 
   function removeTyping() {
-    clearInterval(typingTimer);
-    typingTimer = null;
+    clearInterval(typingTimer); typingTimer = null;
     document.getElementById('typingIndicator')?.remove();
   }
 
+  // ==========================================
+  // ENVOI QUESTION
+  // ==========================================
   async function sendMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
     if (!msg || !currentDossier) return;
-    input.value = '';
-    input.style.height = 'auto';
+    input.value = ''; input.style.height = 'auto';
     addMessage('user', msg);
     addTyping('Recherche en cours...');
     document.getElementById('sendBtn').disabled = true;
@@ -610,66 +548,81 @@
     } catch {
       removeTyping();
       addMessage('ai', "Une erreur s'est produite. Vérifiez votre connexion.");
-    } finally {
-      document.getElementById('sendBtn').disabled = false;
-    }
+    } finally { document.getElementById('sendBtn').disabled = false; }
   }
 
   function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
   function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
+  // ==========================================
+  // MODAL — VERROUILLAGE PENDANT CRÉATION
+  // ==========================================
+  function lockModal() {
+    document.getElementById('dossierNameInput').disabled = true;
+    document.getElementById('dossierNotesInput').disabled = true;
+    document.getElementById('dropZone').classList.add('disabled');
+    document.getElementById('fileInput').disabled = true;
+  }
+
+  function unlockModal() {
+    document.getElementById('dossierNameInput').disabled = false;
+    document.getElementById('dossierNotesInput').disabled = false;
+    document.getElementById('dropZone').classList.remove('disabled');
+    document.getElementById('fileInput').disabled = false;
+  }
+
   function openModal() {
+    if (creationEnCours) return;
     document.getElementById('modalOverlay').style.display = 'flex';
     document.getElementById('dossierNameInput').focus();
     selectedFiles = [];
     renderFilesList();
+    unlockModal();
   }
 
   function closeModal() {
+    if (creationEnCours) return; // Empêche la fermeture pendant la création
     document.getElementById('modalOverlay').style.display = 'none';
     document.getElementById('dossierNameInput').value = '';
     document.getElementById('dossierNotesInput').value = '';
     selectedFiles = [];
     renderFilesList();
+    unlockModal();
   }
 
   function openUpload() { document.getElementById('addFileInput').click(); }
 
+  // ==========================================
+  // AJOUT DOCUMENTS AU DOSSIER EN COURS
+  // ==========================================
   async function handleAdditionalFiles(files) {
     if (!currentDossier || files.length === 0) return;
     const validFiles = Array.from(files).filter(f => f.type === 'application/pdf');
     if (validFiles.length === 0) return;
     addTyping('Indexation en cours...');
     try {
-      let dernierData = null;
       for (const file of validFiles) {
         const formData = new FormData();
         formData.append('dossier_id', currentDossier.id);
         formData.append('nom_dossier', currentDossier.name);
         formData.append('data', file);
-        const reponse = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getAccessToken() }, body: formData });
-        dernierData = await reponse.json();
+        await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getAccessToken() }, body: formData });
         if (!currentDossier.docs.includes(file.name)) { currentDossier.docs.push(file.name); }
       }
-      saveDossiers();
+      currentDossier.docsCount = currentDossier.docs.length;
       updateDocsStrip();
+      renderDossiers();
       removeTyping();
-
-      const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
-      const msg = synthese
-        ? synthese.replace(/\\n/g, '\n')
-        : `✅ ${validFiles.length} document(s) ajouté(s) avec succès et indexé(s) dans la base de données.`;
-      addMessage('ai', msg);
+      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) et indexé(s) avec succès.\n\nVous pouvez poser vos questions ou taper "Refais l'analyse complète" pour une nouvelle synthèse.`);
     } catch (error) {
       console.error(error);
       removeTyping();
       addMessage('ai', "Erreur lors de l'ajout des documents. Vérifiez votre connexion.");
-    } finally {
-      document.getElementById('addFileInput').value = '';
-    }
+    } finally { document.getElementById('addFileInput').value = ''; }
   }
 
   function handleFiles(files) {
+    if (creationEnCours) return;
     for (const f of files) {
       if (f.type === 'application/pdf' && !selectedFiles.find(x => x.name === f.name)) { selectedFiles.push(f); }
     }
@@ -678,19 +631,30 @@
 
   function renderFilesList() {
     document.getElementById('filesList').innerHTML = selectedFiles.map((f, i) => `
-      <div class="file-item"><span style="color:var(--accent-light);display:flex">${iconDoc}</span><span>${f.name}</span><span class="file-remove" onclick="removeFile(${i})">×</span></div>
+      <div class="file-item"><span>📄</span><span>${f.name}</span><span class="file-remove" onclick="removeFile(${i})">×</span></div>
     `).join('');
   }
 
-  function removeFile(i) { selectedFiles.splice(i, 1); renderFilesList(); }
+  function removeFile(i) {
+    if (creationEnCours) return;
+    selectedFiles.splice(i, 1); renderFilesList();
+  }
 
+  // ==========================================
+  // CRÉATION DOSSIER
+  // ==========================================
   async function createDossier() {
     const name = document.getElementById('dossierNameInput').value.trim();
     const notes = document.getElementById('dossierNotesInput').value.trim();
     if (!name) { alert("Veuillez saisir un nom de dossier."); return; }
 
+    creationEnCours = true;
+    lockModal();
+
     const btn = document.getElementById('createBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
     btn.disabled = true;
+    cancelBtn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span><span id="btnCreateLabel">Analyse en cours… 0s</span>';
     let btnSeconds = 0;
     const btnTimer = setInterval(() => {
@@ -698,55 +662,67 @@
       const lbl = document.getElementById('btnCreateLabel');
       if (lbl) lbl.textContent = 'Analyse en cours… ' + btnSeconds + 's';
     }, 1000);
-    addTyping('Analyse en cours...');
 
     const id = 'dossier_' + Date.now();
     const dossier = {
       id, name,
       date: new Date().toLocaleDateString('fr-FR'),
       docs: selectedFiles.map(f => f.name),
-      messages: []
+      docsCount: selectedFiles.length,
+      messages: [],
+      _loaded: true
     };
 
-    if (notes) {
-      dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
-    }
+    if (notes) dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
 
     try {
       let dernierData = null;
-
       for (const file of selectedFiles) {
         const formData = new FormData();
         formData.append('dossier_id', id);
         formData.append('nom_dossier', name);
         if (notes) formData.append('notes', notes);
         formData.append('data', file);
-
         const reponse = await fetch(WEBHOOK_UPLOAD, {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + getAccessToken() },
           body: formData
         });
-
         dernierData = await reponse.json();
         console.log("RÉPONSE N8N :", dernierData);
       }
 
       dossiers.unshift(dossier);
-      saveDossiers();
-      closeModal();
-      openDossier(id);
-      removeTyping();
+      document.getElementById('modalOverlay').style.display = 'none';
+      selectedFiles = [];
 
+      // Ouvre le dossier et affiche l'indicateur
+      currentDossier = dossier;
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('dossierView').style.display = 'flex';
+      document.getElementById('currentDossierName').textContent = dossier.name;
+      updateDocsStrip();
+      renderMessages();
+      renderDossiers();
+      addTyping('Analyse en cours...');
+
+      // Affiche la synthèse
+      removeTyping();
       if (dernierData) {
         const synthese = dernierData.synthese || dernierData.reponse || dernierData.message || '';
         const msg = synthese
           ? synthese.replace(/\\n/g, '\n')
-          : `✅ ${selectedFiles.length} document(s) reçu(s) et indexé(s). Vous pouvez maintenant poser vos questions.`;
+          : `✅ ${dossier.docs.length} document(s) reçu(s) et indexé(s) avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
         addMessage('ai', msg);
+      } else if (dossier.docs.length === 0) {
+        addMessage('ai', `✅ Dossier "${name}" créé. Ajoutez des documents pour démarrer l'analyse.`);
       } else {
-        addMessage('ai', `✅ Dossier ${name} créé. Ajoutez des documents pour démarrer l'analyse.`);
+        addMessage('ai', `✅ ${dossier.docs.length} document(s) reçu(s) et indexé(s) avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`);
       }
+
+      // Recharge depuis Supabase pour avoir les données propres
+      await loadDossiersFromSupabase();
+      renderDossiers();
 
     } catch (error) {
       console.error(error);
@@ -754,32 +730,19 @@
       alert("Erreur lors de l'envoi des documents. Vérifiez la connexion au serveur.");
     } finally {
       clearInterval(btnTimer);
+      creationEnCours = false;
+      unlockModal();
       btn.disabled = false;
+      cancelBtn.disabled = false;
       btn.textContent = 'Créer et analyser';
     }
   }
 
-  function injectIcons() {
-    const map = {
-      micBtn: iconMic,
-      emptyIcon: iconBuilding,
-      globalDropIcon: iconFolder,
-      dropIcon: iconDocBig,
-      expandIcon: iconExpand,
-      uploadIcon: iconPaperclip,
-      fsCloseIcon: iconClose,
-      logoutIcon: iconLogout
-    };
-    for (const [id, svg] of Object.entries(map)) {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = svg;
-    }
-  }
-
-  function saveDossiers() { localStorage.setItem('dossiers', JSON.stringify(dossiers)); }
-
+  // ==========================================
+  // FULLSCREEN
+  // ==========================================
   function openFullscreen() {
-    if (!currentDossier || !currentDossier.messages) return;
+    if (!currentDossier?.messages) return;
     const msgs = currentDossier.messages.filter(m => m.role === 'ai');
     if (msgs.length === 0) return;
     const dernierMsg = msgs[msgs.length - 1];
@@ -787,48 +750,40 @@
     document.getElementById('fullscreenContent').innerHTML = formatResponse(dernierMsg.content.replace(/\n/g, '<br>'));
     document.getElementById('fullscreenOverlay').style.display = 'flex';
   }
+  function closeFullscreen() { document.getElementById('fullscreenOverlay').style.display = 'none'; }
 
-  function closeFullscreen() {
-    document.getElementById('fullscreenOverlay').style.display = 'none';
-  }
-
+  // ==========================================
+  // DRAG & DROP GLOBAL
+  // ==========================================
   let dragCounter = 0;
   const globalOverlay = document.getElementById('globalDropOverlay');
   const globalSub = document.getElementById('globalDropSub');
 
   window.addEventListener('dragenter', (e) => {
-    e.preventDefault();
-    dragCounter++;
+    e.preventDefault(); dragCounter++;
     if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
-      globalSub.textContent = currentDossier ? `Ajouter directement au dossier « ${currentDossier.name} »` : "Créer un nouveau dossier avec ces fichiers";
+      globalSub.textContent = currentDossier ? `Ajouter au dossier « ${currentDossier.name} »` : "Créer un nouveau dossier avec ces fichiers";
       globalOverlay.style.display = 'flex';
     }
   });
-
   window.addEventListener('dragover', (e) => { e.preventDefault(); });
-
   window.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    dragCounter--;
+    e.preventDefault(); dragCounter--;
     if (dragCounter <= 0) { dragCounter = 0; globalOverlay.style.display = 'none'; }
   });
-
   window.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dragCounter = 0;
-    globalOverlay.style.display = 'none';
+    e.preventDefault(); dragCounter = 0; globalOverlay.style.display = 'none';
     const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
+    if (files?.length > 0) {
       if (currentDossier) { handleAdditionalFiles(files); } else { openModal(); handleFiles(files); }
     }
   });
 
   const dropZone = document.getElementById('dropZone');
-  dropZone?.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone?.addEventListener('dragover', e => { e.preventDefault(); if (!creationEnCours) dropZone.classList.add('drag-over'); });
   dropZone?.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
-  dropZone?.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+  dropZone?.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (!creationEnCours) handleFiles(e.dataTransfer.files); });
 
-  injectIcons();
   initAuth();
 </script>
 </body>
