@@ -140,7 +140,9 @@
     .fullscreen-title { font-size: 18px; font-weight: 700; color: var(--accent-light); }
     .fullscreen-close { padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: border-color 0.15s; }
     .fullscreen-close:hover { border-color: var(--red); color: var(--red); }
-    .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); }
+    .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); display: flex; flex-direction: column; gap: 20px; }
+    .fullscreen-content .message { max-width: 100%; }
+    .fullscreen-content .bubble { max-width: 780px; font-size: 15px; }
 
     /* AUTH */
     .auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
@@ -153,6 +155,13 @@
     .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .logout-btn { margin: 0 20px 16px; padding: 8px 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
     .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+    /* MOT DE PASSE : bouton œil */
+    .pwd-wrap { position: relative; margin-bottom: 12px; }
+    .pwd-wrap.last { margin-bottom: 16px; }
+    .pwd-wrap .modal-input { margin-bottom: 0; padding-right: 44px; }
+    .pwd-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .pwd-toggle:hover { color: var(--text); background: var(--surface); }
 
     input[type="file"] { display: none; }
     ::-webkit-scrollbar { width: 4px; }
@@ -171,7 +180,10 @@
     <div class="auth-logo-sub">Analyse de dossiers immobiliers</div>
     <div class="auth-error" id="authError"></div>
     <input class="modal-input" type="email" id="authEmail" placeholder="Email" />
-    <input class="modal-input" type="password" id="authPassword" placeholder="Mot de passe" style="margin-bottom:16px;" />
+    <div class="pwd-wrap last">
+      <input class="modal-input" type="password" id="authPassword" placeholder="Mot de passe" />
+      <button type="button" class="pwd-toggle" onclick="togglePassword('authPassword', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+    </div>
     <button class="auth-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">Se connecter</button>
   </div>
 </div>
@@ -182,8 +194,14 @@
     <div class="auth-logo"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"></rect><rect x="9" y="6" width="2" height="2"></rect><rect x="13" y="6" width="2" height="2"></rect><rect x="9" y="11" width="2" height="2"></rect><rect x="13" y="11" width="2" height="2"></rect><path d="M9 22v-4h6v4"></path></svg>ASSISTANT IA</div>
     <div class="auth-logo-sub">Choisissez votre nouveau mot de passe</div>
     <div class="auth-error" id="recoveryError"></div>
-    <input class="modal-input" type="password" id="recoveryPassword" placeholder="Nouveau mot de passe" />
-    <input class="modal-input" type="password" id="recoveryPasswordConfirm" placeholder="Confirmez le mot de passe" style="margin-bottom:16px;" />
+    <div class="pwd-wrap">
+      <input class="modal-input" type="password" id="recoveryPassword" placeholder="Nouveau mot de passe" />
+      <button type="button" class="pwd-toggle" onclick="togglePassword('recoveryPassword', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+    </div>
+    <div class="pwd-wrap last">
+      <input class="modal-input" type="password" id="recoveryPasswordConfirm" placeholder="Confirmez le mot de passe" />
+      <button type="button" class="pwd-toggle" onclick="togglePassword('recoveryPasswordConfirm', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+    </div>
     <button class="auth-btn" id="recoverySubmitBtn" onclick="handleRecoverySubmit()">Valider le nouveau mot de passe</button>
   </div>
 </div>
@@ -255,11 +273,12 @@
     <textarea class="modal-input" id="dossierNotesInput" placeholder="Notes ou instructions complémentaires (optionnel)…"></textarea>
     <div class="drop-zone" id="dropZone" onclick="triggerFileInput()">
       <div class="drop-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>
-      <div class="drop-text">Déposez vos PDF ici ou cliquez pour sélectionner</div>
-      <div class="drop-sub">Formats acceptés : PDF</div>
+      <div class="drop-text">Déposez votre PDF ici ou cliquez pour le sélectionner</div>
+      <div class="drop-sub">Format accepté : PDF · un seul document à la création</div>
     </div>
-    <input type="file" id="fileInput" multiple accept=".pdf" onchange="handleFiles(this.files)" />
+    <input type="file" id="fileInput" accept=".pdf" onchange="handleFiles(this.files)" />
     <div class="files-list" id="filesList"></div>
+    <div class="auth-error" id="modalError"></div>
     <div class="modal-actions">
       <button class="btn-cancel" id="cancelBtn" onclick="closeModal()">Annuler</button>
       <button class="btn-create" id="createBtn" onclick="createDossier()">Créer et analyser</button>
@@ -312,6 +331,17 @@
   }
 
   function getToken() { return session?.access_token || ''; }
+
+  const ICON_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+  const ICON_EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const afficher = input.type === 'password';
+    input.type = afficher ? 'text' : 'password';
+    btn.innerHTML = afficher ? ICON_EYE_OFF : ICON_EYE;
+    btn.setAttribute('aria-label', afficher ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+  }
 
   async function fetchJson(url, options = {}) {
     const res = await fetch(url, options);
@@ -405,16 +435,32 @@
       (docsData || []).forEach(d => { countMap[d.dossier_id] = (countMap[d.dossier_id] || 0) + 1; });
     }
 
-    dossiers = (data || []).map(row => ({
-      id: row.dossier_id,
-      name: row.nom,
-      date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
-      docsCount: countMap[row.dossier_id] || 0,
-      status: row.statut || 'ready',
-      docs: [],
-      messages: null,
-      _loaded: false
-    }));
+    // On réutilise les objets déjà en mémoire (même id) au lieu de les recréer :
+    // sinon le dossier ouvert (currentDossier) devient un "vieil objet" déconnecté de la liste,
+    // sa conversation s'efface à l'écran et se recharge depuis Supabase.
+    const anciens = dossiers;
+    const depuisSupabase = (data || []).map(row => {
+      const nouveau = {
+        id: row.dossier_id,
+        name: row.nom,
+        date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
+        docsCount: countMap[row.dossier_id] || 0,
+        status: row.statut || 'ready',
+        docs: [],
+        messages: null,
+        _loaded: false
+      };
+      const ancien = anciens.find(d => d.id === row.dossier_id);
+      if (!ancien) return nouveau;
+      ancien.name = nouveau.name;
+      ancien.date = nouveau.date;
+      if (!ancien._pending) ancien.status = nouveau.status;
+      if (!ancien._loaded) ancien.docsCount = nouveau.docsCount;
+      return ancien;
+    });
+    // Un dossier en cours de création pas encore visible dans Supabase reste dans la liste
+    const enCreation = anciens.filter(d => d._pending && !ids.includes(d.id));
+    dossiers = [...enCreation, ...depuisSupabase];
     renderDossiers();
   }
 
@@ -547,13 +593,20 @@
   // ==========================================
   function renderMessages() {
     const area = document.getElementById('chatArea');
+    removeTyping(); // le rendu efface l'indicateur : on le nettoie proprement
+    if (!currentDossier._loaded) {
+      area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px">Chargement de la conversation…</div>`;
+      return;
+    }
     const msgs = currentDossier.messages || [];
     if (msgs.length === 0) {
       area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="font-size:28px;margin-bottom:12px">💬</div>Posez une question sur ce dossier</div>`;
-      return;
+    } else {
+      area.innerHTML = msgs.map(m => renderMessage(m)).join('');
+      area.scrollTop = area.scrollHeight;
     }
-    area.innerHTML = msgs.map(m => renderMessage(m)).join('');
-    area.scrollTop = area.scrollHeight;
+    // Si ce dossier a une opération en cours (question, analyse, indexation), on réaffiche l'indicateur
+    if (currentDossier._pending) addTyping(currentDossier._pending.label, currentDossier._pending.start);
   }
 
   function renderMessage(m) {
@@ -610,15 +663,15 @@
   // ==========================================
   let typingTimer = null, typingSeconds = 0;
 
-  function addTyping(label) {
+  function addTyping(label, start = Date.now()) {
     const area = document.getElementById('chatArea');
     if (!area) return;
     if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
     document.getElementById('typingIndicator')?.remove();
-    typingSeconds = 0;
+    typingSeconds = Math.floor((Date.now() - start) / 1000);
     const div = document.createElement('div');
     div.className = 'message ai'; div.id = 'typingIndicator';
-    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' 0s</span></div></div>';
+    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' ' + typingSeconds + 's</span></div></div>';
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
     typingTimer = setInterval(() => {
@@ -631,6 +684,16 @@
   function removeTyping() {
     clearInterval(typingTimer); typingTimer = null;
     document.getElementById('typingIndicator')?.remove();
+  }
+
+  // Opération en cours pour UN dossier (mémorisée sur le dossier, pas globale)
+  function startPending(dossier, label) {
+    dossier._pending = { label, start: Date.now() };
+    if (dossier === currentDossier) addTyping(label, dossier._pending.start);
+  }
+  function endPending(dossier) {
+    dossier._pending = null;
+    if (dossier === currentDossier) removeTyping();
   }
 
   // ==========================================
@@ -649,7 +712,7 @@
     questionEnCours = true;
     input.value = ''; input.style.height = 'auto';
     addMessage('user', msg, dossier);
-    addTyping('Recherche en cours...');
+    startPending(dossier, 'Recherche en cours...');
     document.getElementById('sendBtn').disabled = true;
     try {
       const data = await fetchJson(WEBHOOK_QUESTION, {
@@ -657,11 +720,11 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ dossier_id: dossier.id, message: msg })
       });
-      removeTyping();
+      endPending(dossier);
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
       addMessage('ai', reponse.replace(/\\n/g, '\n'), dossier);
     } catch(err) {
-      removeTyping();
+      endPending(dossier);
       addMessage('ai', "❌ Une erreur s'est produite. Vérifiez votre connexion et réessayez.", dossier);
     } finally {
       questionEnCours = false;
@@ -697,6 +760,7 @@
     document.getElementById('dossierNameInput').focus();
     selectedFiles = [];
     renderFilesList();
+    hideModalError();
     lockModal(false);
   }
 
@@ -707,6 +771,7 @@
     document.getElementById('dossierNotesInput').value = '';
     selectedFiles = [];
     renderFilesList();
+    hideModalError();
   }
 
   function openUpload() { document.getElementById('addFileInput').click(); }
@@ -724,7 +789,7 @@
 
     analyseEnCours = true;
     setChatEnabled(false);
-    addTyping('Indexation en cours...');
+    startPending(dossier, 'Indexation en cours...');
     try {
       for (const file of validFiles) {
         const formData = new FormData();
@@ -738,11 +803,11 @@
       dossier.docsCount = dossier.docs.length;
       if (dossier === currentDossier) updateDocsStrip();
       renderDossiers();
-      removeTyping();
+      endPending(dossier);
       addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) et indexé(s) avec succès.\n\nVous pouvez poser vos questions ou taper "Refais l'analyse complète" pour une nouvelle synthèse intégrant ce document.`, dossier);
     } catch (err) {
       console.error(err);
-      removeTyping();
+      endPending(dossier);
       addMessage('ai', "❌ L'ajout du document a échoué. Vérifiez votre connexion et réessayez.", dossier);
     } finally {
       analyseEnCours = false;
@@ -751,12 +816,35 @@
     }
   }
 
+  const MAX_PDF_CREATION = 1;
+
+  function showModalError(msg) {
+    const el = document.getElementById('modalError');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function hideModalError() {
+    const el = document.getElementById('modalError');
+    if (el) el.style.display = 'none';
+  }
+
   function handleFiles(files) {
     if (creationEnCours) return;
-    for (const f of files) {
-      if (f.type === 'application/pdf' && !selectedFiles.find(x => x.name === f.name)) { selectedFiles.push(f); }
+    const pdfs = Array.from(files).filter(f => f.type === 'application/pdf');
+    // Permet de re-choisir le même fichier après l'avoir retiré
+    document.getElementById('fileInput').value = '';
+    hideModalError();
+    let refuse = false;
+    for (const f of pdfs) {
+      if (selectedFiles.find(x => x.name === f.name)) continue;
+      if (selectedFiles.length >= MAX_PDF_CREATION) { refuse = true; continue; }
+      selectedFiles.push(f);
     }
     renderFilesList();
+    if (refuse) {
+      showModalError("La création ne peut analyser qu'un seul document à la fois. Une fois le dossier créé, ouvrez la conversation et cliquez sur « Ajouter des documents » pour en ajouter d'autres.");
+    }
   }
 
   function renderFilesList() {
@@ -771,7 +859,7 @@
 
   function removeFile(i) {
     if (creationEnCours) return;
-    selectedFiles.splice(i, 1); renderFilesList();
+    selectedFiles.splice(i, 1); renderFilesList(); hideModalError();
   }
 
   // ==========================================
@@ -815,7 +903,7 @@
     renderMessages();
     renderDossiers();
     setChatEnabled(false);
-    addTyping('Analyse en cours...');
+    startPending(dossier, 'Analyse en cours...');
 
     try {
       let dernierData = null;
@@ -833,7 +921,7 @@
 
       // Mise à jour statut
       dossier.status = 'ready';
-      removeTyping();
+      endPending(dossier);
 
       const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
       const msg = synthese
@@ -846,7 +934,7 @@
     } catch (err) {
       console.error(err);
       dossier.status = 'error';
-      removeTyping();
+      endPending(dossier);
       addMessage('ai', "❌ L'analyse n'a pas pu être terminée. Les documents ont bien été reçus, mais un problème est survenu. Réessayez en posant une question ou en ajoutant à nouveau un document.", dossier);
     } finally {
       clearInterval(timer);
@@ -866,13 +954,21 @@
   // FULLSCREEN
   // ==========================================
   function openFullscreen() {
-    if (!currentDossier?.messages) return;
-    const msgs = currentDossier.messages.filter(m => m.role === 'ai');
-    if (msgs.length === 0) return;
-    const last = msgs[msgs.length - 1];
+    if (!currentDossier) return;
+    // Affiche toute la conversation, avec le même rendu que le chat
+    const msgs = (currentDossier.messages || []).filter(m => m.content);
     document.getElementById('fullscreenTitle').textContent = currentDossier.name;
-    document.getElementById('fullscreenContent').innerHTML = formatResponse(last.content.replace(/\n/g, '<br>'));
-    document.getElementById('fullscreenOverlay').style.display = 'flex';
+    const contenu = document.getElementById('fullscreenContent');
+    if (!currentDossier._loaded) {
+      contenu.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Chargement de la conversation…</div>';
+    } else if (msgs.length === 0) {
+      contenu.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Aucun message dans cette conversation pour le moment.</div>';
+    } else {
+      contenu.innerHTML = msgs.map(m => renderMessage(m)).join('');
+    }
+    const overlay = document.getElementById('fullscreenOverlay');
+    overlay.style.display = 'flex';
+    overlay.scrollTop = 0;
   }
   function closeFullscreen() { document.getElementById('fullscreenOverlay').style.display = 'none'; }
 
