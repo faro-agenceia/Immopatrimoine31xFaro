@@ -293,6 +293,7 @@
   let selectedFiles = [];
   let creationEnCours = false;
   let analyseEnCours = false;
+  let questionEnCours = false;
 
   // ==========================================
   // ICÔNES SVG RÉUTILISÉES DANS LES TEMPLATES JS
@@ -556,8 +557,12 @@
   }
 
   function renderMessage(m) {
+    // Message utilisateur : texte échappé (jamais interprété comme du HTML)
+    if (m.role === 'user') {
+      const contenuUser = escapeHtml(m.content).replace(/\n/g, '<br>');
+      return `<div class="message user"><div class="avatar user">${ICON_USER}</div><div class="bubble">${contenuUser}</div></div>`;
+    }
     const contenu = m.content.replace(/\n/g, '<br>');
-    if (m.role === 'user') return `<div class="message user"><div class="avatar user">${ICON_USER}</div><div class="bubble">${contenu}</div></div>`;
     return `<div class="message ai"><div class="avatar ai">✦</div><div class="bubble">${formatResponse(contenu)}</div></div>`;
   }
 
@@ -569,13 +574,16 @@
       .replace(/📄 \*\*([^*]+)\*\*/g, '<div class="response-section section-sources"><div class="section-title">📄 $1</div>');
   }
 
-  function addMessage(role, content) {
-    if (!currentDossier) return;
-    if (!currentDossier.messages) currentDossier.messages = [];
-    currentDossier.messages.push({ role, content });
-    renderMessages();
+  // Le 3e paramètre indique à quel dossier appartient le message.
+  // Par défaut : le dossier ouvert. On le passe explicitement quand la réponse
+  // arrive après un await, car l'utilisateur a pu changer de dossier entre-temps.
+  function addMessage(role, content, dossier = currentDossier) {
+    if (!dossier) return;
+    if (!dossier.messages) dossier.messages = [];
+    dossier.messages.push({ role, content });
+    if (dossier === currentDossier) renderMessages();
     // Sauvegarde async sans bloquer l'affichage
-    sb.from('conversations').insert({ dossier_id: currentDossier.id, role, content, timestamp: new Date().toISOString() })
+    sb.from('conversations').insert({ dossier_id: dossier.id, role, content, timestamp: new Date().toISOString() })
       .then(({ error }) => { if (error) console.error('Save conv :', error); });
   }
 
@@ -631,24 +639,35 @@
   async function sendMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
-    if (!msg || !currentDossier || analyseEnCours) return;
+    // Bloque aussi pendant une création, une analyse ou une question déjà en cours
+    // (la touche Entrée contournait le bouton désactivé)
+    if (!msg || !currentDossier || analyseEnCours || creationEnCours || questionEnCours) return;
+
+    // On garde le dossier concerné : si l'utilisateur change de dossier
+    // pendant l'attente, la réponse ira quand même au bon endroit.
+    const dossier = currentDossier;
+    questionEnCours = true;
     input.value = ''; input.style.height = 'auto';
-    addMessage('user', msg);
+    addMessage('user', msg, dossier);
     addTyping('Recherche en cours...');
     document.getElementById('sendBtn').disabled = true;
     try {
       const data = await fetchJson(WEBHOOK_QUESTION, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ dossier_id: currentDossier.id, message: msg })
+        body: JSON.stringify({ dossier_id: dossier.id, message: msg })
       });
       removeTyping();
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
-      addMessage('ai', reponse.replace(/\\n/g, '\n'));
+      addMessage('ai', reponse.replace(/\\n/g, '\n'), dossier);
     } catch(err) {
       removeTyping();
-      addMessage('ai', "❌ Une erreur s'est produite. Vérifiez votre connexion et réessayez.");
-    } finally { document.getElementById('sendBtn').disabled = false; }
+      addMessage('ai', "❌ Une erreur s'est produite. Vérifiez votre connexion et réessayez.", dossier);
+    } finally {
+      questionEnCours = false;
+      // Ne pas réactiver le bouton si une création / analyse est en cours
+      document.getElementById('sendBtn').disabled = creationEnCours || analyseEnCours;
+    }
   }
 
   function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
@@ -700,28 +719,31 @@
     const validFiles = Array.from(files).filter(f => f.type === 'application/pdf');
     if (validFiles.length === 0) return;
 
+    // On garde le dossier concerné (l'utilisateur peut en ouvrir un autre pendant l'indexation)
+    const dossier = currentDossier;
+
     analyseEnCours = true;
     setChatEnabled(false);
     addTyping('Indexation en cours...');
     try {
       for (const file of validFiles) {
         const formData = new FormData();
-        formData.append('dossier_id', currentDossier.id);
-        formData.append('nom_dossier', currentDossier.name);
+        formData.append('dossier_id', dossier.id);
+        formData.append('nom_dossier', dossier.name);
         formData.append('data', file);
         const res = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        if (!currentDossier.docs.includes(file.name)) { currentDossier.docs.push(file.name); }
+        if (!dossier.docs.includes(file.name)) { dossier.docs.push(file.name); }
       }
-      currentDossier.docsCount = currentDossier.docs.length;
-      updateDocsStrip();
+      dossier.docsCount = dossier.docs.length;
+      if (dossier === currentDossier) updateDocsStrip();
       renderDossiers();
       removeTyping();
-      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) et indexé(s) avec succès.\n\nVous pouvez poser vos questions ou taper "Refais l'analyse complète" pour une nouvelle synthèse intégrant ce document.`);
+      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) et indexé(s) avec succès.\n\nVous pouvez poser vos questions ou taper "Refais l'analyse complète" pour une nouvelle synthèse intégrant ce document.`, dossier);
     } catch (err) {
       console.error(err);
       removeTyping();
-      addMessage('ai', "❌ L'ajout du document a échoué. Vérifiez votre connexion et réessayez.");
+      addMessage('ai', "❌ L'ajout du document a échoué. Vérifiez votre connexion et réessayez.", dossier);
     } finally {
       analyseEnCours = false;
       setChatEnabled(true);
@@ -819,13 +841,13 @@
         : selectedFiles.length > 0
           ? `✅ ${selectedFiles.length} document(s) reçu(s) et indexé(s) avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`
           : `✅ Dossier "${name}" créé. Ajoutez des documents pour démarrer l'analyse.`;
-      addMessage('ai', msg);
+      addMessage('ai', msg, dossier);
 
     } catch (err) {
       console.error(err);
       dossier.status = 'error';
       removeTyping();
-      addMessage('ai', "❌ L'analyse n'a pas pu être terminée. Les documents ont bien été reçus, mais un problème est survenu. Réessayez en posant une question ou en ajoutant à nouveau un document.");
+      addMessage('ai', "❌ L'analyse n'a pas pu être terminée. Les documents ont bien été reçus, mais un problème est survenu. Réessayez en posant une question ou en ajoutant à nouveau un document.", dossier);
     } finally {
       clearInterval(timer);
       creationEnCours = false;
