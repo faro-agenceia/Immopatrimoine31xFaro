@@ -32,6 +32,7 @@
     .status-ready { background: rgba(16,185,129,0.15); color: var(--green); }
     .status-processing { background: rgba(79,70,229,0.15); color: var(--accent-light); }
     .status-error { background: rgba(239,68,68,0.15); color: var(--red); }
+    .status-question { background: rgba(249,115,22,0.15); color: var(--orange); }
     .dossier-delete { opacity: 0; color: var(--text-muted); border: none; background: none; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; transition: opacity 0.15s, color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .dossier-item:hover .dossier-delete { opacity: 1; }
     .dossier-delete:hover { color: var(--red); background: rgba(239,68,68,0.15); }
@@ -122,10 +123,8 @@
     .spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* GLOBAL DROP */
-    .global-drop-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.85); backdrop-filter: blur(8px); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text); border: 3px dashed var(--accent); pointer-events: none; }
-    .global-drop-text { font-size: 20px; font-weight: 600; }
-    .global-drop-sub { font-size: 14px; color: var(--text-muted); }
+    /* GLOBAL DROP — uniquement quand la modal est ouverte */
+    .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,70,229,0.05); }
 
     /* TYPING */
     .typing { display: flex; gap: 4px; padding: 6px 0; }
@@ -206,13 +205,6 @@
   </div>
 </div>
 
-<!-- GLOBAL DROP -->
-<div class="global-drop-overlay" id="globalDropOverlay" style="display:none;">
-  <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-  <div class="global-drop-text">Déposez vos fichiers PDF ici</div>
-  <div class="global-drop-sub" id="globalDropSub">Ils seront ajoutés directement à l'analyse</div>
-</div>
-
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-header">
@@ -232,7 +224,7 @@
   <div class="empty-state" id="emptyState">
     <div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"></rect><rect x="9" y="6" width="2" height="2"></rect><rect x="13" y="6" width="2" height="2"></rect><rect x="9" y="11" width="2" height="2"></rect><rect x="13" y="11" width="2" height="2"></rect><path d="M9 22v-4h6v4"></path></svg></div>
     <div class="empty-title">Aucun dossier ouvert</div>
-    <div class="empty-sub">Créez un nouveau dossier ou glissez-déposez un fichier n'importe où pour démarrer.</div>
+    <div class="empty-sub">Créez un nouveau dossier ou glissez-déposez un fichier PDF pour démarrer.</div>
   </div>
 
   <div class="dossier-view" id="dossierView" style="display:none;">
@@ -243,7 +235,6 @@
       </div>
       <div class="header-actions">
         <button class="btn-icon expand" onclick="openFullscreen()"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M16 3h3a2 2 0 0 1 2 2v3"></path><path d="M21 16v3a2 2 0 0 1-2 2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path></svg>Agrandir</button>
-        <button class="btn-icon" onclick="openUpload()"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>Ajouter des documents</button>
       </div>
     </div>
     <div class="docs-strip" id="docsStrip"></div>
@@ -286,8 +277,6 @@
   </div>
 </div>
 
-<input type="file" id="addFileInput" multiple accept=".pdf" onchange="handleAdditionalFiles(this.files)" />
-
 <!-- FULLSCREEN -->
 <div class="fullscreen-overlay" id="fullscreenOverlay" style="display:none;">
   <div class="fullscreen-header">
@@ -302,7 +291,6 @@
   const WEBHOOK_UPLOAD   = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
   const WEBHOOK_QUESTION = 'https://n8n.srv1960518.hstgr.cloud/webhook/reponses-questions';
   const SUPABASE_URL      = 'https://zpvxifqbunhaoldkubqn.supabase.co';
-  // ⚠️ Remplace par ta clé anon (eyJ...) depuis Supabase → Settings → API → anon public
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwdnhpZnFidW5oYW9sZGt1YnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4OTI1NjAsImV4cCI6MjEwNDQ2ODU2MH0.bs-ssIxQm2WRhMXIU_m3z0YvqI-hXj4wAcVj9Bl0NQ4';
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -311,16 +299,17 @@
   let currentDossier = null;
   let selectedFiles = [];
   let creationEnCours = false;
-  let analyseEnCours = false;
   let questionEnCours = false;
 
   // ==========================================
-  // ICÔNES SVG RÉUTILISÉES DANS LES TEMPLATES JS
+  // ICÔNES SVG
   // ==========================================
   const ICON_DOC = '<svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
   const ICON_DOC_SM = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
   const ICON_USER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
   const ICON_TRASH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
+  const ICON_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+  const ICON_EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
 
   // ==========================================
   // UTILITAIRES
@@ -332,8 +321,6 @@
 
   function getToken() { return session?.access_token || ''; }
 
-  const ICON_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
-  const ICON_EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
   function togglePassword(inputId, btn) {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -347,6 +334,27 @@
     const res = await fetch(url, options);
     if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
     return res.json();
+  }
+
+  // ==========================================
+  // STATUT DYNAMIQUE
+  // ==========================================
+  // Chaque dossier a un champ _liveStatus : null | 'analyse' | 'question'
+  // Quand null → on affiche le statut Supabase (ready/error)
+
+  function setLiveStatus(dossier, status) {
+    dossier._liveStatus = status; // null | 'analyse' | 'question'
+    renderDossiers();
+  }
+
+  function statusLabel(dossier) {
+    if (dossier._liveStatus === 'analyse') return '<span class="dossier-status status-processing">⏳ Analyse en cours</span>';
+    if (dossier._liveStatus === 'question') return '<span class="dossier-status status-question">💬 Question en cours</span>';
+    if (dossier._liveStatus === 'analyse_done') return '<span class="dossier-status status-ready">✅ Analyse prête</span>';
+    if (dossier._liveStatus === 'question_done') return '<span class="dossier-status status-ready">✅ Question prête</span>';
+    if (dossier.status === 'error') return '<span class="dossier-status status-error">⚠️ Erreur</span>';
+    if (dossier.status === 'ready') return '<span class="dossier-status status-ready">✅ Prêt</span>';
+    return '<span class="dossier-status status-processing">⏳ En cours</span>';
   }
 
   // ==========================================
@@ -420,14 +428,13 @@
   }
 
   // ==========================================
-  // CHARGEMENT DOSSIERS (Supabase = source unique)
+  // CHARGEMENT DOSSIERS
   // ==========================================
   async function loadDossiers() {
     if (!session) return;
     const { data, error } = await sb.from('dossiers').select('*').eq('user_id', session.user.id).order('date_creation', { ascending: false });
     if (error) { console.error('Chargement dossiers :', error); renderDossiers(); return; }
 
-    // Compter les docs pour chaque dossier en une passe
     const ids = (data || []).map(r => r.dossier_id);
     let countMap = {};
     if (ids.length > 0) {
@@ -435,9 +442,6 @@
       (docsData || []).forEach(d => { countMap[d.dossier_id] = (countMap[d.dossier_id] || 0) + 1; });
     }
 
-    // On réutilise les objets déjà en mémoire (même id) au lieu de les recréer :
-    // sinon le dossier ouvert (currentDossier) devient un "vieil objet" déconnecté de la liste,
-    // sa conversation s'efface à l'écran et se recharge depuis Supabase.
     const anciens = dossiers;
     const depuisSupabase = (data || []).map(row => {
       const nouveau = {
@@ -448,7 +452,8 @@
         status: row.statut || 'ready',
         docs: [],
         messages: null,
-        _loaded: false
+        _loaded: false,
+        _liveStatus: null
       };
       const ancien = anciens.find(d => d.id === row.dossier_id);
       if (!ancien) return nouveau;
@@ -458,7 +463,6 @@
       if (!ancien._loaded) ancien.docsCount = nouveau.docsCount;
       return ancien;
     });
-    // Un dossier en cours de création pas encore visible dans Supabase reste dans la liste
     const enCreation = anciens.filter(d => d._pending && !ids.includes(d.id));
     dossiers = [...enCreation, ...depuisSupabase];
     renderDossiers();
@@ -503,12 +507,6 @@
   // ==========================================
   // DOSSIERS — SIDEBAR
   // ==========================================
-  function statusLabel(status) {
-    if (status === 'processing') return '<span class="dossier-status status-processing">⏳ En cours</span>';
-    if (status === 'error') return '<span class="dossier-status status-error">⚠️ Erreur</span>';
-    return '<span class="dossier-status status-ready">✅ Prêt</span>';
-  }
-
   function renderDossiers() {
     const list = document.getElementById('dossiersList');
     if (dossiers.length === 0) { list.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Aucun dossier</div>'; return; }
@@ -519,14 +517,14 @@
         <div class="dossier-item ${isActive ? 'active' : ''}" onclick="toggleDossier('${d.id}')">
           <div class="dossier-info">
             <div class="dossier-name">${escapeHtml(d.name)}</div>
-            <div class="dossier-meta">${nb} doc${nb !== 1 ? 's' : ''} · ${d.date} ${statusLabel(d.status)}</div>
+            <div class="dossier-meta">${nb} doc${nb !== 1 ? 's' : ''} · ${d.date}</div>
+            <div class="dossier-meta">${statusLabel(d)}</div>
           </div>
           <button class="dossier-delete" onclick="deleteDossier(event, '${d.id}')" title="Supprimer" aria-label="Supprimer le dossier">${ICON_TRASH}</button>
         </div>`;
     }).join('');
   }
 
-  // Clic sur un dossier actif → désélectionne. Sinon → ouvre.
   async function toggleDossier(id) {
     if (currentDossier?.id === id) {
       currentDossier = null;
@@ -560,15 +558,8 @@
   async function deleteDossier(event, id) {
     event.stopPropagation();
     if (!confirm('Supprimer ce dossier définitivement ?')) return;
-
-    // Supprimer d'abord dans Supabase, ensuite de l'interface
     const { error } = await sb.from('dossiers').delete().eq('dossier_id', id);
-    if (error) {
-      console.error('Suppression échouée :', error);
-      alert('❌ La suppression a échoué. Veuillez réessayer.');
-      return;
-    }
-
+    if (error) { console.error('Suppression échouée :', error); alert('❌ La suppression a échoué. Veuillez réessayer.'); return; }
     dossiers = dossiers.filter(d => d.id !== id);
     if (currentDossier?.id === id) {
       currentDossier = null;
@@ -593,7 +584,7 @@
   // ==========================================
   function renderMessages() {
     const area = document.getElementById('chatArea');
-    removeTyping(); // le rendu efface l'indicateur : on le nettoie proprement
+    removeTyping();
     if (!currentDossier._loaded) {
       area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px">Chargement de la conversation…</div>`;
       return;
@@ -605,12 +596,10 @@
       area.innerHTML = msgs.map(m => renderMessage(m)).join('');
       area.scrollTop = area.scrollHeight;
     }
-    // Si ce dossier a une opération en cours (question, analyse, indexation), on réaffiche l'indicateur
     if (currentDossier._pending) addTyping(currentDossier._pending.label, currentDossier._pending.start);
   }
 
   function renderMessage(m) {
-    // Message utilisateur : texte échappé (jamais interprété comme du HTML)
     if (m.role === 'user') {
       const contenuUser = escapeHtml(m.content).replace(/\n/g, '<br>');
       return `<div class="message user"><div class="avatar user">${ICON_USER}</div><div class="bubble">${contenuUser}</div></div>`;
@@ -627,17 +616,15 @@
       .replace(/📄 \*\*([^*]+)\*\*/g, '<div class="response-section section-sources"><div class="section-title">📄 $1</div>');
   }
 
-  // Le 3e paramètre indique à quel dossier appartient le message.
-  // Par défaut : le dossier ouvert. On le passe explicitement quand la réponse
-  // arrive après un await, car l'utilisateur a pu changer de dossier entre-temps.
   function addMessage(role, content, dossier = currentDossier) {
     if (!dossier) return;
     if (!dossier.messages) dossier.messages = [];
     dossier.messages.push({ role, content });
     if (dossier === currentDossier) renderMessages();
+  }
 
   // ==========================================
-  // CHAT DÉSACTIVÉ PENDANT ANALYSE
+  // CHAT DÉSACTIVÉ PENDANT OPÉRATION
   // ==========================================
   function setChatEnabled(enabled) {
     const wrap = document.getElementById('inputWrap');
@@ -682,7 +669,6 @@
     document.getElementById('typingIndicator')?.remove();
   }
 
-  // Opération en cours pour UN dossier (mémorisée sur le dossier, pas globale)
   function startPending(dossier, label) {
     dossier._pending = { label, start: Date.now() };
     if (dossier === currentDossier) addTyping(label, dossier._pending.start);
@@ -698,16 +684,13 @@
   async function sendMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
-    // Bloque aussi pendant une création, une analyse ou une question déjà en cours
-    // (la touche Entrée contournait le bouton désactivé)
-    if (!msg || !currentDossier || analyseEnCours || creationEnCours || questionEnCours) return;
+    if (!msg || !currentDossier || creationEnCours || questionEnCours) return;
 
-    // On garde le dossier concerné : si l'utilisateur change de dossier
-    // pendant l'attente, la réponse ira quand même au bon endroit.
     const dossier = currentDossier;
     questionEnCours = true;
     input.value = ''; input.style.height = 'auto';
     addMessage('user', msg, dossier);
+    setLiveStatus(dossier, 'question');
     startPending(dossier, 'Recherche en cours...');
     document.getElementById('sendBtn').disabled = true;
     try {
@@ -719,13 +702,15 @@
       endPending(dossier);
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
       addMessage('ai', reponse.replace(/\\n/g, '\n'), dossier);
+      setLiveStatus(dossier, 'question_done');
     } catch(err) {
       endPending(dossier);
       addMessage('ai', "❌ Une erreur s'est produite. Vérifiez votre connexion et réessayez.", dossier);
+      dossier.status = 'error';
+      setLiveStatus(dossier, null);
     } finally {
       questionEnCours = false;
-      // Ne pas réactiver le bouton si une création / analyse est en cours
-      document.getElementById('sendBtn').disabled = creationEnCours || analyseEnCours;
+      document.getElementById('sendBtn').disabled = creationEnCours;
     }
   }
 
@@ -741,7 +726,6 @@
     const dz = document.getElementById('dropZone');
     if (dz) dz.classList.toggle('disabled', lock);
     document.getElementById('cancelBtn').disabled = lock;
-    // Les boutons supprimer fichier
     document.querySelectorAll('.file-remove').forEach(el => el.classList.toggle('disabled', lock));
   }
 
@@ -770,48 +754,6 @@
     hideModalError();
   }
 
-  function openUpload() { document.getElementById('addFileInput').click(); }
-
-  // ==========================================
-  // AJOUT DOCS AU DOSSIER EN COURS
-  // ==========================================
-  async function handleAdditionalFiles(files) {
-    if (!currentDossier || files.length === 0) return;
-    const validFiles = Array.from(files).filter(f => f.type === 'application/pdf');
-    if (validFiles.length === 0) return;
-
-    // On garde le dossier concerné (l'utilisateur peut en ouvrir un autre pendant l'indexation)
-    const dossier = currentDossier;
-
-    analyseEnCours = true;
-    setChatEnabled(false);
-    startPending(dossier, 'Indexation en cours...');
-    try {
-      for (const file of validFiles) {
-        const formData = new FormData();
-        formData.append('dossier_id', dossier.id);
-        formData.append('nom_dossier', dossier.name);
-        formData.append('data', file);
-        const res = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        if (!dossier.docs.includes(file.name)) { dossier.docs.push(file.name); }
-      }
-      dossier.docsCount = dossier.docs.length;
-      if (dossier === currentDossier) updateDocsStrip();
-      renderDossiers();
-      endPending(dossier);
-      addMessage('ai', `✅ ${validFiles.length} document(s) ajouté(s) et indexé(s) avec succès.\n\nVous pouvez poser vos questions ou taper "Refais l'analyse complète" pour une nouvelle synthèse intégrant ce document.`, dossier);
-    } catch (err) {
-      console.error(err);
-      endPending(dossier);
-      addMessage('ai', "❌ L'ajout du document a échoué. Vérifiez votre connexion et réessayez.", dossier);
-    } finally {
-      analyseEnCours = false;
-      setChatEnabled(true);
-      document.getElementById('addFileInput').value = '';
-    }
-  }
-
   const MAX_PDF_CREATION = 1;
 
   function showModalError(msg) {
@@ -828,7 +770,6 @@
   function handleFiles(files) {
     if (creationEnCours) return;
     const pdfs = Array.from(files).filter(f => f.type === 'application/pdf');
-    // Permet de re-choisir le même fichier après l'avoir retiré
     document.getElementById('fileInput').value = '';
     hideModalError();
     let refuse = false;
@@ -838,9 +779,7 @@
       selectedFiles.push(f);
     }
     renderFilesList();
-    if (refuse) {
-      showModalError("La création ne peut analyser qu'un seul document à la fois. Une fois le dossier créé, ouvrez la conversation et cliquez sur « Ajouter des documents » pour en ajouter d'autres.");
-    }
+    if (refuse) showModalError("Un seul document PDF par dossier.");
   }
 
   function renderFilesList() {
@@ -883,12 +822,12 @@
       docsCount: selectedFiles.length,
       status: 'processing',
       messages: [],
-      _loaded: true
+      _loaded: true,
+      _liveStatus: 'analyse'
     };
 
     if (notes) dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
 
-    // Ouvre le dossier tout de suite (avant même le fetch)
     dossiers.unshift(dossier);
     currentDossier = dossier;
     document.getElementById('modalOverlay').style.display = 'none';
@@ -915,23 +854,24 @@
         console.log('RÉPONSE N8N :', dernierData);
       }
 
-      // Mise à jour statut
       dossier.status = 'ready';
       endPending(dossier);
+      setLiveStatus(dossier, 'analyse_done');
 
       const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
       const msg = synthese
         ? synthese.replace(/\\n/g, '\n')
         : selectedFiles.length > 0
-          ? `✅ ${selectedFiles.length} document(s) reçu(s) et indexé(s) avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`
-          : `✅ Dossier "${name}" créé. Ajoutez des documents pour démarrer l'analyse.`;
+          ? `✅ Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`
+          : `✅ Dossier "${name}" créé. Ajoutez un document pour démarrer l'analyse.`;
       addMessage('ai', msg, dossier);
 
     } catch (err) {
       console.error(err);
       dossier.status = 'error';
       endPending(dossier);
-      addMessage('ai', "❌ L'analyse n'a pas pu être terminée. Les documents ont bien été reçus, mais un problème est survenu. Réessayez en posant une question ou en ajoutant à nouveau un document.", dossier);
+      setLiveStatus(dossier, null);
+      addMessage('ai', "❌ L'analyse n'a pas pu être terminée. Réessayez en posant une question.", dossier);
     } finally {
       clearInterval(timer);
       creationEnCours = false;
@@ -940,8 +880,6 @@
       selectedFiles = [];
       setChatEnabled(true);
       renderDossiers();
-
-      // Recharge Supabase en arrière-plan pour synchroniser
       loadDossiers().then(() => { renderDossiers(); });
     }
   }
@@ -951,7 +889,6 @@
   // ==========================================
   function openFullscreen() {
     if (!currentDossier) return;
-    // Affiche toute la conversation, avec le même rendu que le chat
     const msgs = (currentDossier.messages || []).filter(m => m.content);
     document.getElementById('fullscreenTitle').textContent = currentDossier.name;
     const contenu = document.getElementById('fullscreenContent');
@@ -969,37 +906,16 @@
   function closeFullscreen() { document.getElementById('fullscreenOverlay').style.display = 'none'; }
 
   // ==========================================
-  // DRAG & DROP
+  // DRAG & DROP — uniquement sur la modal (dropZone)
   // ==========================================
-  let dragCounter = 0;
-  const globalOverlay = document.getElementById('globalDropOverlay');
-  const globalSub = document.getElementById('globalDropSub');
-
-  window.addEventListener('dragenter', e => {
-    e.preventDefault(); dragCounter++;
-    if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
-      globalSub.textContent = currentDossier ? `Ajouter au dossier « ${currentDossier.name} »` : "Créer un nouveau dossier avec ces fichiers";
-      globalOverlay.style.display = 'flex';
-    }
-  });
-  window.addEventListener('dragover', e => { e.preventDefault(); });
-  window.addEventListener('dragleave', e => {
-    e.preventDefault(); dragCounter--;
-    if (dragCounter <= 0) { dragCounter = 0; globalOverlay.style.display = 'none'; }
-  });
-  window.addEventListener('drop', e => {
-    e.preventDefault(); dragCounter = 0; globalOverlay.style.display = 'none';
-    const files = e.dataTransfer.files;
-    if (files?.length > 0) {
-      if (currentDossier) handleAdditionalFiles(files);
-      else { openModal(); handleFiles(files); }
-    }
-  });
-
   const dropZone = document.getElementById('dropZone');
   dropZone?.addEventListener('dragover', e => { e.preventDefault(); if (!creationEnCours) dropZone.classList.add('drag-over'); });
   dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-  dropZone?.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (!creationEnCours) handleFiles(e.dataTransfer.files); });
+  dropZone?.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (!creationEnCours) handleFiles(e.dataTransfer.files);
+  });
 
   initAuth();
 </script>
