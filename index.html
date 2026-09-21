@@ -635,10 +635,6 @@
     if (!dossier.messages) dossier.messages = [];
     dossier.messages.push({ role, content });
     if (dossier === currentDossier) renderMessages();
-    // Sauvegarde async sans bloquer l'affichage
-    sb.from('conversations').insert({ dossier_id: dossier.id, role, content, timestamp: new Date().toISOString() })
-      .then(({ error }) => { if (error) console.error('Save conv :', error); });
-  }
 
   // ==========================================
   // CHAT DÉSACTIVÉ PENDANT ANALYSE
