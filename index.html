@@ -94,6 +94,8 @@
     .send-btn { background: var(--accent); color: white; }
     .send-btn:hover { background: var(--accent-light); }
     .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .send-btn.stop { background: var(--surface2); color: var(--text); border-radius: 50%; }
+    .send-btn.stop:hover { background: var(--border); }
     @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
     /* MODAL */
@@ -300,6 +302,7 @@
   let selectedFiles = [];
   let creationEnCours = false;
   let questionEnCours = false;
+  let currentAbortController = null;
 
   // ==========================================
   // ICÔNES SVG
@@ -310,6 +313,8 @@
   const ICON_TRASH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
   const ICON_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
   const ICON_EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+  const ICON_SEND = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
+  const ICON_STOP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>';
 
   // ==========================================
   // UTILITAIRES
@@ -328,6 +333,16 @@
     input.type = afficher ? 'text' : 'password';
     btn.innerHTML = afficher ? ICON_EYE_OFF : ICON_EYE;
     btn.setAttribute('aria-label', afficher ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+  }
+
+  // Formate une durée en secondes en texte français ("1 minute 5 secondes")
+  function formatDuration(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    const parts = [];
+    if (m > 0) parts.push(`${m} minute${m > 1 ? 's' : ''}`);
+    parts.push(`${s} seconde${s > 1 ? 's' : ''}`);
+    return parts.join(' ');
   }
 
   async function fetchJson(url, options = {}) {
@@ -481,6 +496,30 @@
     dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
     dossier._loaded = true;
   }
+
+  // Force le rechargement du dossier actuellement ouvert depuis Supabase
+  // (source de vérité), utilisé notamment quand l'onglet redevient visible.
+  async function resyncCurrentDossier() {
+    if (!currentDossier) return;
+    const id = currentDossier.id;
+    currentDossier._loaded = false;
+    await loadDossierDetails(currentDossier);
+    if (currentDossier?.id === id) {
+      updateDocsStrip();
+      renderMessages();
+    }
+    loadDossiers();
+  }
+
+  // Si l'onglet a été mis en veille (ordinateur fermé, changement d'onglet
+  // prolongé...) pendant qu'aucune opération n'était réellement en cours
+  // dans CET onglet, on revient sur l'état réel enregistré côté serveur
+  // plutôt que de garder un affichage local potentiellement périmé.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && session && currentDossier && !currentDossier._pending) {
+      resyncCurrentDossier();
+    }
+  });
 
   // ==========================================
   // VOCAL
@@ -641,6 +680,29 @@
     }
   }
 
+  // Bascule le bouton d'envoi entre son mode normal (flèche) et son mode
+  // "arrêter" (carré) pendant qu'une question est en cours.
+  function setSendButtonMode(mode) {
+    const btn = document.getElementById('sendBtn');
+    if (!btn) return;
+    if (mode === 'stop') {
+      btn.innerHTML = ICON_STOP;
+      btn.classList.add('stop');
+      btn.disabled = false;
+      btn.setAttribute('aria-label', 'Arrêter la question');
+      btn.onclick = stopQuestion;
+    } else {
+      btn.innerHTML = ICON_SEND;
+      btn.classList.remove('stop');
+      btn.setAttribute('aria-label', 'Envoyer le message');
+      btn.onclick = sendMessage;
+    }
+  }
+
+  function stopQuestion() {
+    if (currentAbortController) currentAbortController.abort();
+  }
+
   // ==========================================
   // TYPING INDICATOR
   // ==========================================
@@ -654,13 +716,13 @@
     typingSeconds = Math.floor((Date.now() - start) / 1000);
     const div = document.createElement('div');
     div.className = 'message ai'; div.id = 'typingIndicator';
-    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' ' + typingSeconds + 's</span></div></div>';
+    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds) + '</span></div></div>';
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
     typingTimer = setInterval(() => {
       typingSeconds++;
       const el = document.getElementById('typingLabel');
-      if (el) el.textContent = (label||'Analyse en cours...') + ' ' + typingSeconds + 's';
+      if (el) el.textContent = (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds);
     }, 1000);
   }
 
@@ -692,12 +754,17 @@
     addMessage('user', msg, dossier);
     setLiveStatus(dossier, 'question');
     startPending(dossier, 'Recherche en cours...');
-    document.getElementById('sendBtn').disabled = true;
+    setSendButtonMode('stop');
+
+    const controller = new AbortController();
+    currentAbortController = controller;
+
     try {
       const data = await fetchJson(WEBHOOK_QUESTION, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ dossier_id: dossier.id, message: msg })
+        body: JSON.stringify({ dossier_id: dossier.id, message: msg }),
+        signal: controller.signal
       });
       endPending(dossier);
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
@@ -705,12 +772,18 @@
       setLiveStatus(dossier, 'question_done');
     } catch(err) {
       endPending(dossier);
-      addMessage('ai', "❌ Une erreur s'est produite. Vérifiez votre connexion et réessayez.", dossier);
-      dossier.status = 'error';
-      setLiveStatus(dossier, null);
+      if (err.name === 'AbortError') {
+        addMessage('ai', "⏹️ Question annulée.", dossier);
+        setLiveStatus(dossier, null);
+      } else {
+        addMessage('ai', "❌ Une erreur s'est produite. Vérifiez votre connexion et réessayez.", dossier);
+        dossier.status = 'error';
+        setLiveStatus(dossier, null);
+      }
     } finally {
       questionEnCours = false;
-      document.getElementById('sendBtn').disabled = creationEnCours;
+      currentAbortController = null;
+      setSendButtonMode('send');
     }
   }
 
@@ -810,9 +883,9 @@
 
     const btn = document.getElementById('createBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span><span id="btnLbl">Analyse en cours… 0s</span>';
+    btn.innerHTML = '<span class="spinner"></span><span id="btnLbl">Analyse en cours… ' + formatDuration(0) + '</span>';
     let sec = 0;
-    const timer = setInterval(() => { sec++; const l = document.getElementById('btnLbl'); if (l) l.textContent = 'Analyse en cours… ' + sec + 's'; }, 1000);
+    const timer = setInterval(() => { sec++; const l = document.getElementById('btnLbl'); if (l) l.textContent = 'Analyse en cours… ' + formatDuration(sec); }, 1000);
 
     const id = 'dossier_' + Date.now();
     const dossier = {
