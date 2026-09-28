@@ -164,11 +164,6 @@
     .pwd-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
     .pwd-toggle:hover { color: var(--text); background: var(--surface); }
 
-    /* RELANCE */
-    .relance-wrap { text-align: center; margin-top: 4px; }
-    .btn-relance { padding: 9px 18px; background: var(--accent); border: none; color: white; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
-    .btn-relance:hover { background: var(--accent-light); }
-
     input[type="file"] { display: none; }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -308,8 +303,6 @@
   let creationEnCours = false;
   let questionEnCours = false;
   let currentAbortController = null;
-  let currentPollingTimer = null;
-  let currentAbortCause = null;
 
   // ==========================================
   // ICÔNES SVG
@@ -358,16 +351,12 @@
     return res.json();
   }
 
-  // Écrit le statut du dossier dans Supabase (colonne "statut" de la table dossiers).
-  // Valeurs attendues : en_cours / pret / erreur / interrompu
-  async function updateStatutSupabase(dossierId, statut) {
-    const { error } = await sb.from('dossiers').update({ statut }).eq('dossier_id', dossierId);
-    if (error) console.error('Maj statut Supabase :', error);
-  }
-
   // ==========================================
   // STATUT DYNAMIQUE
   // ==========================================
+  // Chaque dossier a un champ _liveStatus : null | 'analyse' | 'question'
+  // Quand null → on affiche le statut Supabase (ready/error)
+
   function setLiveStatus(dossier, status) {
     dossier._liveStatus = status; // null | 'analyse' | 'question'
     renderDossiers();
@@ -378,9 +367,8 @@
     if (dossier._liveStatus === 'question') return '<span class="dossier-status status-question">💬 Question en cours</span>';
     if (dossier._liveStatus === 'analyse_done') return '<span class="dossier-status status-ready">✅ Analyse prête</span>';
     if (dossier._liveStatus === 'question_done') return '<span class="dossier-status status-ready">✅ Question prête</span>';
-    if (dossier.status === 'erreur' || dossier.status === 'error') return '<span class="dossier-status status-error">⚠️ Erreur</span>';
-    if (dossier.status === 'interrompu') return '<span class="dossier-status status-error">⏹️ Interrompu</span>';
-    if (dossier.status === 'pret' || dossier.status === 'ready') return '<span class="dossier-status status-ready">✅ Prêt</span>';
+    if (dossier.status === 'error') return '<span class="dossier-status status-error">⚠️ Erreur</span>';
+    if (dossier.status === 'ready') return '<span class="dossier-status status-ready">✅ Prêt</span>';
     return '<span class="dossier-status status-processing">⏳ En cours</span>';
   }
 
@@ -510,6 +498,7 @@
   }
 
   // Force le rechargement du dossier actuellement ouvert depuis Supabase
+  // (source de vérité), utilisé notamment quand l'onglet redevient visible.
   async function resyncCurrentDossier() {
     if (!currentDossier) return;
     const id = currentDossier.id;
@@ -522,6 +511,10 @@
     loadDossiers();
   }
 
+  // Si l'onglet a été mis en veille (ordinateur fermé, changement d'onglet
+  // prolongé...) pendant qu'aucune opération n'était réellement en cours
+  // dans CET onglet, on revient sur l'état réel enregistré côté serveur
+  // plutôt que de garder un affichage local potentiellement périmé.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && session && currentDossier && !currentDossier._pending) {
       resyncCurrentDossier();
@@ -642,15 +635,7 @@
       area.innerHTML = msgs.map(m => renderMessage(m)).join('');
       area.scrollTop = area.scrollHeight;
     }
-    if (currentDossier._pending) {
-      addTyping(currentDossier._pending.label, currentDossier._pending.start, currentDossier._pending.stoppable);
-    } else if ((currentDossier.status === 'erreur' || currentDossier.status === 'error' || currentDossier.status === 'interrompu')) {
-      const relanceDiv = document.createElement('div');
-      relanceDiv.className = 'relance-wrap';
-      relanceDiv.innerHTML = '<button class="btn-relance" onclick="relancerAnalyse()">Relancer l\'analyse</button>';
-      area.appendChild(relanceDiv);
-      area.scrollTop = area.scrollHeight;
-    }
+    if (currentDossier._pending) addTyping(currentDossier._pending.label, currentDossier._pending.start);
   }
 
   function renderMessage(m) {
@@ -658,7 +643,7 @@
       const contenuUser = escapeHtml(m.content).replace(/\n/g, '<br>');
       return `<div class="message user"><div class="avatar user">${ICON_USER}</div><div class="bubble">${contenuUser}</div></div>`;
     }
-    const contenu = escapeHtml(String(m.content)).replace(/\n/g, '<br>');
+    const contenu = m.content.replace(/\n/g, '<br>');
     return `<div class="message ai"><div class="avatar ai">✦</div><div class="bubble">${formatResponse(contenu)}</div></div>`;
   }
 
@@ -695,6 +680,8 @@
     }
   }
 
+  // Bascule le bouton d'envoi entre son mode normal (flèche) et son mode
+  // "arrêter" (carré) pendant qu'une question est en cours.
   function setSendButtonMode(mode) {
     const btn = document.getElementById('sendBtn');
     if (!btn) return;
@@ -716,35 +703,12 @@
     if (currentAbortController) currentAbortController.abort();
   }
 
-  // Arrêt côté interface : on arrête immédiatement l'attente/polling et on
-  // marque le dossier comme interrompu. L'arrêt réel de l'exécution n8n
-  // nécessite toujours un mécanisme d'annulation côté serveur/workflow.
-  function stopCreation() {
-    if (!currentDossier || !creationEnCours) return;
-
-    currentDossier.status = 'interrompu';
-    setLiveStatus(currentDossier, null);
-    endPending(currentDossier);
-    addMessage('ai', "⏹️ Analyse interrompue.", currentDossier);
-    renderMessages();
-    updateStatutSupabase(currentDossier.id, 'interrompu');
-
-    if (currentAbortController) {
-      currentAbortCause = 'user';
-      currentAbortController.abort();
-    }
-    if (currentPollingTimer) {
-      clearInterval(currentPollingTimer);
-      currentPollingTimer = null;
-    }
-  }
-
   // ==========================================
   // TYPING INDICATOR
   // ==========================================
   let typingTimer = null, typingSeconds = 0;
 
-  function addTyping(label, start = Date.now(), stoppable = false) {
+  function addTyping(label, start = Date.now()) {
     const area = document.getElementById('chatArea');
     if (!area) return;
     if (typingTimer) { clearInterval(typingTimer); typingTimer = null; }
@@ -752,10 +716,7 @@
     typingSeconds = Math.floor((Date.now() - start) / 1000);
     const div = document.createElement('div');
     div.className = 'message ai'; div.id = 'typingIndicator';
-    const stopBtn = stoppable
-      ? '<button onclick="stopCreation()" style="margin-left:10px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;cursor:pointer;">Arrêter</button>'
-      : '';
-    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds) + '</span>' + stopBtn + '</div></div>';
+    div.innerHTML = '<div class="avatar ai">✦</div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds) + '</span></div></div>';
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
     typingTimer = setInterval(() => {
@@ -770,9 +731,9 @@
     document.getElementById('typingIndicator')?.remove();
   }
 
-  function startPending(dossier, label, stoppable = false) {
-    dossier._pending = { label, start: Date.now(), stoppable };
-    if (dossier === currentDossier) addTyping(label, dossier._pending.start, stoppable);
+  function startPending(dossier, label) {
+    dossier._pending = { label, start: Date.now() };
+    if (dossier === currentDossier) addTyping(label, dossier._pending.start);
   }
   function endPending(dossier) {
     dossier._pending = null;
@@ -927,18 +888,15 @@
     const timer = setInterval(() => { sec++; const l = document.getElementById('btnLbl'); if (l) l.textContent = 'Analyse en cours… ' + formatDuration(sec); }, 1000);
 
     const id = 'dossier_' + Date.now();
-    const fichier = selectedFiles[0] || null;
     const dossier = {
       id, name,
       date: new Date().toLocaleDateString('fr-FR'),
-      docs: fichier ? [fichier.name] : [],
-      docsCount: fichier ? 1 : 0,
+      docs: selectedFiles.map(f => f.name),
+      docsCount: selectedFiles.length,
       status: 'processing',
       messages: [],
       _loaded: true,
-      _liveStatus: 'analyse',
-      _file: fichier,
-      _notes: notes
+      _liveStatus: 'analyse'
     };
 
     if (notes) dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
@@ -953,174 +911,50 @@
     renderMessages();
     renderDossiers();
     setChatEnabled(false);
+    startPending(dossier, 'Analyse en cours...');
 
-    await lancerAnalyse(dossier);
-
-    clearInterval(timer);
-    creationEnCours = false;
-    btn.disabled = false;
-    btn.textContent = 'Créer et analyser';
-    selectedFiles = [];
-    setChatEnabled(true);
-    renderDossiers();
-    loadDossiers().then(() => { renderDossiers(); });
-  }
-
-  // Lance (ou relance) l'analyse d'un dossier existant. N'attend pas la
-  // réponse complète du webhook (qui peut être très longue) : envoie la
-  // requête puis surveille le statut dans Supabase par sondage régulier,
-  // pour continuer à fonctionner même si l'onglet passe en veille et perd
-  // temporairement la connexion réseau active.
-  async function lancerAnalyse(dossier) {
-    if (!dossier._file) {
-      addMessage('ai', "❌ Aucun document à analyser pour ce dossier.", dossier);
-      return;
-    }
-
-    await updateStatutSupabase(dossier.id, 'en_cours');
-    dossier.status = 'processing';
-    startPending(dossier, 'Analyse en cours...', true);
-
-    const controller = new AbortController();
-    currentAbortController = controller;
-
-    // Envoi du fichier — on n'attend pas nécessairement la fin ici, on
-    // capture juste les erreurs d'envoi immédiates (réseau, 4xx/5xx).
-    const formData = new FormData();
-    formData.append('dossier_id', dossier.id);
-    formData.append('nom_dossier', dossier.name);
-    if (dossier._notes) formData.append('notes', dossier._notes);
-    formData.append('data', dossier._file);
-
-    currentAbortCause = null;
-    fetch(WEBHOOK_UPLOAD, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + getToken() },
-      body: formData,
-      signal: controller.signal
-    }).then(res => {
-      if (!res.ok) {
-        throw new Error(`Erreur HTTP ${res.status}`);
-      }
-    }).catch(err => {
-      if (err.name === 'AbortError' && currentAbortCause === 'user') return;
-      if (err.name === 'AbortError') return;
-      console.error('Erreur envoi webhook analyse :', err);
-      currentAbortCause = 'upload_error';
-      if (!controller.signal.aborted) controller.abort();
-    });
-
-    // Sondage du statut dans Supabase toutes les 5 secondes.
-    const resultat = await attendreStatutDossier(dossier, controller.signal);
-    currentAbortController = null;
-
-    if (resultat.abandon) {
-      if (resultat.cause === 'upload_error') {
-        dossier.status = 'erreur';
-        await updateStatutSupabase(dossier.id, 'erreur');
-        endPending(dossier);
-        addMessage('ai', "❌ Un problème est survenu lors de l'envoi du document à l'analyse. Vous pouvez relancer l'analyse.", dossier);
-        setLiveStatus(dossier, null);
-        renderMessages();
-        return;
+    try {
+      let dernierData = null;
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append('dossier_id', id);
+        formData.append('nom_dossier', name);
+        if (notes) formData.append('notes', notes);
+        formData.append('data', file);
+        const res = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        dernierData = await res.json();
+        console.log('RÉPONSE N8N :', dernierData);
       }
 
-      dossier.status = 'interrompu';
-      await updateStatutSupabase(dossier.id, 'interrompu');
-      endPending(dossier);
-      // Le message d'interruption a déjà été ajouté par stopCreation().
-      if (!dossier.messages?.some(m => m.role === 'ai' && m.content === "⏹️ Analyse interrompue.")) {
-        addMessage('ai', "⏹️ Analyse interrompue.", dossier);
-      }
-      setLiveStatus(dossier, null);
-      renderMessages();
-      return;
-    }
-
-    if (resultat.statut === 'pret' || resultat.statut === 'ready') {
       dossier.status = 'ready';
       endPending(dossier);
       setLiveStatus(dossier, 'analyse_done');
-      const synthese = resultat.analyse || '';
+
+      const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
       const msg = synthese
         ? synthese.replace(/\\n/g, '\n')
-        : `✅ Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
+        : selectedFiles.length > 0
+          ? `✅ Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`
+          : `✅ Dossier "${name}" créé. Ajoutez un document pour démarrer l'analyse.`;
       addMessage('ai', msg, dossier);
-    } else if (resultat.statut === 'erreur' || resultat.statut === 'error') {
-      dossier.status = 'erreur';
+
+    } catch (err) {
+      console.error(err);
+      dossier.status = 'error';
       endPending(dossier);
-      addMessage('ai', "❌ Erreur lors de l'analyse. Vous pouvez relancer l'analyse.", dossier);
       setLiveStatus(dossier, null);
-    } else {
-      // Sondage arrêté sans conclusion claire (timeout de sécurité)
-      dossier.status = 'erreur';
-      await updateStatutSupabase(dossier.id, 'erreur');
-      endPending(dossier);
-      addMessage('ai', "❌ L'analyse prend trop de temps ou n'a pas pu être vérifiée. Vous pouvez relancer l'analyse.", dossier);
-      setLiveStatus(dossier, null);
-    }
-    renderMessages();
-  }
-
-  // Interroge Supabase toutes les 5 secondes jusqu'à ce que le statut du
-  // dossier passe à 'pret' ou 'erreur', ou jusqu'à annulation par l'utilisateur.
-  // Timeout de sécurité : 30 minutes.
-  function attendreStatutDossier(dossier, signal) {
-    return new Promise((resolve) => {
-      const DELAI_MS = 5000;
-      const TIMEOUT_MS = 30 * 60 * 1000;
-      const debut = Date.now();
-
-      const onAbort = () => {
-        clearInterval(currentPollingTimer);
-        currentPollingTimer = null;
-        resolve({ abandon: true, cause: currentAbortCause });
-      };
-      signal.addEventListener('abort', onAbort);
-
-      currentPollingTimer = setInterval(async () => {
-        if (Date.now() - debut > TIMEOUT_MS) {
-          clearInterval(currentPollingTimer);
-          currentPollingTimer = null;
-          signal.removeEventListener('abort', onAbort);
-          resolve({ statut: 'timeout' });
-          return;
-        }
-        const { data, error } = await sb
-          .from('documents')
-          .select('statut, analyse')
-          .eq('dossier_id', dossier.id)
-          .order('date_upload', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (error) { console.error('Sondage statut :', error); return; }
-        if (!data) return;
-        if (data.statut === 'pret' || data.statut === 'ready' || data.statut === 'erreur' || data.statut === 'error') {
-          clearInterval(currentPollingTimer);
-          currentPollingTimer = null;
-          signal.removeEventListener('abort', onAbort);
-          resolve({ statut: data.statut, analyse: data.analyse });
-        }
-      }, DELAI_MS);
-    });
-  }
-
-  // Relance l'analyse d'un dossier après une erreur ou une interruption.
-  // Ne fonctionne que si le fichier d'origine est encore présent dans cette
-  // session (le fichier binaire n'est pas conservé après un rechargement de page).
-  function relancerAnalyse() {
-    if (!currentDossier) return;
-    if (!currentDossier._file) {
-      addMessage('ai', "❌ Impossible de relancer automatiquement : le fichier d'origine n'est plus disponible dans cette session (page rechargée). Veuillez créer un nouveau dossier avec le document.", currentDossier);
-      return;
-    }
-    const dossier = currentDossier;
-    setChatEnabled(false);
-    lancerAnalyse(dossier).then(() => {
+      addMessage('ai', "❌ L'analyse n'a pas pu être terminée. Réessayez en posant une question.", dossier);
+    } finally {
+      clearInterval(timer);
+      creationEnCours = false;
+      btn.disabled = false;
+      btn.textContent = 'Créer et analyser';
+      selectedFiles = [];
       setChatEnabled(true);
       renderDossiers();
-      loadDossiers().then(() => renderDossiers());
-    });
+      loadDossiers().then(() => { renderDossiers(); });
+    }
   }
 
   // ==========================================
