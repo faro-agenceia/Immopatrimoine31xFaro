@@ -310,7 +310,6 @@
   let currentAbortController = null;
   let currentPollingTimer = null;
   let currentAbortCause = null;
-  let currentExecutionId = null;
 
   // ==========================================
   // ICÔNES SVG
@@ -723,14 +722,6 @@
   function stopCreation() {
     if (!currentDossier || !creationEnCours) return;
 
-    if (currentExecutionId) {
-      fetch(`https://n8n.srv1960518.hstgr.cloud/rest/executions/${currentExecutionId}`, {
-        method: 'DELETE',
-        headers: { 'X-N8N-API-KEY': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0ZjJiOTE3Yi04M2ZkLTRjMWYtYjE0Yi1hM2EwNTA1MDYzOTAiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZjEyMWU1NTctZTdlNS00MjE1LWJiMzMtYjhmNjlhYmE4OGUwIiwiaWF0IjoxNzkwNjI2NjAwfQ.jUyGQfncNOb5iuBEPKkJfA98vzMmRi7SlPRrsCAjZek' }
-      }).catch(e => console.error('Erreur arrêt n8n :', e));
-      currentExecutionId = null;
-    }
-
     currentDossier.status = 'interrompu';
     setLiveStatus(currentDossier, null);
     endPending(currentDossier);
@@ -1002,17 +993,15 @@
     formData.append('data', dossier._file);
 
     currentAbortCause = null;
-    currentExecutionId = null;
     fetch(WEBHOOK_UPLOAD, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + getToken() },
       body: formData,
       signal: controller.signal
     }).then(res => {
-      if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
-      return res.json();
-    }).then(data => {
-      if (data?.executionId) currentExecutionId = data.executionId;
+      if (!res.ok) {
+        throw new Error(`Erreur HTTP ${res.status}`);
+      }
     }).catch(err => {
       if (err.name === 'AbortError' && currentAbortCause === 'user') return;
       if (err.name === 'AbortError') return;
