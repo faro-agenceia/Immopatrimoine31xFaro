@@ -124,6 +124,7 @@
     .btn-create:disabled { opacity: 0.7; cursor: not-allowed; }
     .spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .spin-icon svg { animation: spin 0.8s linear infinite; display: inline-block; }
 
     /* GLOBAL DROP — uniquement quand la modal est ouverte */
     .drop-zone.drag-over { border-color: var(--accent); background: rgba(79,70,229,0.05); }
@@ -362,14 +363,20 @@
     renderDossiers();
   }
 
+  const ICON_CHECK = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  const ICON_MSG_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+  const ICON_ERR_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+  const ICON_SPIN_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"></path></svg>';
+
   function statusLabel(dossier) {
-    if (dossier._liveStatus === 'analyse') return '<span class="dossier-status status-processing">⏳ Analyse en cours</span>';
-    if (dossier._liveStatus === 'question') return '<span class="dossier-status status-question">💬 Question en cours</span>';
-    if (dossier._liveStatus === 'analyse_done') return '<span class="dossier-status status-ready">✅ Analyse prête</span>';
-    if (dossier._liveStatus === 'question_done') return '<span class="dossier-status status-ready">✅ Question prête</span>';
-    if (dossier.status === 'error') return '<span class="dossier-status status-error">⚠️ Erreur</span>';
-    if (dossier.status === 'ready') return '<span class="dossier-status status-ready">✅ Prêt</span>';
-    return '<span class="dossier-status status-processing">⏳ En cours</span>';
+    const spin = '<span class="spin-icon">' + ICON_SPIN_SM + '</span>';
+    if (dossier._liveStatus === 'analyse') return '<span class="dossier-status status-processing">' + spin + ' Analyse en cours</span>';
+    if (dossier._liveStatus === 'question') return '<span class="dossier-status status-question">' + ICON_MSG_SM + ' Question en cours</span>';
+    if (dossier._liveStatus === 'analyse_done') return '<span class="dossier-status status-ready">' + ICON_CHECK + ' Analyse prête</span>';
+    if (dossier._liveStatus === 'question_done') return '<span class="dossier-status status-ready">' + ICON_CHECK + ' Question prête</span>';
+    if (dossier.status === 'error') return '<span class="dossier-status status-error">' + ICON_ERR_SM + ' Erreur</span>';
+    if (dossier.status === 'ready') return '<span class="dossier-status status-ready">' + ICON_CHECK + ' Prêt</span>';
+    return '<span class="dossier-status status-processing">' + spin + ' En cours</span>';
   }
 
   // ==========================================
@@ -597,8 +604,12 @@
   async function deleteDossier(event, id) {
     event.stopPropagation();
     if (!confirm('Supprimer ce dossier définitivement ?')) return;
+    if (creationEnCours && currentDossier?.id === id) {
+      creationEnCours = false;
+      releaseWakeLock();
+    }
     const { error } = await sb.from('dossiers').delete().eq('dossier_id', id);
-    if (error) { console.error('Suppression échouée :', error); alert('❌ La suppression a échoué. Veuillez réessayer.'); return; }
+    if (error) { console.error('Suppression échouée :', error); alert('La suppression a échoué. Veuillez réessayer.'); return; }
     dossiers = dossiers.filter(d => d.id !== id);
     if (currentDossier?.id === id) {
       currentDossier = null;
@@ -630,7 +641,7 @@
     }
     const msgs = currentDossier.messages || [];
     if (msgs.length === 0) {
-      area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="font-size:28px;margin-bottom:12px">💬</div>Posez une question sur ce dossier</div>`;
+      area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="margin-bottom:12px;opacity:0.4"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>Posez une question sur ce dossier</div>`;
     } else {
       area.innerHTML = msgs.map(m => renderMessage(m)).join('');
       area.scrollTop = area.scrollHeight;
@@ -638,22 +649,22 @@
     if (currentDossier._pending) addTyping(currentDossier._pending.label, currentDossier._pending.start);
   }
 
+  function parseMarkdown(text) {
+    return text
+      .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+  }
+
   function renderMessage(m) {
     if (m.role === 'user') {
       const contenuUser = escapeHtml(m.content).replace(/\n/g, '<br>');
       return `<div class="message user"><div class="avatar user">${ICON_USER}</div><div class="bubble">${contenuUser}</div></div>`;
     }
-    const contenu = m.content.replace(/\n/g, '<br>');
-    return `<div class="message ai"><div class="avatar ai">✦</div><div class="bubble">${formatResponse(contenu)}</div></div>`;
+    const contenu = parseMarkdown(m.content);
+    return `<div class="message ai"><div class="avatar ai">✦</div><div class="bubble">${contenu}</div></div>`;
   }
 
-  function formatResponse(text) {
-    return text
-      .replace(/🔴 \*\*([^*]+)\*\*/g, '<div class="response-section section-critical"><div class="section-title">🔴 $1</div>')
-      .replace(/🟠 \*\*([^*]+)\*\*/g, '<div class="response-section section-warning"><div class="section-title">🟠 $1</div>')
-      .replace(/🟢 \*\*([^*]+)\*\*/g, '<div class="response-section section-ok"><div class="section-title">🟢 $1</div>')
-      .replace(/📄 \*\*([^*]+)\*\*/g, '<div class="response-section section-sources"><div class="section-title">📄 $1</div>');
-  }
+
 
   function addMessage(role, content, dossier = currentDossier) {
     if (!dossier) return;
@@ -880,6 +891,7 @@
 
     creationEnCours = true;
     lockModal(true);
+    await requestWakeLock();
 
     const btn = document.getElementById('createBtn');
     btn.disabled = true;
@@ -944,10 +956,17 @@
       dossier.status = 'error';
       endPending(dossier);
       setLiveStatus(dossier, null);
-      addMessage('ai', "❌ L'analyse n'a pas pu être terminée. Réessayez en posant une question.", dossier);
+      let msgErr = "L'analyse a échoué.";
+      if (err.message.includes('503')) msgErr = "Le service d'extraction est temporairement surchargé. Réessayez dans quelques minutes.";
+      else if (err.message.includes('401') || err.message.includes('403')) msgErr = "Erreur d'authentification. Veuillez vous reconnecter.";
+      else if (err.message.includes('404')) msgErr = "Le service d'analyse est introuvable. Contactez le support.";
+      else if (err.message.includes('500')) msgErr = "Erreur serveur lors de l'analyse. Réessayez ou contactez le support.";
+      else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) msgErr = "Connexion perdue pendant l'analyse. Vérifiez votre réseau et recréez le dossier.";
+      addMessage('ai', msgErr, dossier);
     } finally {
       clearInterval(timer);
       creationEnCours = false;
+      releaseWakeLock();
       btn.disabled = false;
       btn.textContent = 'Créer et analyser';
       selectedFiles = [];
@@ -988,6 +1007,20 @@
     e.preventDefault();
     dropZone.classList.remove('drag-over');
     if (!creationEnCours) handleFiles(e.dataTransfer.files);
+  });
+
+  // WAKE LOCK — empêche la veille pendant une analyse
+  let wakeLock = null;
+  async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) { console.warn('Wake Lock refusé :', e); }
+    }
+  }
+  function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && creationEnCours && !wakeLock) await requestWakeLock();
   });
 
   initAuth();
