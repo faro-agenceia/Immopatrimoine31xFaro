@@ -707,8 +707,8 @@ function statusLabel(dossier) {
   if (dossier._liveStatus === 'analyse_done') return '<span class="dossier-status status-ready">' + DOT + ' Analyse prête</span>';
   if (dossier._liveStatus === 'question_done') return '<span class="dossier-status status-ready">' + DOT + ' Réponse prête</span>';
   if (dossier.status === 'error') return '<span class="dossier-status status-error">' + ICON_ERR_SM + ' Erreur</span>';
-  if (dossier.status === 'ready') return '<span class="dossier-status status-ready">' + ICON_CHECK + ' Prêt</span>';
-  return '<span class="dossier-status status-processing">' + LOADER_3D + ' En cours</span>';
+  if (dossier.status === 'ready') return '<span class="dossier-status status-ready">' + DOT + ' Analyse prête</span>';
+  return '<span class="dossier-status status-processing">' + LOADER_3D + ' Analyse en cours</span>';
 }
 
 // ==========================================
