@@ -545,7 +545,7 @@ let rechercheDossier = '';
 // ==========================================
 const ICON_DOC = '<svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
 const ICON_DOC_SM = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
-const ICON_USER = '<svg width="24" height=24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+const ICON_USER = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
 const ICON_TRASH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
 const ICON_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
 const ICON_EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
@@ -687,7 +687,7 @@ function onSearchChange(value) {
 // STATUT DYNAMIQUE
 // ==========================================
 // Chaque dossier a un champ _liveStatus : null | 'analyse' | 'question'
-// Quand null → on affiche le statut Supabase (ready/error)
+// Quand null → on affiche le dernier état géré localement par le site.
 
 function setLiveStatus(dossier, status) {
   dossier._liveStatus = status; // null | 'analyse' | 'question'
@@ -837,7 +837,7 @@ function dossierVide(row, countMap) {
     name: row.nom,
     date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
     docsCount: countMap[row.dossier_id] || 0,
-    status: row.statut || 'ready',
+    status: 'ready',
     docs: [],
     messages: null,
     _loaded: false,
@@ -865,12 +865,7 @@ async function loadDossiers() {
     if (!ancien) return nouveau;
     ancien.name = nouveau.name;
     ancien.date = nouveau.date;
-    if (!ancien._pending) ancien.status = nouveau.status;
     if (!ancien._loaded) ancien.docsCount = nouveau.docsCount;
-    if (!ancien._pending && nouveau.status === 'processing') {
-      ancien.status = 'processing';
-      if (!ancien._liveStatus) ancien._liveStatus = 'analyse';
-    }
     return ancien;
   });
   const enCreation = anciens.filter(d => d._pending && !ids.includes(d.id));
@@ -912,7 +907,7 @@ async function resyncCurrentDossier() {
 
 // ==========================================
 // ANALYSE CÔTÉ SERVEUR (ordinateur fermé, connexion perdue…)
-// Le statut reste « analyse en cours » et le résultat est récupéré
+// L'analyse continue côté serveur et le résultat est récupéré
 // automatiquement dès que le serveur a terminé.
 // ==========================================
 let pollTimer = null;
@@ -953,19 +948,25 @@ function startPolling() {
     const suivis = dossiers.filter(d => d._pending && d._pending.server);
     if (!suivis.length) { stopPolling(); return; }
     for (const d of suivis) {
-      const { data, error } = await sb.from('dossiers').select('statut').eq('dossier_id', d.id).maybeSingle();
-      if (error || !data) continue;
-      if (data.statut && data.statut !== 'processing') {
-        endPending(d);
-        d.status = data.statut;
-        d._liveStatus = data.statut === 'ready' ? 'analyse_done' : null;
-        d._loaded = false;
-        await loadDossierDetails(d);
-        if (currentDossier?.id === d.id) { updateDocsStrip(); renderMessages(); }
-        renderDossiers(); renderHome(); renderAllDossiers();
-      }
+      const { data, error } = await sb.from('conversations')
+        .select('role, content, timestamp')
+        .eq('dossier_id', d.id)
+        .order('timestamp', { ascending: true });
+      if (error) continue;
+      const messages = normaliserConversation(data || []);
+      const nbReponsesAvant = d._analysisAnswerBaseline || 0;
+      const nouvelleSynthese = compterReponsesIA(messages) > nbReponsesAvant;
+      // Le suivi se termine uniquement quand une nouvelle réponse IA est enregistrée.
+      if (!nouvelleSynthese) continue;
+
+      appliquerConversationServeur(d, messages);
+      endPending(d);
+      d.status = 'ready';
+      d._liveStatus = 'analyse_done';
+      if (currentDossier?.id === d.id) { updateDocsStrip(); renderMessages(); }
+      renderDossiers(); renderHome(); renderAllDossiers();
     }
-  }, 5000);
+  }, 2500);
 }
 
 function stopPolling() {
@@ -1281,6 +1282,27 @@ function endPending(dossier) {
 // Dès que n8n a répondu, le dossier va directement chercher la réponse
 // enregistrée par le serveur (source de vérité) et rafraîchit l'affichage.
 // ==========================================
+function extraireTexteReponse(data, profondeur = 0) {
+  if (typeof data === 'string') return data.trim();
+  if (!data || typeof data !== 'object' || profondeur > 5) return '';
+  if (Array.isArray(data)) {
+    for (const element of data) {
+      const texte = extraireTexteReponse(element, profondeur + 1);
+      if (texte) return texte;
+    }
+    return '';
+  }
+  const clesPrioritaires = ['synthese', 'réponse', 'reponse', 'answer', 'output', 'text', 'content', 'message', 'result', 'data', 'response'];
+  for (const cle of clesPrioritaires) {
+    if (data[cle] !== undefined) {
+      const texte = extraireTexteReponse(data[cle], profondeur + 1);
+      if (texte) return texte;
+    }
+  }
+  if (data.choices) return extraireTexteReponse(data.choices, profondeur + 1);
+  return '';
+}
+
 function compterReponsesIA(messages = []) {
   return messages.filter(m => m.role === 'ai' || m.role === 'assistant').length;
 }
@@ -1573,6 +1595,9 @@ function setCreateButtonLoading(chargement) {
 }
 
 async function surveillerSyntheseAnalyse(dossier, reponsesAvant) {
+  if (dossier._analysisWatcher) return;
+  dossier._analysisWatcher = true;
+  try {
   for (let tentative = 0; tentative < 240; tentative++) {
     try {
       const { data, error } = await sb.from('conversations')
@@ -1595,6 +1620,9 @@ async function surveillerSyntheseAnalyse(dossier, reponsesAvant) {
       console.warn('Suivi automatique de la synthèse impossible :', err);
     }
     await new Promise(resolve => setTimeout(resolve, 2500));
+  }
+  } finally {
+    dossier._analysisWatcher = false;
   }
 }
 
@@ -1625,6 +1653,7 @@ async function createDossier() {
     docs: selectedFiles.map(f => f.name),
     docsCount: selectedFiles.length,
     status: 'processing',
+    _analysisAnswerBaseline: 0,
     messages: [],
     _loaded: true,
     _liveStatus: 'analyse',
@@ -1646,6 +1675,7 @@ async function createDossier() {
   renderAllDossiers();
   setChatEnabled(false);
   startPending(dossier, 'Analyse en cours...');
+  surveillerSyntheseAnalyse(dossier, messagesAvantAnalyse);
 
   try {
     let dernierData = null;
@@ -1669,20 +1699,18 @@ async function createDossier() {
     // enregistrée côté serveur ; le contenu du webhook sert de secours.
     const syntheseServeur = await attendreReponseServeur(dossier, messagesAvantAnalyse);
     if (!syntheseServeur) {
-      const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
+      const synthese = extraireTexteReponse(dernierData);
       const msg = synthese
         ? synthese.replace(/\\n/g, '\n')
         : `Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
       ajouterMessageSiAbsent('ai', msg, dossier);
-      surveillerSyntheseAnalyse(dossier, messagesAvantAnalyse);
     }
 
   } catch (err) {
     console.error(err);
     const perteConnexion = !navigator.onLine || /Failed to fetch|NetworkError|Load failed|network/i.test(err.message || '');
     if (perteConnexion) {
-      // L'analyse continue côté serveur : le statut reste « analyse en cours »
-      // et le résultat est récupéré automatiquement une fois disponible.
+      // L'analyse continue côté serveur ; la conversation sera mise à jour automatiquement dès que la réponse sera enregistrée.
       addMessage('system', "Connexion interrompue : l'analyse continue sur le serveur. Le résultat s'affichera automatiquement dès qu'elle aboutit.", dossier);
       startPendingServeur(dossier);
     } else {
