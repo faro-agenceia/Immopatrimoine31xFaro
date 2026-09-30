@@ -1210,6 +1210,34 @@ function endPending(dossier) {
 }
 
 // ==========================================
+// RÉCUPÉRATION DE LA RÉPONSE CÔTÉ SERVEUR
+// Dès que n8n a répondu, le dossier va directement chercher la réponse
+// enregistrée par le serveur (source de vérité) et rafraîchit l'affichage.
+// ==========================================
+async function synchroniserConversation(dossier, roleAttendu = 'ai') {
+  if (!dossier) return null;
+  try {
+    const { data, error } = await sb.from('conversations')
+      .select('role, content, timestamp')
+      .eq('dossier_id', dossier.id)
+      .order('timestamp', { ascending: true });
+    if (error) throw error;
+    const msgs = (data || []).map(m => ({ role: m.role, content: m.content }));
+    if (!msgs.length) return null;
+    const local = dossier.messages || [];
+    // Le serveur fait foi dès qu'il a enregistré au moins autant de messages.
+    dossier.messages = msgs.length >= local.length ? msgs : local.concat(msgs.slice(local.length));
+    dossier._loaded = true;
+    if (dossier === currentDossier) renderMessages();
+    const dernierAi = [...msgs].reverse().find(m => m.role === roleAttendu);
+    return dernierAi ? dernierAi.content : null;
+  } catch (e) {
+    console.warn('Récupération de la réponse serveur impossible :', e);
+    return null;
+  }
+}
+
+// ==========================================
 // ENVOI QUESTION
 // ==========================================
 async function sendMessage() {
@@ -1236,8 +1264,13 @@ async function sendMessage() {
       signal: controller.signal
     });
     endPending(dossier);
-    const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
-    addMessage('ai', reponse.replace(/\\n/g, '\n'), dossier);
+    // La réponse est d'abord récupérée directement côté serveur ;
+    // le contenu renvoyé par n8n ne sert que de secours.
+    const reponseServeur = await synchroniserConversation(dossier, 'ai');
+    if (!reponseServeur) {
+      const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
+      addMessage('ai', reponse.replace(/\\n/g, '\n'), dossier);
+    }
     setLiveStatus(dossier, 'question_done');
   } catch(err) {
     endPending(dossier);
@@ -1422,11 +1455,16 @@ async function createDossier() {
     endPending(dossier);
     setLiveStatus(dossier, 'analyse_done');
 
-    const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
-    const msg = synthese
-      ? synthese.replace(/\\n/g, '\n')
-      : `Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
-    addMessage('ai', msg, dossier);
+    // Dès que n8n a répondu, le dossier va chercher la synthèse
+    // enregistrée côté serveur ; le contenu du webhook sert de secours.
+    const syntheseServeur = await synchroniserConversation(dossier, 'ai');
+    if (!syntheseServeur) {
+      const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
+      const msg = synthese
+        ? synthese.replace(/\\n/g, '\n')
+        : `Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
+      addMessage('ai', msg, dossier);
+    }
 
   } catch (err) {
     console.error(err);
