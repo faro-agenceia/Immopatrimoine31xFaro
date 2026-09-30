@@ -245,7 +245,9 @@ body.unauthenticated .main { display: none; }
 .modal-input:disabled { opacity: 0.45; cursor: not-allowed; }
 textarea.modal-input { resize: vertical; min-height: 70px; }
 .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 24px; text-align: center; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 16px; }
-.drop-zone:hover:not(.disabled), .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-soft); }
+.drop-zone:hover:not(.disabled):not(.has-file), .drop-zone.drag-over:not(.has-file) { border-color: var(--accent); background: var(--accent-soft); }
+.drop-zone.has-file { opacity: 0.58; cursor: not-allowed; border-style: solid; pointer-events: none; }
+.drop-zone.has-file:hover { border-color: var(--border); background: transparent; }
 .drop-zone.disabled { opacity: 0.4; pointer-events: none; }
 .drop-icon { margin-bottom: 8px; display: flex; align-items: center; justify-content: center; }
 .drop-text { font-size: 13px; }
@@ -1488,9 +1490,14 @@ function hideModalError() {
 
 function handleFiles(files) {
   if (creationEnCours) return;
-  const pdfs = Array.from(files).filter(f => f.type === 'application/pdf');
+  const tousLesFichiers = Array.from(files);
+  const pdfs = tousLesFichiers.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
   document.getElementById('fileInput').value = '';
   hideModalError();
+  if (tousLesFichiers.length && !pdfs.length) {
+    showModalError('Seuls les fichiers PDF sont acceptés.');
+    return;
+  }
   let refuse = false;
   for (const f of pdfs) {
     if (selectedFiles.find(x => x.name === f.name)) continue;
@@ -1509,6 +1516,10 @@ function renderFilesList() {
     dropZone.classList.toggle('has-file', fichierAjoute);
     dropZone.setAttribute('aria-disabled', String(fichierAjoute || creationEnCours));
     dropZone.title = fichierAjoute ? 'Un PDF est déjà ajouté. Retirez-le pour le remplacer.' : 'Ajouter un PDF';
+    const texteZone = dropZone.querySelector('.drop-text');
+    if (texteZone) texteZone.textContent = fichierAjoute
+      ? 'PDF ajouté — retirez-le pour le remplacer'
+      : 'Déposez votre PDF ici ou cliquez pour le sélectionner';
   }
   document.getElementById('filesList').innerHTML = selectedFiles.map((f, i) => `
     <div class="file-item">
