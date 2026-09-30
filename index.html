@@ -194,8 +194,12 @@ body.unauthenticated .main { display: none; }
 .message { display: flex; gap: 12px; max-width: 760px; }
 .message.user { flex-direction: row-reverse; align-self: flex-end; }
 .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-.avatar.ai { background: var(--accent); color: var(--on-accent); position: relative; overflow: hidden; }
-.avatar.ai::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 34% 30%, #ffffff 0%, var(--accent-light) 45%, transparent 72%); opacity: 0.9; }
+.avatar.ai { width: 46px; height: 46px; flex-basis: 46px; background: transparent; color: var(--on-accent); position: relative; overflow: visible; border-radius: 50%; }
+.avatar.ai::before, .avatar.ai::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; border: 1px solid var(--accent-soft); pointer-events: none; animation: orbRing 4.5s linear infinite; }
+.avatar.ai::after { inset: 0; border-color: transparent; border-top-color: var(--accent-light); animation-duration: 2.6s; animation-direction: reverse; }
+.avatar.ai .orb-core { position: absolute; inset: 8px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #dbeafe 0%, var(--accent-light) 34%, var(--accent) 70%, #1e3a8a 100%); box-shadow: 0 0 14px rgba(59,130,246,0.5), inset -3px -4px 9px rgba(15,23,42,0.35); animation: orbPulse 3.2s ease-in-out infinite; }
+.avatar.ai.thinking .orb-core { animation-duration: 1.1s; }
+.avatar.ai.thinking::after { animation-duration: 0.8s; }
 .avatar.user { background: var(--surface2); }
 .bubble { padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.7; max-width: 600px; }
 .message.ai .bubble { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 4px; }
@@ -529,6 +533,8 @@ let selectedFiles = [];
 let creationEnCours = false;
 let questionEnCours = false;
 let currentAbortController = null;
+let questionSequence = 0;
+let questionResolvedSequence = 0;
 let currentView = 'accueil';
 let rechercheDossier = '';
 
@@ -660,7 +666,10 @@ function setView(view) {
 }
 
 function openAccueil() {
+  currentDossier = null;
+  removeTyping();
   setView('accueil');
+  renderDossiers();
   renderHome();
 }
 function openDossiersView() {
@@ -1177,7 +1186,7 @@ function renderMessage(m) {
     return `<div class="message system"><div class="bubble">${escapeHtml(m.content)}</div></div>`;
   }
   const contenu = parseMarkdown(m.content);
-  return `<div class="message ai"><div class="avatar ai"></div><div class="bubble">${contenu}</div></div>`;
+  return `<div class="message ai"><div class="avatar ai" aria-hidden="true"><span class="orb-core"></span></div><div class="bubble">${contenu}</div></div>`;
 }
 
 function addMessage(role, content, dossier = currentDossier) {
@@ -1241,7 +1250,7 @@ function addTyping(label, start = Date.now()) {
   typingSeconds = Math.floor((Date.now() - start) / 1000);
   const div = document.createElement('div');
   div.className = 'message ai'; div.id = 'typingIndicator';
-  div.innerHTML = '<div class="avatar ai"></div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds) + '</span></div></div>';
+  div.innerHTML = '<div class="avatar ai thinking" aria-hidden="true"><span class="orb-core"></span></div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds) + '</span></div></div>';
   area.appendChild(div);
   area.scrollTop = area.scrollHeight;
   typingTimer = setInterval(() => {
@@ -1328,6 +1337,37 @@ async function synchroniserConversation(dossier, roleAttendu = 'ai') {
 // ==========================================
 // ENVOI QUESTION
 // ==========================================
+async function surveillerReponseQuestion(dossier, messagesAvant, sequence) {
+  for (let tentative = 0; tentative < 180 && sequence === questionSequence; tentative++) {
+    if (!questionEnCours) return;
+    try {
+      const { data, error } = await sb.from('conversations')
+        .select('role, content, timestamp')
+        .eq('dossier_id', dossier.id)
+        .order('timestamp', { ascending: true });
+      if (!error) {
+        const messages = (data || []).map(m => ({ role: m.role, content: m.content }));
+        const nouvellesReponses = messages.slice(messagesAvant).filter(m => m.role === 'ai');
+        if (nouvellesReponses.length) {
+          dossier.messages = messages;
+          dossier._loaded = true;
+          questionResolvedSequence = sequence;
+          endPending(dossier);
+          setLiveStatus(dossier, 'question_done');
+          if (dossier === currentDossier) renderMessages();
+          questionEnCours = false;
+          currentAbortController = null;
+          setSendButtonMode('send');
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Suivi automatique de la réponse impossible :', err);
+    }
+    await new Promise(resolve => setTimeout(resolve, 2500));
+  }
+}
+
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
@@ -1335,6 +1375,7 @@ async function sendMessage() {
 
   const dossier = currentDossier;
   const messagesAvant = (dossier.messages || []).length;
+  const sequence = ++questionSequence;
   questionEnCours = true;
   input.value = ''; input.style.height = 'auto';
   addMessage('user', msg, dossier);
@@ -1344,6 +1385,7 @@ async function sendMessage() {
 
   const controller = new AbortController();
   currentAbortController = controller;
+  surveillerReponseQuestion(dossier, messagesAvant, sequence);
 
   try {
     const data = await fetchJson(WEBHOOK_QUESTION, {
@@ -1352,16 +1394,20 @@ async function sendMessage() {
       body: JSON.stringify({ dossier_id: dossier.id, message: msg }),
       signal: controller.signal
     });
+    if (sequence !== questionSequence) return;
     endPending(dossier);
     // La réponse est d'abord récupérée directement côté serveur ;
     // le contenu renvoyé par n8n ne sert que de secours.
     const reponseServeur = await attendreReponseServeur(dossier, messagesAvant);
+    if (sequence !== questionSequence) return;
     if (!reponseServeur) {
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
       ajouterMessageSiAbsent('ai', reponse.replace(/\\n/g, '\n'), dossier);
     }
+    questionResolvedSequence = sequence;
     setLiveStatus(dossier, 'question_done');
   } catch(err) {
+    if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
     endPending(dossier);
     if (err.name === 'AbortError') {
       addMessage('ai', "Question annulée.", dossier);
@@ -1375,9 +1421,11 @@ async function sendMessage() {
       setLiveStatus(dossier, null);
     }
   } finally {
-    questionEnCours = false;
-    currentAbortController = null;
-    setSendButtonMode('send');
+    if (sequence === questionSequence) {
+      questionEnCours = false;
+      currentAbortController = null;
+      setSendButtonMode('send');
+    }
   }
 }
 
@@ -1398,6 +1446,10 @@ function lockModal(lock) {
 
 function triggerFileInput() {
   if (creationEnCours) return;
+  if (selectedFiles.length >= MAX_PDF_CREATION) {
+    showModalError('Un seul document PDF par dossier. Retirez le document actuel pour le remplacer.');
+    return;
+  }
   document.getElementById('fileInput').click();
 }
 
@@ -1451,6 +1503,13 @@ function handleFiles(files) {
 }
 
 function renderFilesList() {
+  const dropZone = document.getElementById('dropZone');
+  const fichierAjoute = selectedFiles.length >= MAX_PDF_CREATION;
+  if (dropZone) {
+    dropZone.classList.toggle('has-file', fichierAjoute);
+    dropZone.setAttribute('aria-disabled', String(fichierAjoute || creationEnCours));
+    dropZone.title = fichierAjoute ? 'Un PDF est déjà ajouté. Retirez-le pour le remplacer.' : 'Ajouter un PDF';
+  }
   document.getElementById('filesList').innerHTML = selectedFiles.map((f, i) => `
     <div class="file-item">
       <span>${ICON_DOC_SM}</span>
