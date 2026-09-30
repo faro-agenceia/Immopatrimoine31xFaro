@@ -545,7 +545,7 @@ let rechercheDossier = '';
 // ==========================================
 const ICON_DOC = '<svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
 const ICON_DOC_SM = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
-const ICON_USER = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+const ICON_USER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
 const ICON_TRASH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
 const ICON_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
 const ICON_EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
@@ -1281,6 +1281,28 @@ function endPending(dossier) {
 // Dès que n8n a répondu, le dossier va directement chercher la réponse
 // enregistrée par le serveur (source de vérité) et rafraîchit l'affichage.
 // ==========================================
+function compterReponsesIA(messages = []) {
+  return messages.filter(m => m.role === 'ai' || m.role === 'assistant').length;
+}
+
+function normaliserConversation(data = []) {
+  const messages = data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content }));
+  return messages.filter((m, i) => i === 0 || m.role !== messages[i - 1].role || m.content !== messages[i - 1].content);
+}
+
+function appliquerConversationServeur(dossier, messagesServeur) {
+  const messages = normaliserConversation(messagesServeur);
+  // Conserve la question optimiste si le workflow n'a enregistré que sa réponse.
+  const questionEnAttente = dossier._questionEnAttente;
+  if (questionEnAttente && !messages.some(m => m.role === 'user' && m.content === questionEnAttente)) {
+    const indexReponse = messages.findIndex((m, i) => i > 0 && m.role === 'ai');
+    messages.splice(indexReponse >= 0 ? indexReponse : messages.length, 0, { role: 'user', content: questionEnAttente });
+  }
+  dossier.messages = messages;
+  dossier._loaded = true;
+  if (dossier === currentDossier) renderMessages();
+}
+
 async function attendreReponseServeur(dossier, messagesAvant, tentatives = 12) {
   // Le workflow peut enregistrer la réponse quelques instants après son retour.
   for (let i = 0; i < tentatives; i++) {
@@ -1290,12 +1312,12 @@ async function attendreReponseServeur(dossier, messagesAvant, tentatives = 12) {
       .order('timestamp', { ascending: true });
 
     if (!error) {
-      const messages = (data || []).map(m => ({ role: m.role, content: m.content }));
-      const nouvellesReponses = messages.slice(messagesAvant).filter(m => m.role === 'ai');
+      const messages = normaliserConversation(data || []);
+      const reponses = messages.filter(m => m.role === 'ai');
+      const nouvellesReponses = reponses.slice(messagesAvant);
       if (nouvellesReponses.length) {
-        dossier.messages = messages;
-        dossier._loaded = true;
-        if (dossier === currentDossier) renderMessages();
+        appliquerConversationServeur(dossier, messages);
+        dossier._questionEnAttente = null;
         return nouvellesReponses[nouvellesReponses.length - 1].content;
       }
     }
@@ -1341,25 +1363,25 @@ async function synchroniserConversation(dossier, roleAttendu = 'ai') {
 // ==========================================
 async function surveillerReponseQuestion(dossier, messagesAvant, sequence) {
   for (let tentative = 0; tentative < 180 && sequence === questionSequence; tentative++) {
-    if (!questionEnCours) return;
     try {
       const { data, error } = await sb.from('conversations')
         .select('role, content, timestamp')
         .eq('dossier_id', dossier.id)
         .order('timestamp', { ascending: true });
       if (!error) {
-        const messages = (data || []).map(m => ({ role: m.role, content: m.content }));
-        const nouvellesReponses = messages.slice(messagesAvant).filter(m => m.role === 'ai');
+        const messages = normaliserConversation(data || []);
+        const nouvellesReponses = messages.filter(m => m.role === 'ai').slice(messagesAvant);
         if (nouvellesReponses.length) {
-          dossier.messages = messages;
-          dossier._loaded = true;
-          questionResolvedSequence = sequence;
-          endPending(dossier);
-          setLiveStatus(dossier, 'question_done');
-          if (dossier === currentDossier) renderMessages();
-          questionEnCours = false;
-          currentAbortController = null;
-          setSendButtonMode('send');
+          appliquerConversationServeur(dossier, messages);
+          dossier._questionEnAttente = null;
+          if (sequence === questionSequence) {
+            questionResolvedSequence = sequence;
+            endPending(dossier);
+            setLiveStatus(dossier, 'question_done');
+            questionEnCours = false;
+            currentAbortController = null;
+            setSendButtonMode('send');
+          }
           return;
         }
       }
@@ -1376,8 +1398,9 @@ async function sendMessage() {
   if (!msg || !currentDossier || creationEnCours || questionEnCours) return;
 
   const dossier = currentDossier;
-  const messagesAvant = (dossier.messages || []).length;
+  const messagesAvant = compterReponsesIA(dossier.messages || []);
   const sequence = ++questionSequence;
+  dossier._questionEnAttente = msg;
   questionEnCours = true;
   input.value = ''; input.style.height = 'auto';
   addMessage('user', msg, dossier);
@@ -1406,6 +1429,7 @@ async function sendMessage() {
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
       ajouterMessageSiAbsent('ai', reponse.replace(/\\n/g, '\n'), dossier);
     }
+    dossier._questionEnAttente = null;
     questionResolvedSequence = sequence;
     setLiveStatus(dossier, 'question_done');
   } catch(err) {
@@ -1548,6 +1572,32 @@ function setCreateButtonLoading(chargement) {
   if (!chargement) lbl.textContent = 'Créer et analyser';
 }
 
+async function surveillerSyntheseAnalyse(dossier, reponsesAvant) {
+  for (let tentative = 0; tentative < 240; tentative++) {
+    try {
+      const { data, error } = await sb.from('conversations')
+        .select('role, content, timestamp')
+        .eq('dossier_id', dossier.id)
+        .order('timestamp', { ascending: true });
+      if (!error) {
+        const messages = normaliserConversation(data || []);
+        const nouvelles = messages.filter(m => m.role === 'ai').slice(reponsesAvant);
+        if (nouvelles.length) {
+          appliquerConversationServeur(dossier, messages);
+          dossier.status = 'ready';
+          dossier._liveStatus = 'analyse_done';
+          endPending(dossier);
+          renderDossiers(); renderHome(); renderAllDossiers();
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Suivi automatique de la synthèse impossible :', err);
+    }
+    await new Promise(resolve => setTimeout(resolve, 2500));
+  }
+}
+
 async function createDossier() {
   const name = document.getElementById('dossierNameInput').value.trim();
   const notes = document.getElementById('dossierNotesInput').value.trim();
@@ -1582,7 +1632,7 @@ async function createDossier() {
   };
 
   if (notes) dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
-  const messagesAvantAnalyse = dossier.messages.length;
+  const messagesAvantAnalyse = compterReponsesIA(dossier.messages);
 
   dossiers.unshift(dossier);
   currentDossier = dossier;
@@ -1624,6 +1674,7 @@ async function createDossier() {
         ? synthese.replace(/\\n/g, '\n')
         : `Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
       ajouterMessageSiAbsent('ai', msg, dossier);
+      surveillerSyntheseAnalyse(dossier, messagesAvantAnalyse);
     }
 
   } catch (err) {
