@@ -1018,7 +1018,7 @@ function renderDossiers() {
   if (dossiers.length === 0) { list.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Aucun dossier</div>'; return; }
   list.innerHTML = dossiers.slice(0, 5).map(d => {
     const nb = d._loaded ? d.docs.length : d.docsCount;
-    const isActive = currentDossier?.id === d.id;
+    const isActive = currentView === 'chat' && currentDossier?.id === d.id;
     return `
       <div class="dossier-item ${isActive ? 'active' : ''}" onclick="toggleDossier('${d.id}')">
         <div class="dossier-info">
@@ -1270,6 +1270,38 @@ function endPending(dossier) {
 // Dès que n8n a répondu, le dossier va directement chercher la réponse
 // enregistrée par le serveur (source de vérité) et rafraîchit l'affichage.
 // ==========================================
+async function attendreReponseServeur(dossier, messagesAvant, tentatives = 12) {
+  // Le workflow peut enregistrer la réponse quelques instants après son retour.
+  for (let i = 0; i < tentatives; i++) {
+    const { data, error } = await sb.from('conversations')
+      .select('role, content, timestamp')
+      .eq('dossier_id', dossier.id)
+      .order('timestamp', { ascending: true });
+
+    if (!error) {
+      const messages = (data || []).map(m => ({ role: m.role, content: m.content }));
+      const nouvellesReponses = messages.slice(messagesAvant).filter(m => m.role === 'ai');
+      if (nouvellesReponses.length) {
+        dossier.messages = messages;
+        dossier._loaded = true;
+        if (dossier === currentDossier) renderMessages();
+        return nouvellesReponses[nouvellesReponses.length - 1].content;
+      }
+    }
+
+    if (i < tentatives - 1) await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+  return null;
+}
+
+function ajouterMessageSiAbsent(role, content, dossier) {
+  if (!dossier) return;
+  if (!dossier.messages) dossier.messages = [];
+  const dernier = dossier.messages[dossier.messages.length - 1];
+  if (dernier?.role === role && dernier?.content === content) return;
+  addMessage(role, content, dossier);
+}
+
 async function synchroniserConversation(dossier, roleAttendu = 'ai') {
   if (!dossier) return null;
   try {
@@ -1302,6 +1334,7 @@ async function sendMessage() {
   if (!msg || !currentDossier || creationEnCours || questionEnCours) return;
 
   const dossier = currentDossier;
+  const messagesAvant = (dossier.messages || []).length;
   questionEnCours = true;
   input.value = ''; input.style.height = 'auto';
   addMessage('user', msg, dossier);
@@ -1322,10 +1355,10 @@ async function sendMessage() {
     endPending(dossier);
     // La réponse est d'abord récupérée directement côté serveur ;
     // le contenu renvoyé par n8n ne sert que de secours.
-    const reponseServeur = await synchroniserConversation(dossier, 'ai');
+    const reponseServeur = await attendreReponseServeur(dossier, messagesAvant);
     if (!reponseServeur) {
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
-      addMessage('ai', reponse.replace(/\\n/g, '\n'), dossier);
+      ajouterMessageSiAbsent('ai', reponse.replace(/\\n/g, '\n'), dossier);
     }
     setLiveStatus(dossier, 'question_done');
   } catch(err) {
@@ -1479,6 +1512,7 @@ async function createDossier() {
   };
 
   if (notes) dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
+  const messagesAvantAnalyse = dossier.messages.length;
 
   dossiers.unshift(dossier);
   currentDossier = dossier;
@@ -1513,13 +1547,13 @@ async function createDossier() {
 
     // Dès que n8n a répondu, le dossier va chercher la synthèse
     // enregistrée côté serveur ; le contenu du webhook sert de secours.
-    const syntheseServeur = await synchroniserConversation(dossier, 'ai');
+    const syntheseServeur = await attendreReponseServeur(dossier, messagesAvantAnalyse);
     if (!syntheseServeur) {
       const synthese = dernierData?.synthese || dernierData?.reponse || dernierData?.message || '';
       const msg = synthese
         ? synthese.replace(/\\n/g, '\n')
         : `Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
-      addMessage('ai', msg, dossier);
+      ajouterMessageSiAbsent('ai', msg, dossier);
     }
 
   } catch (err) {
