@@ -1683,6 +1683,7 @@ async function createDossier() {
       const formData = new FormData();
       formData.append('dossier_id', id);
       formData.append('user_id', session.user.id);
+      formData.append('nom_dossier', name);
       if (notes) formData.append('notes', notes);
       formData.append('data', file);
       const res = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData });
