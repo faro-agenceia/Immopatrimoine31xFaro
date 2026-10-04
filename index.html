@@ -220,10 +220,6 @@ body.unauthenticated .main { display: none; }
 
 /* INPUT */
 .input-area { padding: 16px 28px; border-top: 1px solid var(--border); background: var(--surface); }
-.chat-format-toolbar { display: flex; align-items: center; gap: 6px; margin: 0 0 8px 2px; }
-.format-btn { min-width: 30px; height: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); color: var(--text); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-.format-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-light); }
-.format-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .bubble ul, .bubble ol { margin: 8px 0; padding-left: 22px; }
 .bubble ul { list-style-type: disc; }
 .bubble li { padding-left: 2px; }
@@ -483,12 +479,6 @@ input[type="file"] { display: none; }
     <div class="docs-strip" id="docsStrip"></div>
     <div class="chat-area" id="chatArea"></div>
     <div class="input-area">
-      <div class="chat-format-toolbar" aria-label="Mise en forme du message">
-        <button class="format-btn" type="button" title="Gras" aria-label="Mettre en gras" onclick="formatChatInput('bold')"><strong>G</strong></button>
-        <button class="format-btn" type="button" title="Souligné" aria-label="Souligner" onclick="formatChatInput('underline')"><u>S</u></button>
-        <button class="format-btn" type="button" title="Italique" aria-label="Mettre en italique" onclick="formatChatInput('italic')"><em>I</em></button>
-        <button class="format-btn" type="button" title="Liste à puces" aria-label="Ajouter une puce" onclick="formatChatInput('bullet')">• Liste</button>
-      </div>
       <div class="input-wrap" id="inputWrap">
         <textarea class="chat-input" id="chatInput" placeholder="Posez une question sur le dossier…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <button class="mic-btn" id="micBtn" onclick="toggleSpeech()" title="Dictée vocale (Français)" aria-label="Dictée vocale (Français)">
@@ -1265,41 +1255,19 @@ function setChatEnabled(enabled, message = 'Analyse en cours, veuillez patienter
   const btn = document.getElementById('sendBtn');
   const input = document.getElementById('chatInput');
   const mic = document.getElementById('micBtn');
-  const boutonsFormat = document.querySelectorAll('.chat-format-toolbar button');
   if (enabled) {
     wrap.classList.remove('disabled');
     btn.disabled = false;
     input.disabled = false;
     if (mic) mic.disabled = false;
-    boutonsFormat.forEach(b => b.disabled = false);
     input.placeholder = 'Posez une question sur le dossier…';
   } else {
     wrap.classList.add('disabled');
     btn.disabled = true;
     input.disabled = true;
     if (mic) mic.disabled = true;
-    boutonsFormat.forEach(b => b.disabled = true);
     input.placeholder = message;
   }
-}
-
-function formatChatInput(format) {
-  const input = document.getElementById('chatInput');
-  if (!input || input.disabled) return;
-  const debut = input.selectionStart;
-  const fin = input.selectionEnd;
-  if (format === 'bullet') {
-    const debutLigne = input.value.lastIndexOf('\n', Math.max(0, debut - 1)) + 1;
-    input.setRangeText('• ', debutLigne, debutLigne, 'end');
-  } else {
-    const marqueurs = { bold: '**', underline: '__', italic: '*' };
-    const marqueur = marqueurs[format];
-    const selection = input.value.slice(debut, fin);
-    input.setRangeText(`${marqueur}${selection}${marqueur}`, debut, fin, 'select');
-    if (!selection) input.setSelectionRange(debut + marqueur.length, debut + marqueur.length);
-  }
-  input.focus();
-  autoResize(input);
 }
 
 // ==========================================
