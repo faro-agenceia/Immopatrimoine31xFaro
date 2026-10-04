@@ -103,7 +103,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .link-btn:hover { text-decoration: underline; }
 .home-list { display: flex; flex-direction: column; gap: 8px; }
 .home-list.in-view { padding: 20px 28px 40px; max-width: 860px; width: 100%; margin: 0 auto; }
-.list-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; transition: border-color 0.15s, background 0.15s; }
+.list-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; transition: border-color 0.15s, background 0.15s; cursor: pointer; }
 .list-card:hover { border-color: var(--accent); }
 .list-card-main { flex: 1; min-width: 0; }
 .list-card-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -220,6 +220,15 @@ body.unauthenticated .main { display: none; }
 
 /* INPUT */
 .input-area { padding: 16px 28px; border-top: 1px solid var(--border); background: var(--surface); }
+.chat-format-toolbar { display: flex; align-items: center; gap: 6px; margin: 0 0 8px 2px; }
+.format-btn { min-width: 30px; height: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); color: var(--text); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.format-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-light); }
+.format-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.bubble ul, .bubble ol { margin: 8px 0; padding-left: 22px; }
+.bubble ul { list-style-type: disc; }
+.bubble li { padding-left: 2px; }
+.bubble li + li { margin-top: 4px; }
+.message-heading { margin: 12px 0 5px; font-weight: 600; }
 .input-wrap { display: flex; gap: 10px; align-items: flex-end; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; transition: border-color 0.15s; }
 .input-wrap:focus-within { border-color: var(--accent); }
 .input-wrap.disabled { opacity: 0.5; pointer-events: none; }
@@ -474,6 +483,12 @@ input[type="file"] { display: none; }
     <div class="docs-strip" id="docsStrip"></div>
     <div class="chat-area" id="chatArea"></div>
     <div class="input-area">
+      <div class="chat-format-toolbar" aria-label="Mise en forme du message">
+        <button class="format-btn" type="button" title="Gras" aria-label="Mettre en gras" onclick="formatChatInput('bold')"><strong>G</strong></button>
+        <button class="format-btn" type="button" title="Souligné" aria-label="Souligner" onclick="formatChatInput('underline')"><u>S</u></button>
+        <button class="format-btn" type="button" title="Italique" aria-label="Mettre en italique" onclick="formatChatInput('italic')"><em>I</em></button>
+        <button class="format-btn" type="button" title="Liste à puces" aria-label="Ajouter une puce" onclick="formatChatInput('bullet')">• Liste</button>
+      </div>
       <div class="input-wrap" id="inputWrap">
         <textarea class="chat-input" id="chatInput" placeholder="Posez une question sur le dossier…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <button class="mic-btn" id="micBtn" onclick="toggleSpeech()" title="Dictée vocale (Français)" aria-label="Dictée vocale (Français)">
@@ -534,7 +549,6 @@ let currentDossier = null;
 let selectedFiles = [];
 let creationEnCours = false;
 let questionEnCours = false;
-let currentAbortController = null;
 let questionSequence = 0;
 let questionResolvedSequence = 0;
 let currentView = 'accueil';
@@ -550,7 +564,6 @@ const ICON_TRASH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" 
 const ICON_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
 const ICON_EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
 const ICON_SEND = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
-const ICON_STOP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>';
 const ICON_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>';
 const ICON_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
 const LOADER_3D = '<span class="loader"><i></i><i></i><i></i></span>';
@@ -1056,7 +1069,7 @@ function renderListeDossiers(containerId, emptyId, source) {
   conteneur.innerHTML = source.map(d => {
     const nb = d._loaded ? d.docs.length : d.docsCount;
     return `
-      <div class="list-card">
+      <div class="list-card" role="button" tabindex="0" onclick="openDossier('${d.id}')" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openDossier('${d.id}')}">
         <div class="list-card-main">
           <div class="list-card-name">${escapeHtml(d.name)}</div>
           <div class="list-card-meta">
@@ -1066,7 +1079,7 @@ function renderListeDossiers(containerId, emptyId, source) {
           </div>
         </div>
         <div class="list-card-actions">
-          <button class="mini-btn" onclick="openDossier('${d.id}')">Voir</button>
+          <button class="mini-btn" onclick="event.stopPropagation();openDossier('${d.id}')">Voir</button>
           <button class="mini-btn danger" onclick="deleteDossier(event, '${d.id}')">Supprimer</button>
         </div>
       </div>`;
@@ -1105,6 +1118,9 @@ async function toggleDossier(id) {
 async function openDossier(id) {
   currentDossier = dossiers.find(d => d.id === id);
   if (!currentDossier) return;
+  if (creationEnCours) setChatEnabled(false, 'Analyse en cours, veuillez patienter…');
+  else if (questionEnCours) setChatEnabled(false, 'Question en cours, veuillez patienter…');
+  else setChatEnabled(true);
   setView('chat');
   document.getElementById('currentDossierName').textContent = currentDossier.name;
   updateDocsStrip();
@@ -1175,14 +1191,56 @@ function renderMessages() {
 }
 
 function parseMarkdown(text) {
-  return text
+  const safe = escapeHtml(text || '').replace(/\r\n?/g, '\n');
+  const lignes = safe.split('\n');
+  const sortie = [];
+  let typeListe = null;
+  let elementsListe = [];
+
+  const inline = (ligne) => ligne
     .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
+    .replace(/__([^_\n]+)__/g, '<u>$1</u>')
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
+    .replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
+
+  const fermerListe = () => {
+    if (!typeListe) return;
+    const balise = typeListe === 'ol' ? 'ol' : 'ul';
+    sortie.push(`<${balise}>${elementsListe.map(item => `<li>${inline(item)}</li>`).join('')}</${balise}>`);
+    typeListe = null;
+    elementsListe = [];
+  };
+
+  for (const ligne of lignes) {
+    if (/^\s*(?:-{3,}|_{3,}|\*{3,})\s*$/.test(ligne)) {
+      fermerListe();
+      continue;
+    }
+    const titre = ligne.match(/^\s*#{1,6}\s+(.+)$/);
+    if (titre) {
+      fermerListe();
+      sortie.push(`<div class="message-heading">${inline(titre[1])}</div>`);
+      continue;
+    }
+    const puce = ligne.match(/^\s*(?:[-*+]\s+|•\s+)(.+)$/);
+    const numerote = ligne.match(/^\s*\d+[.)]\s+(.+)$/);
+    if (puce || numerote) {
+      const nouveauType = numerote ? 'ol' : 'ul';
+      if (typeListe && typeListe !== nouveauType) fermerListe();
+      typeListe = nouveauType;
+      elementsListe.push((puce || numerote)[1]);
+      continue;
+    }
+    fermerListe();
+    if (ligne.trim()) sortie.push(inline(ligne));
+  }
+  fermerListe();
+  return sortie.join('<br>');
 }
 
 function renderMessage(m) {
   if (m.role === 'user') {
-    const contenuUser = escapeHtml(m.content).replace(/\n/g, '<br>');
+    const contenuUser = parseMarkdown(m.content);
     return `<div class="message user"><div class="avatar user">${ICON_USER}</div><div class="bubble">${contenuUser}</div></div>`;
   }
   if (m.role === 'system') {
@@ -1202,42 +1260,46 @@ function addMessage(role, content, dossier = currentDossier) {
 // ==========================================
 // CHAT DÉSACTIVÉ PENDANT OPÉRATION
 // ==========================================
-function setChatEnabled(enabled) {
+function setChatEnabled(enabled, message = 'Analyse en cours, veuillez patienter…') {
   const wrap = document.getElementById('inputWrap');
   const btn = document.getElementById('sendBtn');
   const input = document.getElementById('chatInput');
+  const mic = document.getElementById('micBtn');
+  const boutonsFormat = document.querySelectorAll('.chat-format-toolbar button');
   if (enabled) {
     wrap.classList.remove('disabled');
     btn.disabled = false;
+    input.disabled = false;
+    if (mic) mic.disabled = false;
+    boutonsFormat.forEach(b => b.disabled = false);
     input.placeholder = 'Posez une question sur le dossier…';
   } else {
     wrap.classList.add('disabled');
     btn.disabled = true;
-    input.placeholder = 'Analyse en cours, veuillez patienter…';
+    input.disabled = true;
+    if (mic) mic.disabled = true;
+    boutonsFormat.forEach(b => b.disabled = true);
+    input.placeholder = message;
   }
 }
 
-// Bascule le bouton d'envoi entre son mode normal (flèche) et son mode
-// "arrêter" (carré) pendant qu'une question est en cours.
-function setSendButtonMode(mode) {
-  const btn = document.getElementById('sendBtn');
-  if (!btn) return;
-  if (mode === 'stop') {
-    btn.innerHTML = ICON_STOP;
-    btn.classList.add('stop');
-    btn.disabled = false;
-    btn.setAttribute('aria-label', 'Arrêter la question');
-    btn.onclick = stopQuestion;
+function formatChatInput(format) {
+  const input = document.getElementById('chatInput');
+  if (!input || input.disabled) return;
+  const debut = input.selectionStart;
+  const fin = input.selectionEnd;
+  if (format === 'bullet') {
+    const debutLigne = input.value.lastIndexOf('\n', Math.max(0, debut - 1)) + 1;
+    input.setRangeText('• ', debutLigne, debutLigne, 'end');
   } else {
-    btn.innerHTML = ICON_SEND;
-    btn.classList.remove('stop');
-    btn.setAttribute('aria-label', 'Envoyer le message');
-    btn.onclick = sendMessage;
+    const marqueurs = { bold: '**', underline: '__', italic: '*' };
+    const marqueur = marqueurs[format];
+    const selection = input.value.slice(debut, fin);
+    input.setRangeText(`${marqueur}${selection}${marqueur}`, debut, fin, 'select');
+    if (!selection) input.setSelectionRange(debut + marqueur.length, debut + marqueur.length);
   }
-}
-
-function stopQuestion() {
-  if (currentAbortController) currentAbortController.abort();
+  input.focus();
+  autoResize(input);
 }
 
 // ==========================================
@@ -1401,8 +1463,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence) {
             endPending(dossier);
             setLiveStatus(dossier, 'question_done');
             questionEnCours = false;
-            currentAbortController = null;
-            setSendButtonMode('send');
+            setChatEnabled(true);
           }
           return;
         }
@@ -1428,10 +1489,7 @@ async function sendMessage() {
   addMessage('user', msg, dossier);
   setLiveStatus(dossier, 'question');
   startPending(dossier, 'Recherche en cours...');
-  setSendButtonMode('stop');
-
-  const controller = new AbortController();
-  currentAbortController = controller;
+  setChatEnabled(false, 'Question en cours, veuillez patienter…');
   surveillerReponseQuestion(dossier, messagesAvant, sequence);
 
   try {
@@ -1439,7 +1497,6 @@ async function sendMessage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
       body: JSON.stringify({ dossier_id: dossier.id, message: msg }),
-      signal: controller.signal
     });
     if (sequence !== questionSequence) return;
     endPending(dossier);
@@ -1456,23 +1513,28 @@ async function sendMessage() {
     setLiveStatus(dossier, 'question_done');
   } catch(err) {
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
-    endPending(dossier);
-    if (err.name === 'AbortError') {
-      addMessage('ai', "Question annulée.", dossier);
-      setLiveStatus(dossier, null);
-    } else if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(err.message || '')) {
-      addMessage('system', 'Connexion interrompue. Votre question n\'a pas pu être envoyée : réessayez une fois la connexion rétablie.', dossier);
-      setLiveStatus(dossier, null);
+    const reponseEnregistree = await attendreReponseServeur(dossier, messagesAvant, 4);
+    if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
+    if (reponseEnregistree) {
+      dossier._questionEnAttente = null;
+      questionResolvedSequence = sequence;
+      endPending(dossier);
+      setLiveStatus(dossier, 'question_done');
     } else {
-      addMessage('ai', "Une erreur s'est produite. Vérifiez votre connexion et réessayez.", dossier);
-      dossier.status = 'error';
-      setLiveStatus(dossier, null);
+      endPending(dossier);
+      if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(err.message || '')) {
+        addMessage('system', 'Connexion interrompue. Votre question n\'a pas pu être envoyée : réessayez une fois la connexion rétablie.', dossier);
+        setLiveStatus(dossier, null);
+      } else {
+        addMessage('ai', "Une erreur s'est produite. Vérifiez votre connexion et réessayez.", dossier);
+        dossier.status = 'error';
+        setLiveStatus(dossier, null);
+      }
     }
   } finally {
     if (sequence === questionSequence) {
       questionEnCours = false;
-      currentAbortController = null;
-      setSendButtonMode('send');
+      setChatEnabled(true);
     }
   }
 }
