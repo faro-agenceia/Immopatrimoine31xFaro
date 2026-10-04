@@ -1181,7 +1181,10 @@ function renderMessages() {
 }
 
 function parseMarkdown(text) {
-  const safe = escapeHtml(text || '').replace(/\r\n?/g, '\n');
+  // Convertit les balises <u> émises par le modèle en marqueurs compris ci-dessous,
+  // puis échappe le reste du texte pour qu'aucune balise brute ne s'affiche.
+  const texteNormalise = String(text || '').replace(/<u>([\s\S]*?)<\/u>/gi, '__$1__');
+  const safe = escapeHtml(texteNormalise).replace(/\r\n?/g, '\n');
   const lignes = safe.split('\n');
   const sortie = [];
   let typeListe = null;
