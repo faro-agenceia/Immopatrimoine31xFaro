@@ -930,7 +930,8 @@ async function handleRecoverySubmit() {
 async function handleLogout() {
   await sb.auth.signOut();
   appUserInitialise = null;
-  session = null; currentDossier = null; dossiers = [];
+  session = null; currentDossier = null; dossiers = []; dossiersSupprimes = [];
+  afficherDossiersSupprimes = false;
   stopPolling();
   document.getElementById('accountPopover').style.display = 'none';
   document.getElementById('sidebarAccount')?.classList.remove('open');
@@ -1286,11 +1287,12 @@ async function openDossier(id) {
 
 async function deleteDossier(event, id) {
   if (event) event.stopPropagation();
-  if (!confirm('Déplacer ce dossier dans les dossiers supprimés ? Vous pourrez le récupérer avec ses documents et sa conversation.')) return;
-  if (creationEnCours && currentDossier?.id === id) {
-    creationEnCours = false;
-    releaseWakeLock();
+  const dossier = dossiers.find(d => d.id === id);
+  if (dossier && (dossier.status === 'processing' || dossier._pending?.server || (creationEnCours && currentDossier?.id === id))) {
+    alert('Ce dossier est encore en cours d’analyse. Vous pourrez le supprimer lorsque l’analyse sera terminée.');
+    return;
   }
+  if (!confirm('Déplacer ce dossier dans les dossiers supprimés ? Vous pourrez le récupérer avec ses documents et sa conversation.')) return;
   const { data: lignesModifiees, error } = await sb.from('dossiers').update({ deleted_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id).select('dossier_id, deleted_at');
   if (error) { console.error('Mise en corbeille échouée :', error); alert('Le déplacement a échoué. Vérifiez que la colonne deleted_at existe dans Supabase et que les autorisations permettent la modification.'); return; }
   if (!lignesModifiees?.length) { alert('Supabase n’a confirmé aucune modification. Vérifiez les règles d’accès (RLS), les colonnes SQL et que le site publié utilise la dernière version du code.'); return; }
@@ -1767,7 +1769,6 @@ function handleFiles(files) {
   }
   renderFilesList();
   if (refuse) showModalError("Un seul document PDF par dossier.");
-  if (selectedFiles.length) hideModalError();
 }
 
 function renderFilesList() {
