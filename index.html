@@ -117,6 +117,9 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .view-head { display: flex; align-items: baseline; gap: 10px; }
 .view-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
 .view-count { font-size: 12px; color: var(--text-muted); }
+.dossier-tabs { display: flex; gap: 8px; max-width: 860px; width: 100%; margin: 16px auto 0; padding: 0 28px; }
+.dossier-tab { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.dossier-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-light); }
 .view-actions { display: flex; align-items: center; gap: 10px; }
 .search-wrap { position: relative; display: flex; align-items: center; }
 .search-ico { position: absolute; left: 10px; color: var(--text-muted); pointer-events: none; }
@@ -491,8 +494,14 @@ input[type="file"] { display: none; }
         <button class="theme-switch" id="themeToggle2" type="button" onclick="toggleTheme()" title="Passer en thème clair" aria-label="Passer en thème clair"><span class="switch-ico switch-sun"></span><span class="switch-ico switch-moon"></span><span class="switch-thumb"></span></button>
       </div>
     </div>
+    <div class="dossier-tabs" role="tablist" aria-label="Dossiers actifs et supprimés">
+      <button class="dossier-tab active" id="activeDossiersTab" type="button" role="tab" aria-selected="true" onclick="afficherCorbeille(false)">Mes dossiers</button>
+      <button class="dossier-tab" id="deletedDossiersTab" type="button" role="tab" aria-selected="false" onclick="afficherCorbeille(true)">Dossiers supprimés <span id="deletedDossiersCount">(0)</span></button>
+    </div>
     <div class="home-list in-view" id="dossiersFullList"></div>
     <div class="list-empty" id="dossiersFullEmpty" style="display:none;">Aucun dossier pour le moment.</div>
+    <div class="home-list in-view" id="deletedDossiersList" style="display:none;"></div>
+    <div class="list-empty" id="deletedDossiersEmpty" style="display:none;">Aucun dossier dans la corbeille.</div>
   </div>
 
   <div class="dossier-view" id="dossierView" style="display:none;">
@@ -573,6 +582,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let session = null;
 let dossiers = [];
+let dossiersSupprimes = [];
 let currentDossier = null;
 let selectedFiles = [];
 let creationEnCours = false;
@@ -581,6 +591,7 @@ let questionSequence = 0;
 let questionResolvedSequence = 0;
 let currentView = 'accueil';
 let rechercheDossier = '';
+let afficherDossiersSupprimes = false;
 
 // ==========================================
 // ICÔNES SVG
@@ -749,8 +760,26 @@ function openAccueil() {
   renderHome();
 }
 function openDossiersView() {
+  afficherCorbeille(false);
   setView('dossiers');
   renderAllDossiers();
+}
+function afficherCorbeille(afficher) {
+  afficherDossiersSupprimes = !!afficher;
+  const actifs = document.getElementById('activeDossiersTab');
+  const supprimes = document.getElementById('deletedDossiersTab');
+  if (actifs) { actifs.classList.toggle('active', !afficherDossiersSupprimes); actifs.setAttribute('aria-selected', String(!afficherDossiersSupprimes)); }
+  if (supprimes) { supprimes.classList.toggle('active', afficherDossiersSupprimes); supprimes.setAttribute('aria-selected', String(afficherDossiersSupprimes)); }
+  const listeActifs = document.getElementById('dossiersFullList');
+  const videActifs = document.getElementById('dossiersFullEmpty');
+  const listeSupprimes = document.getElementById('deletedDossiersList');
+  const videSupprimes = document.getElementById('deletedDossiersEmpty');
+  const actifsVisibles = searchFiltres().length;
+  const supprimesVisibles = dossiersSupprimes.filter(d => !rechercheDossier || (d.name || '').toLowerCase().includes(rechercheDossier)).length;
+  if (listeActifs) listeActifs.style.display = afficherDossiersSupprimes ? 'none' : 'flex';
+  if (videActifs) videActifs.style.display = !afficherDossiersSupprimes && actifsVisibles === 0 ? 'block' : 'none';
+  if (listeSupprimes) listeSupprimes.style.display = afficherDossiersSupprimes ? 'flex' : 'none';
+  if (videSupprimes) videSupprimes.style.display = afficherDossiersSupprimes && supprimesVisibles === 0 ? 'block' : 'none';
 }
 function onSearchChange(value) {
   rechercheDossier = (value || '').toLowerCase();
@@ -935,8 +964,8 @@ async function loadDossiers() {
     (docsData || []).forEach(d => { countMap[d.dossier_id] = (countMap[d.dossier_id] || 0) + 1; });
   }
 
-  const anciens = dossiers;
-  const depuisSupabase = (data || []).map(row => {
+  const anciens = [...dossiers, ...dossiersSupprimes];
+  const convertir = (rows) => rows.map(row => {
     const nouveau = dossierVide(row, countMap);
     const ancien = anciens.find(d => d.id === row.dossier_id);
     if (!ancien) return nouveau;
@@ -945,8 +974,12 @@ async function loadDossiers() {
     if (!ancien._loaded) ancien.docsCount = nouveau.docsCount;
     return ancien;
   });
-  const enCreation = anciens.filter(d => d._pending && !ids.includes(d.id));
-  dossiers = [...enCreation, ...depuisSupabase];
+  const actifs = (data || []).filter(row => !row.deleted_at && !row.archived_at);
+  const supprimes = (data || []).filter(row => !!row.deleted_at && !row.archived_at);
+  const idsActifs = actifs.map(r => r.dossier_id);
+  const enCreation = anciens.filter(d => d._pending && !idsActifs.includes(d.id));
+  dossiers = [...enCreation, ...convertir(actifs)];
+  dossiersSupprimes = convertir(supprimes);
 
   suivreAnalysesServeur();
   renderDossiers();
@@ -1120,7 +1153,7 @@ function renderDossiers() {
   }).join('');
 }
 
-function renderListeDossiers(containerId, emptyId, source) {
+function renderListeDossiers(containerId, emptyId, source, corbeille = false) {
   const conteneur = document.getElementById(containerId);
   if (!conteneur) return;
   const vide = emptyId ? document.getElementById(emptyId) : null;
@@ -1143,8 +1176,9 @@ function renderListeDossiers(containerId, emptyId, source) {
           </div>
         </div>
         <div class="list-card-actions">
-          <button class="mini-btn" onclick="event.stopPropagation();openDossier('${d.id}')">Voir</button>
-          <button class="mini-btn danger" onclick="deleteDossier(event, '${d.id}')">Supprimer</button>
+          ${corbeille
+            ? `<button class="mini-btn" onclick="event.stopPropagation();restaurerDossier(event, '${d.id}')">Récupérer</button><button class="mini-btn danger" onclick="event.stopPropagation();archiverDossier(event, '${d.id}')">Archiver</button>`
+            : `<button class="mini-btn" onclick="event.stopPropagation();openDossier('${d.id}')">Voir</button><button class="mini-btn danger" onclick="deleteDossier(event, '${d.id}')">Supprimer</button>`}
         </div>
       </div>`;
   }).join('');
@@ -1159,8 +1193,15 @@ function renderHome() {
 function renderAllDossiers() {
   const filtres = searchFiltres();
   renderListeDossiers('dossiersFullList', 'dossiersFullEmpty', filtres);
+  const filtresSupprimes = dossiersSupprimes.filter(d => !rechercheDossier || (d.name || '').toLowerCase().includes(rechercheDossier));
+  renderListeDossiers('deletedDossiersList', 'deletedDossiersEmpty', filtresSupprimes, true);
   const compteur = document.getElementById('dossiersViewCount');
-  if (compteur) compteur.textContent = `${filtres.length} dossier${filtres.length !== 1 ? 's' : ''}`;
+  if (compteur) compteur.textContent = afficherDossiersSupprimes
+    ? `${filtresSupprimes.length} dossier${filtresSupprimes.length !== 1 ? 's' : ''} dans la corbeille`
+    : `${filtres.length} dossier${filtres.length !== 1 ? 's' : ''}`;
+  const compteurCorbeille = document.getElementById('deletedDossiersCount');
+  if (compteurCorbeille) compteurCorbeille.textContent = `(${dossiersSupprimes.length})`;
+  afficherCorbeille(afficherDossiersSupprimes);
 }
 
 function searchFiltres() {
@@ -1206,14 +1247,16 @@ async function openDossier(id) {
 
 async function deleteDossier(event, id) {
   if (event) event.stopPropagation();
-  if (!confirm('Supprimer ce dossier définitivement ?')) return;
+  if (!confirm('Déplacer ce dossier dans les dossiers supprimés ? Vous pourrez le récupérer avec ses documents et sa conversation.')) return;
   if (creationEnCours && currentDossier?.id === id) {
     creationEnCours = false;
     releaseWakeLock();
   }
-  const { error } = await sb.from('dossiers').delete().eq('dossier_id', id);
-  if (error) { console.error('Suppression échouée :', error); alert('La suppression a échoué. Veuillez réessayer.'); return; }
+  const { error } = await sb.from('dossiers').update({ deleted_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id);
+  if (error) { console.error('Mise en corbeille échouée :', error); alert('Le déplacement a échoué. Vérifiez que la colonne deleted_at existe dans Supabase et que les autorisations permettent la modification.'); return; }
+  const dossierSupprime = dossiers.find(d => d.id === id);
   dossiers = dossiers.filter(d => d.id !== id);
+  if (dossierSupprime) dossiersSupprimes.unshift(dossierSupprime);
   if (currentDossier?.id === id) {
     currentDossier = null;
     removeTyping();
@@ -1221,6 +1264,29 @@ async function deleteDossier(event, id) {
   }
   renderDossiers();
   renderHome();
+  renderAllDossiers();
+}
+
+async function restaurerDossier(event, id) {
+  if (event) event.stopPropagation();
+  const dossier = dossiersSupprimes.find(d => d.id === id);
+  if (!dossier) return;
+  const { error } = await sb.from('dossiers').update({ deleted_at: null }).eq('dossier_id', id).eq('user_id', session.user.id);
+  if (error) { console.error('Restauration échouée :', error); alert('La récupération a échoué. Vérifiez que la colonne deleted_at existe et que les autorisations Supabase permettent la modification.'); return; }
+  dossiersSupprimes = dossiersSupprimes.filter(d => d.id !== id);
+  dossiers.unshift(dossier);
+  afficherCorbeille(true);
+  renderDossiers();
+  renderHome();
+  renderAllDossiers();
+}
+
+async function archiverDossier(event, id) {
+  if (event) event.stopPropagation();
+  if (!confirm('Archiver définitivement ce dossier ? Il disparaîtra du site et ne pourra plus être récupéré depuis l’interface. Ses données resteront conservées dans Supabase.')) return;
+  const { error } = await sb.from('dossiers').update({ archived_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id);
+  if (error) { console.error('Archivage échoué :', error); alert('L’archivage a échoué. Vérifiez que la colonne archived_at existe dans Supabase et que les autorisations permettent la modification.'); return; }
+  dossiersSupprimes = dossiersSupprimes.filter(d => d.id !== id);
   renderAllDossiers();
 }
 
