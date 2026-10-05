@@ -495,7 +495,7 @@ input[type="file"] { display: none; }
       </div>
     </div>
     <div class="dossier-tabs" role="tablist" aria-label="Dossiers actifs et supprimés">
-      <button class="dossier-tab active" id="activeDossiersTab" type="button" role="tab" aria-selected="true" onclick="afficherCorbeille(false)">Mes dossiers</button>
+      <button class="dossier-tab active" id="activeDossiersTab" type="button" role="tab" aria-selected="true" onclick="afficherCorbeille(false)">Mes dossiers <span id="activeDossiersCount">(0)</span></button>
       <button class="dossier-tab" id="deletedDossiersTab" type="button" role="tab" aria-selected="false" onclick="afficherCorbeille(true)">Dossiers supprimés <span id="deletedDossiersCount">(0)</span></button>
     </div>
     <div class="home-list in-view" id="dossiersFullList"></div>
@@ -802,6 +802,10 @@ function afficherCorbeille(afficher) {
   const videSupprimes = document.getElementById('deletedDossiersEmpty');
   const actifsVisibles = searchFiltres().length;
   const supprimesVisibles = dossiersSupprimes.filter(d => !rechercheDossier || (d.name || '').toLowerCase().includes(rechercheDossier)).length;
+  const compteurVue = document.getElementById('dossiersViewCount');
+  if (compteurVue) compteurVue.textContent = afficherDossiersSupprimes
+    ? `${supprimesVisibles} dossier${supprimesVisibles !== 1 ? 's' : ''} dans la corbeille`
+    : `${actifsVisibles} dossier${actifsVisibles !== 1 ? 's' : ''}`;
   if (listeActifs) listeActifs.style.display = afficherDossiersSupprimes ? 'none' : 'flex';
   if (videActifs) videActifs.style.display = !afficherDossiersSupprimes && actifsVisibles === 0 ? 'block' : 'none';
   if (listeSupprimes) listeSupprimes.style.display = afficherDossiersSupprimes ? 'flex' : 'none';
@@ -1232,6 +1236,8 @@ function renderAllDossiers() {
     : `${filtres.length} dossier${filtres.length !== 1 ? 's' : ''}`;
   const compteurCorbeille = document.getElementById('deletedDossiersCount');
   if (compteurCorbeille) compteurCorbeille.textContent = `(${dossiersSupprimes.length})`;
+  const compteurActifs = document.getElementById('activeDossiersCount');
+  if (compteurActifs) compteurActifs.textContent = `(${dossiers.length})`;
   afficherCorbeille(afficherDossiersSupprimes);
 }
 
