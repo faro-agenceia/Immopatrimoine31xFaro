@@ -165,6 +165,10 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .sidebar-account.open .profile-caret { transform: rotate(180deg); }
 .account-popover { position: absolute; left: 0; bottom: calc(100% + 6px); width: 232px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; z-index: 130; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
 .account-email { font-size: 12px; color: var(--text-muted); word-break: break-all; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.account-legal-title { color: var(--text-muted); font-size: 11px; font-weight: 600; padding: 2px 2px 0; }
+.account-legal-links { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.account-legal-links button { width: 100%; padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
+.account-legal-links button:hover { background: var(--hover); color: var(--accent-light); }
 .account-logout { padding: 8px 12px; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; transition: border-color 0.15s, color 0.15s; }
 .account-logout:hover { border-color: var(--red); color: var(--red); }
 body.sidebar-collapsed .sidebar-account { margin: 8px 8px 16px; }
@@ -243,6 +247,15 @@ body.unauthenticated .main { display: none; }
 
 /* MODAL */
 .modal-overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+.legal-overlay { position: fixed; inset: 0; z-index: 250; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--overlay); backdrop-filter: blur(4px); }
+.legal-panel { width: min(760px, 96vw); max-height: 88vh; overflow: auto; padding: 24px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+.legal-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.legal-panel h2 { font-size: 19px; }
+.legal-panel h3 { margin: 20px 0 6px; font-size: 14px; }
+.legal-panel p, .legal-panel li { font-size: 13px; line-height: 1.65; color: var(--text); }
+.legal-panel p + p { margin-top: 8px; }
+.legal-draft-notice { padding: 10px 12px; margin-bottom: 16px; border: 1px solid var(--orange); border-radius: 8px; color: var(--text); background: rgba(249,115,22,.08); font-size: 12px; line-height: 1.5; }
+.legal-close { border: 1px solid var(--border); border-radius: 7px; padding: 7px 11px; background: var(--surface2); color: var(--text); cursor: pointer; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 480px; max-width: 90vw; box-shadow: var(--shadow); }
 .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
 .modal-input { width: 100%; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; margin-bottom: 12px; transition: border-color 0.15s; }
@@ -292,14 +305,18 @@ textarea.modal-input { resize: vertical; min-height: 70px; }
 .fullscreen-content .bubble { max-width: 780px; font-size: 15px; }
 
 /* AUTH */
-.auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
-.auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 360px; max-width: 90vw; box-shadow: var(--shadow); }
+.auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; overflow-y: auto; padding: 20px; }
+.auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 420px; max-width: 94vw; max-height: calc(100vh - 40px); overflow-y: auto; box-shadow: var(--shadow); }
 .auth-logo { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-light); margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .auth-logo-sub { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 24px; }
 .auth-error { background: rgba(239,68,68,0.1); border: 1px solid var(--red); color: var(--red); font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; display: none; }
 .auth-btn { width: 100%; padding: 10px 16px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 4px; transition: background 0.15s; }
 .auth-btn:hover { background: var(--accent-light); }
 .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-legal-checks { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 14px; }
+.auth-legal-check { display: flex; align-items: flex-start; gap: 9px; color: var(--text-muted); font-size: 11px; line-height: 1.5; cursor: pointer; }
+.auth-legal-check input { flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--accent); }
+.auth-legal-check button { padding: 0; border: 0; background: none; color: var(--accent-light); font: inherit; text-decoration: underline; cursor: pointer; }
 
 
 /* MOT DE PASSE : bouton œil */
@@ -350,6 +367,11 @@ input[type="file"] { display: none; }
     <div class="pwd-wrap last">
       <input class="modal-input" type="password" id="authPassword" placeholder="Mot de passe" />
       <button type="button" class="pwd-toggle" onclick="togglePassword('authPassword', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+    </div>
+    <div class="auth-legal-checks">
+      <div class="auth-legal-check"><input type="checkbox" id="authPrivacyAck" aria-label="Je confirme avoir pris connaissance de la politique de confidentialité" /><span>Je confirme avoir pris connaissance de la</span><button type="button" onclick="openLegalPage('confidentialite')">politique de confidentialité</button>.</div>
+      <div class="auth-legal-check"><input type="checkbox" id="authTermsAccepted" aria-label="J’accepte les conditions d’utilisation" /><span>J’accepte les</span><button type="button" onclick="openLegalPage('conditions')">conditions d’utilisation</button>.</div>
+      <div class="auth-legal-check"><span>Lire les <button type="button" onclick="openLegalPage('mentions')">mentions légales</button> et les informations sur les <button type="button" onclick="openLegalPage('cookies')">cookies et le stockage local</button>.</span></div>
     </div>
     <button class="auth-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">Se connecter</button>
     <div class="auth-note">La connexion est obligatoire : sans identifiants, l'accès aux dossiers est bloqué.</div>
@@ -406,6 +428,13 @@ input[type="file"] { display: none; }
     </button>
     <div class="account-popover" id="accountPopover" style="display:none;">
       <div class="account-email" id="accountEmail">—</div>
+      <div class="account-legal-title">Informations légales</div>
+      <div class="account-legal-links" aria-label="Informations légales du compte">
+        <button type="button" onclick="openLegalPage('mentions')">Mentions légales</button>
+        <button type="button" onclick="openLegalPage('confidentialite')">Politique de confidentialité</button>
+        <button type="button" onclick="openLegalPage('conditions')">Conditions d’utilisation</button>
+        <button type="button" onclick="openLegalPage('cookies')">Cookies et stockage local</button>
+      </div>
       <button class="account-logout" type="button" onclick="handleLogout()"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Se déconnecter</button>
     </div>
   </div>
@@ -494,6 +523,15 @@ input[type="file"] { display: none; }
     </div>
   </div>
 </main>
+
+<!-- INFORMATIONS LÉGALES — brouillons à compléter avant l'ouverture commerciale -->
+<div class="legal-overlay" id="legalOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="legalTitle" onclick="if(event.target===this)closeLegalPage()">
+  <section class="legal-panel">
+    <div class="legal-panel-head"><h2 id="legalTitle">Informations</h2><button class="legal-close" type="button" onclick="closeLegalPage()">Fermer</button></div>
+    <div class="legal-draft-notice">Version de préparation pour la démonstration. Les champs signalés « À COMPLÉTER » et les informations sur les fournisseurs doivent être vérifiés avant toute mise en service commerciale.</div>
+    <div id="legalContent"></div>
+  </section>
+</div>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" style="display:none;">
@@ -591,6 +629,39 @@ async function fetchJson(url, options = {}) {
   const res = await fetch(url, options);
   if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
   return res.json();
+}
+
+// ==========================================
+// INFORMATIONS LÉGALES — brouillons de démonstration
+// ==========================================
+const LEGAL_PAGES = {
+  mentions: {
+    title: 'Mentions légales',
+    html: `<h3>Éditeur du service</h3><p>Éditeur : <strong>À COMPLÉTER</strong> (nom légal de la personne ou dénomination de la société).</p><p>Adresse : <strong>À COMPLÉTER</strong>. Numéro d’immatriculation : <strong>À COMPLÉTER si applicable</strong>. Contact : <strong>À COMPLÉTER</strong>.</p><p>Directeur ou directrice de la publication : <strong>À COMPLÉTER</strong>.</p><h3>Hébergement</h3><p>Hébergeur du site : <strong>À CONFIRMER</strong>. Cette copie de démonstration est publiée via GitHub Pages ; l’hébergeur de production devra être indiqué si le site est migré.</p><h3>Contact</h3><p>Pour toute question sur le service ou les présentes informations : <strong>À COMPLÉTER</strong>.</p>`
+  },
+  confidentialite: {
+    title: 'Politique de confidentialité',
+    html: `<h3>Responsable et périmètre</h3><p>Responsable du traitement : <strong>À DÉTERMINER</strong>. Les rôles peuvent différer entre la gestion des comptes et le traitement des dossiers immobiliers déposés par un client professionnel ; ils doivent être confirmés dans les contrats.</p><h3>Données susceptibles d’être traitées</h3><p>Le service gère des données de compte, les noms de dossiers, les PDF transmis, le texte extrait, les analyses, les questions et les réponses. Les dossiers peuvent contenir des données concernant des personnes autres que l’utilisateur qui les importe.</p><h3>Finalités et base juridique</h3><p>Les données sont utilisées pour gérer l’accès, recevoir et conserver les dossiers, produire une analyse assistée par IA, répondre aux questions et assurer le fonctionnement et la sécurité du service. Base juridique applicable à chaque usage : <strong>À CONFIRMER</strong>.</p><h3>Destinataires et prestataires</h3><p>Le code de démonstration communique avec Supabase et des webhooks n8n ; il charge aussi la bibliothèque Supabase depuis jsDelivr. Les PDF ou leur contenu peuvent être transmis au fournisseur de modèle d’IA configuré, notamment via OpenRouter. Fournisseurs exacts, sous-traitants, régions de traitement, garanties de transfert et conditions d’utilisation : <strong>À VÉRIFIER ET COMPLÉTER</strong>.</p><h3>Durées de conservation</h3><p>Comptes, dossiers, PDF, extractions, conversations, journaux techniques et sauvegardes : durées et règles de suppression <strong>À DÉFINIR</strong>.</p><h3>Droits et contact</h3><p>Selon la situation et la base juridique, les personnes peuvent exercer leurs droits d’accès, de rectification, d’effacement, de limitation, d’opposition ou de portabilité. Contact pour les demandes : <strong>À COMPLÉTER</strong>. Une réclamation peut être adressée à la CNIL.</p><h3>Décisions assistées par IA</h3><p>Les analyses et réponses sont des aides à la lecture des documents. Elles peuvent comporter des erreurs et doivent être vérifiées par un professionnel avant toute décision. Le service ne prend pas la décision d’achat à la place de l’acquéreur.</p>`
+  },
+  cookies: {
+    title: 'Cookies et stockage local',
+    html: `<h3>État observé dans la copie du site</h3><p>Le code utilise le stockage local du navigateur pour conserver des préférences d’interface (thème, barre latérale et nom d’affichage) et le client Supabase pour la session d’authentification. Aucun outil publicitaire ou de mesure d’audience n’est visible dans cette copie du code.</p><p>Cette observation ne remplace pas un audit du site publié et de ses services tiers. Les traceurs réellement déposés doivent être vérifiés en fonctionnement. Les traceurs strictement nécessaires peuvent être exemptés de consentement ; les autres nécessitent un choix préalable conforme.</p><h3>Gestion du choix</h3><p>Aucun bandeau de consentement n’est activé dans cette version de démonstration. Si un traceur soumis au consentement est ajouté, le dispositif de choix et de retrait devra être mis en place avant sa mise en service. Contact : <strong>À COMPLÉTER</strong>.</p>`
+  },
+  conditions: {
+    title: 'Conditions d’utilisation — version démo',
+    html: `<h3>Objet et accès</h3><p>Cette version est une démonstration du service d’aide à l’analyse de dossiers immobiliers. L’accès est réservé aux personnes autorisées par l’éditeur. Modalités définitives d’accès, de durée, de prix et de résiliation : <strong>À DÉFINIR avant l’offre payante</strong>.</p><h3>Documents transmis</h3><p>L’utilisateur doit être autorisé à transmettre les documents qu’il importe et doit éviter d’ajouter des informations qui ne sont pas nécessaires à l’analyse. Les documents sont traités par les services techniques et d’IA décrits dans la politique de confidentialité, qui reste à compléter.</p><h3>Résultats générés</h3><p>Les analyses et réponses automatisées peuvent être incomplètes ou erronées. Elles ne remplacent pas la vérification des pièces originales ni les conseils des professionnels compétents. L’utilisateur doit contrôler les informations avant de les communiquer ou de prendre une décision.</p><h3>Conditions commerciales</h3><p>Prix, facturation, renouvellement, résiliation, assistance, disponibilité, responsabilité et suppression des données : <strong>À DÉFINIR avec l’entité qui exploitera le service</strong>. Cette version ne constitue pas les conditions finales d’un abonnement payant.</p>`
+  }
+};
+
+function openLegalPage(key) {
+  const page = LEGAL_PAGES[key];
+  if (!page) return;
+  document.getElementById('legalTitle').textContent = page.title;
+  document.getElementById('legalContent').innerHTML = page.html;
+  document.getElementById('legalOverlay').style.display = 'flex';
+}
+function closeLegalPage() {
+  document.getElementById('legalOverlay').style.display = 'none';
 }
 
 // ==========================================
@@ -758,6 +829,9 @@ async function handleAuthSubmit() {
   const errBox = document.getElementById('authError');
   const btn = document.getElementById('authSubmitBtn');
   errBox.style.display = 'none';
+  const privacyAcknowledged = document.getElementById('authPrivacyAck').checked;
+  const termsAccepted = document.getElementById('authTermsAccepted').checked;
+  if (!privacyAcknowledged || !termsAccepted) { errBox.textContent = "Merci de confirmer la lecture de la politique de confidentialité et d'accepter les conditions d'utilisation."; errBox.style.display = 'block'; return; }
   // La connexion est obligatoire : nom d'utilisateur + email + mot de passe.
   if (!username || !email || !password) { errBox.textContent = "Merci de renseigner votre nom d'utilisateur, votre email et votre mot de passe."; errBox.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = '…';
