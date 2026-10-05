@@ -592,6 +592,7 @@ let questionResolvedSequence = 0;
 let currentView = 'accueil';
 let rechercheDossier = '';
 let afficherDossiersSupprimes = false;
+let appUserInitialise = null;
 
 // ==========================================
 // ICÔNES SVG
@@ -750,10 +751,35 @@ function setView(view) {
   document.getElementById('dossierView').style.display = view === 'chat' ? 'flex' : 'none';
   document.getElementById('navAccueil').classList.toggle('active', view === 'accueil');
   document.getElementById('navDossiers').classList.toggle('active', view === 'dossiers' || view === 'chat');
+  sauvegarderVue(view);
+}
+
+function cleEtatUtilisateur(type) {
+  return session?.user?.id ? `assistant-ia-${type}-${session.user.id}` : null;
+}
+function sauvegarderVue(view) {
+  const cle = cleEtatUtilisateur('vue');
+  if (!cle) return;
+  try { localStorage.setItem(cle, view); } catch (e) {}
+}
+function restaurerDerniereVue() {
+  const cleVue = cleEtatUtilisateur('vue');
+  const cleDossier = cleEtatUtilisateur('dossier-ouvert');
+  let vue = 'accueil';
+  let dossierId = null;
+  try {
+    vue = localStorage.getItem(cleVue) || 'accueil';
+    dossierId = localStorage.getItem(cleDossier);
+  } catch (e) {}
+  if (vue === 'chat' && dossierId && dossiers.some(d => d.id === dossierId)) return openDossier(dossierId);
+  if (vue === 'dossiers') return openDossiersView();
+  openAccueil();
 }
 
 function openAccueil() {
   currentDossier = null;
+  const cleDossier = cleEtatUtilisateur('dossier-ouvert');
+  if (cleDossier) { try { localStorage.removeItem(cleDossier); } catch (e) {} }
   removeTyping();
   setView('accueil');
   renderDossiers();
@@ -829,6 +855,7 @@ async function initAuth() {
 }
 
 function showAuthScreen() {
+  appUserInitialise = null;
   document.getElementById('recoveryOverlay').style.display = 'none';
   document.getElementById('authOverlay').style.display = 'flex';
   document.getElementById('accountPopover').style.display = 'none';
@@ -842,13 +869,16 @@ function showRecoveryScreen() {
   document.getElementById('authOverlay').style.display = 'none';
   document.getElementById('recoveryOverlay').style.display = 'flex';
 }
-function showApp() {
+async function showApp() {
+  const userId = session?.user?.id;
+  if (!userId || appUserInitialise === userId) return;
+  appUserInitialise = userId;
   document.getElementById('authOverlay').style.display = 'none';
   document.getElementById('recoveryOverlay').style.display = 'none';
   document.body.classList.remove('unauthenticated');
   renderAccount();
-  openAccueil();
-  loadDossiers();
+  await loadDossiers();
+  await restaurerDerniereVue();
 }
 
 async function handleAuthSubmit() {
@@ -895,6 +925,7 @@ async function handleRecoverySubmit() {
 
 async function handleLogout() {
   await sb.auth.signOut();
+  appUserInitialise = null;
   session = null; currentDossier = null; dossiers = [];
   stopPolling();
   document.getElementById('accountPopover').style.display = 'none';
@@ -1223,6 +1254,8 @@ async function toggleDossier(id) {
 async function openDossier(id) {
   currentDossier = dossiers.find(d => d.id === id);
   if (!currentDossier) return;
+  const cleDossier = cleEtatUtilisateur('dossier-ouvert');
+  if (cleDossier) { try { localStorage.setItem(cleDossier, id); } catch (e) {} }
   if (creationEnCours) setChatEnabled(false, 'Analyse en cours, veuillez patienter…');
   else if (questionEnCours) setChatEnabled(false, 'Question en cours, veuillez patienter…');
   else setChatEnabled(true);
@@ -1252,8 +1285,9 @@ async function deleteDossier(event, id) {
     creationEnCours = false;
     releaseWakeLock();
   }
-  const { error } = await sb.from('dossiers').update({ deleted_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id);
+  const { data: lignesModifiees, error } = await sb.from('dossiers').update({ deleted_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id).select('dossier_id, deleted_at');
   if (error) { console.error('Mise en corbeille échouée :', error); alert('Le déplacement a échoué. Vérifiez que la colonne deleted_at existe dans Supabase et que les autorisations permettent la modification.'); return; }
+  if (!lignesModifiees?.length) { alert('Supabase n’a confirmé aucune modification. Vérifiez les règles d’accès (RLS), les colonnes SQL et que le site publié utilise la dernière version du code.'); return; }
   const dossierSupprime = dossiers.find(d => d.id === id);
   dossiers = dossiers.filter(d => d.id !== id);
   if (dossierSupprime) dossiersSupprimes.unshift(dossierSupprime);
@@ -1271,8 +1305,9 @@ async function restaurerDossier(event, id) {
   if (event) event.stopPropagation();
   const dossier = dossiersSupprimes.find(d => d.id === id);
   if (!dossier) return;
-  const { error } = await sb.from('dossiers').update({ deleted_at: null }).eq('dossier_id', id).eq('user_id', session.user.id);
+  const { data: lignesModifiees, error } = await sb.from('dossiers').update({ deleted_at: null }).eq('dossier_id', id).eq('user_id', session.user.id).select('dossier_id, deleted_at');
   if (error) { console.error('Restauration échouée :', error); alert('La récupération a échoué. Vérifiez que la colonne deleted_at existe et que les autorisations Supabase permettent la modification.'); return; }
+  if (!lignesModifiees?.length) { alert('Supabase n’a confirmé aucune modification. Vérifiez les règles d’accès (RLS) et que le site publié utilise la dernière version du code.'); return; }
   dossiersSupprimes = dossiersSupprimes.filter(d => d.id !== id);
   dossiers.unshift(dossier);
   afficherCorbeille(true);
@@ -1284,8 +1319,9 @@ async function restaurerDossier(event, id) {
 async function archiverDossier(event, id) {
   if (event) event.stopPropagation();
   if (!confirm('Archiver définitivement ce dossier ? Il disparaîtra du site et ne pourra plus être récupéré depuis l’interface. Ses données resteront conservées dans Supabase.')) return;
-  const { error } = await sb.from('dossiers').update({ archived_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id);
+  const { data: lignesModifiees, error } = await sb.from('dossiers').update({ archived_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id).select('dossier_id, archived_at');
   if (error) { console.error('Archivage échoué :', error); alert('L’archivage a échoué. Vérifiez que la colonne archived_at existe dans Supabase et que les autorisations permettent la modification.'); return; }
+  if (!lignesModifiees?.length) { alert('Supabase n’a confirmé aucune modification. Vérifiez les règles d’accès (RLS) et que le site publié utilise la dernière version du code.'); return; }
   dossiersSupprimes = dossiersSupprimes.filter(d => d.id !== id);
   renderAllDossiers();
 }
