@@ -73,7 +73,9 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .status-error { background: rgba(239,68,68,0.15); color: var(--red); }
 .status-question { background: rgba(249,115,22,0.15); color: var(--orange); }
 .dossier-delete { opacity: 0; color: var(--text-muted); border: none; background: none; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; transition: opacity 0.15s, color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.dossier-item:hover .dossier-delete { opacity: 1; }
+.dossier-item:hover .dossier-delete, .dossier-item:focus-within .dossier-delete { opacity: 1; }
+.nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: none) { .dossier-delete { opacity: 1; } }
 .dossier-delete:hover { color: var(--red); background: rgba(239,68,68,0.15); }
 
 /* MAIN */
@@ -371,6 +373,7 @@ input[type="file"] { display: none; }
       <input class="modal-input" type="password" id="authPassword" placeholder="Mot de passe" />
       <button type="button" class="pwd-toggle" onclick="togglePassword('authPassword', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
     </div>
+    <button type="button" class="link-btn" id="forgotPasswordBtn" onclick="handleForgotPassword()">Mot de passe oublié ?</button>
     <div class="auth-legal-checks">
       <div class="auth-legal-check"><input type="checkbox" id="authPrivacyAck" aria-label="Je confirme avoir pris connaissance de la politique de confidentialité" /><span>Je confirme avoir pris connaissance de la</span><button type="button" onclick="openLegalPage('confidentialite')">politique de confidentialité</button>.</div>
       <div class="auth-legal-check"><input type="checkbox" id="authTermsAccepted" aria-label="J’accepte les conditions d’utilisation" /><span>J’accepte les</span><button type="button" onclick="openLegalPage('conditions')">conditions d’utilisation</button>.</div>
@@ -409,11 +412,11 @@ input[type="file"] { display: none; }
     </button>
   </div>
   <nav class="sidebar-nav">
-    <div class="nav-item" id="navAccueil" onclick="openAccueil()">
+    <div class="nav-item" id="navAccueil" role="button" tabindex="0" onclick="openAccueil()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAccueil()}">
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 21 9 12 15 12 15 21"></polyline></svg></span>
       <span class="nav-label">Accueil</span>
     </div>
-    <div class="nav-item" id="navDossiers" onclick="openDossiersView()">
+    <div class="nav-item" id="navDossiers" role="button" tabindex="0" onclick="openDossiersView()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDossiersView()}">
       <span class="nav-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></span>
       <span class="nav-label">Mes dossiers</span>
     </div>
@@ -576,6 +579,7 @@ input[type="file"] { display: none; }
 <script>
 const WEBHOOK_UPLOAD   = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
 const WEBHOOK_QUESTION = 'https://n8n.srv1960518.hstgr.cloud/webhook/reponses-questions';
+const LEGAL_ACCEPTANCE_VERSION = 'demo-2026-10-05-v1';
 const SUPABASE_URL      = 'https://zpvxifqbunhaoldkubqn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwdnhpZnFidW5oYW9sZGt1YnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4OTI1NjAsImV4cCI6MjEwNDQ2ODU2MH0.bs-ssIxQm2WRhMXIU_m3z0YvqI-hXj4wAcVj9Bl0NQ4';
 
@@ -593,6 +597,7 @@ let currentView = 'accueil';
 let rechercheDossier = '';
 let afficherDossiersSupprimes = false;
 let appUserInitialise = null;
+let authInProgress = false;
 
 // ==========================================
 // ICÔNES SVG
@@ -637,8 +642,28 @@ function formatDuration(totalSeconds) {
   return parts.join(' ');
 }
 
-async function fetchJson(url, options = {}) {
-  const res = await fetch(url, options);
+async function fetchAvecDelai(url, options = {}, delaiMs = 120000) {
+  const controller = new AbortController();
+  const signalInitial = options.signal;
+  const timer = setTimeout(() => controller.abort(), delaiMs);
+  if (signalInitial) {
+    if (signalInitial.aborted) controller.abort();
+    else signalInitial.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (controller.signal.aborted) {
+      const timeout = new Error('La demande dépasse le délai de réponse prévu.');
+      timeout.name = 'TimeoutError';
+      throw timeout;
+    }
+    throw err;
+  } finally { clearTimeout(timer); }
+}
+
+async function fetchJson(url, options = {}, delaiMs = 120000) {
+  const res = await fetchAvecDelai(url, options, delaiMs);
   if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
   return res.json();
 }
@@ -680,14 +705,11 @@ function closeLegalPage() {
 // NOM D'UTILISATEUR
 // ==========================================
 function lireNomUtilisateur() {
-  try { return localStorage.getItem('assistant-ia-username') || ''; } catch (e) { return ''; }
-}
-function enregistrerNomUtilisateur(nom) {
-  try { localStorage.setItem('assistant-ia-username', nom); } catch (e) {}
+  return '';
 }
 function nomAffichage() {
-  const brut = (session?.user?.user_metadata?.username || session?.user?.user_metadata?.nom || lireNomUtilisateur() || '').trim();
-  return brut || 'Mon compte';
+  const brut = (session?.user?.user_metadata?.username || session?.user?.user_metadata?.nom || '').trim();
+  return brut || (session?.user?.email || 'Mon compte');
 }
 function initialeAffichage() {
   const nom = nomAffichage();
@@ -866,7 +888,7 @@ function showAuthScreen() {
   document.getElementById('sidebarAccount')?.classList.remove('open');
   document.body.classList.add('unauthenticated');
   const champNom = document.getElementById('authUsername');
-  if (champNom && !champNom.value) champNom.value = lireNomUtilisateur();
+  if (champNom) champNom.value = '';
   setView('empty');
 }
 function showRecoveryScreen() {
@@ -874,8 +896,16 @@ function showRecoveryScreen() {
   document.getElementById('recoveryOverlay').style.display = 'flex';
 }
 async function showApp() {
+  if (authInProgress) return;
   const userId = session?.user?.id;
   if (!userId || appUserInitialise === userId) return;
+  const accepted = session.user.user_metadata?.legal_acceptance?.version === LEGAL_ACCEPTANCE_VERSION;
+  if (!accepted) {
+    showAuthScreen();
+    const errBox = document.getElementById('authError');
+    if (errBox) { errBox.textContent = 'Avant d’accéder aux dossiers, confirmez la lecture de la politique et acceptez les conditions.'; errBox.style.display = 'block'; }
+    return;
+  }
   appUserInitialise = userId;
   document.getElementById('authOverlay').style.display = 'none';
   document.getElementById('recoveryOverlay').style.display = 'none';
@@ -885,6 +915,15 @@ async function showApp() {
   await restaurerDerniereVue();
 }
 
+function messageErreurAuth(err, contexte = 'connexion') {
+  const detail = String(err?.code || err?.message || '').toLowerCase();
+  if (/invalid login credentials|invalid_credentials|email not confirmed/.test(detail)) return 'Email ou mot de passe incorrect.';
+  if (/rate limit|too many requests/.test(detail)) return 'Trop de tentatives. Attendez quelques minutes avant de réessayer.';
+  if (/password.*(weak|short)|weak_password/.test(detail)) return 'Le mot de passe ne respecte pas les exigences de sécurité.';
+  if (/network|fetch|timeout/.test(detail)) return 'Le service est momentanément injoignable. Vérifiez votre connexion puis réessayez.';
+  return contexte === 'connexion' ? 'Connexion impossible. Vérifiez vos informations puis réessayez.' : 'Une erreur est survenue. Réessayez.';
+}
+
 async function handleAuthSubmit() {
   const username = document.getElementById('authUsername').value.trim();
   const email = document.getElementById('authEmail').value.trim();
@@ -892,22 +931,67 @@ async function handleAuthSubmit() {
   const errBox = document.getElementById('authError');
   const btn = document.getElementById('authSubmitBtn');
   errBox.style.display = 'none';
-  const privacyAcknowledged = document.getElementById('authPrivacyAck').checked;
-  const termsAccepted = document.getElementById('authTermsAccepted').checked;
-  if (!privacyAcknowledged || !termsAccepted) { errBox.textContent = "Merci de confirmer la lecture de la politique de confidentialité et d'accepter les conditions d'utilisation."; errBox.style.display = 'block'; return; }
   // La connexion est obligatoire : nom d'utilisateur + email + mot de passe.
-  if (!username || !email || !password) { errBox.textContent = "Merci de renseigner votre nom d'utilisateur, votre email et votre mot de passe."; errBox.style.display = 'block'; return; }
+  if (!email || !password) { errBox.textContent = 'Merci de renseigner votre email et votre mot de passe.'; errBox.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = '…';
+  authInProgress = true;
   try {
-    enregistrerNomUtilisateur(username);
-    const { error } = await sb.auth.signInWithPassword({ email, password });
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    // Le nom d'utilisateur est conservé dans le compte pour l'afficher partout.
-    await sb.auth.updateUser({ data: { username, nom: username } });
-    if (session?.user) session.user.user_metadata = Object.assign({}, session.user.user_metadata, { username, nom: username });
-    renderAccount();
-  } catch (err) { errBox.textContent = err.message || 'Erreur de connexion.'; errBox.style.display = 'block'; }
-  finally { btn.disabled = false; btn.textContent = 'Se connecter'; }
+    const user = data?.user || session?.user;
+    if (!user) throw new Error('Utilisateur absent de la réponse d’authentification.');
+    const ancienneAcceptation = user.user_metadata?.legal_acceptance;
+    const dejaAccepte = ancienneAcceptation?.version === LEGAL_ACCEPTANCE_VERSION;
+    if (!dejaAccepte && (!document.getElementById('authPrivacyAck').checked || !document.getElementById('authTermsAccepted').checked)) {
+      await sb.auth.signOut();
+      authInProgress = false;
+      showAuthScreen();
+      errBox.textContent = "Pour cette première connexion, confirmez la lecture de la politique de confidentialité et acceptez les conditions d’utilisation.";
+      errBox.style.display = 'block';
+      return;
+    }
+    const maintenant = new Date().toISOString();
+    const legalAcceptance = dejaAccepte ? ancienneAcceptation : {
+      version: LEGAL_ACCEPTANCE_VERSION,
+      privacy_acknowledged_at: maintenant,
+      terms_accepted_at: maintenant
+    };
+    const metadataToSave = { legal_acceptance: legalAcceptance };
+    if (username) { metadataToSave.username = username; metadataToSave.nom = username; }
+    const { data: updateData, error: updateError } = await sb.auth.updateUser({ data: metadataToSave });
+    if (updateError) throw updateError;
+    session = session || { user };
+    session.user = updateData?.user || user;
+    session.user.user_metadata = Object.assign({}, session.user.user_metadata, metadataToSave);
+    authInProgress = false;
+    appUserInitialise = null;
+    await showApp();
+  } catch (err) {
+    authInProgress = false;
+    if (session?.user && session.user.user_metadata?.legal_acceptance?.version !== LEGAL_ACCEPTANCE_VERSION) {
+      try { await sb.auth.signOut(); } catch (_) {}
+    }
+    errBox.textContent = messageErreurAuth(err, 'connexion');
+    errBox.style.display = 'block';
+  } finally { authInProgress = false; btn.disabled = false; btn.textContent = 'Se connecter'; }
+}
+
+async function handleForgotPassword() {
+  const email = document.getElementById('authEmail').value.trim();
+  const errBox = document.getElementById('authError');
+  errBox.style.display = 'none';
+  if (!email) { errBox.textContent = 'Saisissez votre adresse email pour recevoir le lien de réinitialisation.'; errBox.style.display = 'block'; return; }
+  const btn = document.getElementById('forgotPasswordBtn');
+  btn.disabled = true;
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+    if (error) throw error;
+    errBox.textContent = 'Si cette adresse correspond à un compte, un lien de réinitialisation va être envoyé.';
+    errBox.style.display = 'block';
+  } catch (err) {
+    errBox.textContent = messageErreurAuth(err, 'récupération');
+    errBox.style.display = 'block';
+  } finally { btn.disabled = false; }
 }
 
 async function handleRecoverySubmit() {
@@ -923,20 +1007,32 @@ async function handleRecoverySubmit() {
     const { error } = await sb.auth.updateUser({ password: pwd });
     if (error) throw error;
     showApp();
-  } catch (err) { errBox.textContent = err.message || 'Une erreur est survenue.'; errBox.style.display = 'block'; }
+  } catch (err) { errBox.textContent = messageErreurAuth(err, 'récupération'); errBox.style.display = 'block'; }
   finally { btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe'; }
 }
 
 async function handleLogout() {
-  await sb.auth.signOut();
-  appUserInitialise = null;
-  session = null; currentDossier = null; dossiers = []; dossiersSupprimes = [];
-  afficherDossiersSupprimes = false;
-  stopPolling();
-  document.getElementById('accountPopover').style.display = 'none';
-  document.getElementById('sidebarAccount')?.classList.remove('open');
-  document.body.classList.add('unauthenticated');
-  renderDossiers();
+  let erreurDeconnexion = null;
+  try {
+    const { error } = await sb.auth.signOut();
+    if (error) throw error;
+  } catch (err) {
+    erreurDeconnexion = err;
+    console.error('Déconnexion distante impossible :', err);
+    try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
+  } finally {
+    appUserInitialise = null;
+    authInProgress = false;
+    session = null; currentDossier = null; dossiers = []; dossiersSupprimes = [];
+    afficherDossiersSupprimes = false; questionEnCours = false; creationEnCours = false;
+    stopPolling(); removeTyping();
+    document.getElementById('accountPopover').style.display = 'none';
+    document.getElementById('sidebarAccount')?.classList.remove('open');
+    document.body.classList.add('unauthenticated');
+    renderDossiers();
+    showAuthScreen();
+  }
+  if (erreurDeconnexion) alert('La session locale a été fermée, mais la déconnexion du serveur a échoué. Reconnectez-vous uniquement après avoir vérifié votre connexion.');
 }
 
 // ==========================================
@@ -1525,8 +1621,7 @@ function compterReponsesIA(messages = []) {
 }
 
 function normaliserConversation(data = []) {
-  const messages = data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content }));
-  return messages.filter((m, i) => i === 0 || m.role !== messages[i - 1].role || m.content !== messages[i - 1].content);
+  return data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content }));
 }
 
 function appliquerConversationServeur(dossier, messagesServeur) {
@@ -1628,6 +1723,14 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence) {
     }
     await new Promise(resolve => setTimeout(resolve, 2500));
   }
+  if (sequence === questionSequence && questionResolvedSequence !== sequence) {
+    dossier._questionEnAttente = null;
+    endPending(dossier);
+    addMessage('system', 'Je n’ai pas pu confirmer l’enregistrement de la réponse. Vérifiez la conversation et actualisez le dossier avant de renvoyer la question, pour éviter un doublon.', dossier);
+    setLiveStatus(dossier, null);
+    questionEnCours = false;
+    if (dossier === currentDossier) setChatEnabled(true);
+  }
 }
 
 async function sendMessage() {
@@ -1638,6 +1741,7 @@ async function sendMessage() {
   const dossier = currentDossier;
   const messagesAvant = compterReponsesIA(dossier.messages || []);
   const sequence = ++questionSequence;
+  let attenteConfirmationServeur = false;
   dossier._questionEnAttente = msg;
   questionEnCours = true;
   input.value = ''; input.style.height = 'auto';
@@ -1653,15 +1757,20 @@ async function sendMessage() {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
       body: JSON.stringify({ dossier_id: dossier.id, message: msg }),
     });
-    if (sequence !== questionSequence) return;
+    if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
     endPending(dossier);
     // La réponse est d'abord récupérée directement côté serveur ;
     // le contenu renvoyé par n8n ne sert que de secours.
     const reponseServeur = await attendreReponseServeur(dossier, messagesAvant);
-    if (sequence !== questionSequence) return;
+    if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
     if (!reponseServeur) {
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
       ajouterMessageSiAbsent('ai', reponse.replace(/\\n/g, '\n'), dossier);
+      // Garde la saisie bloquée jusqu’à ce que la réponse soit confirmée dans Supabase.
+      attenteConfirmationServeur = true;
+      startPending(dossier, 'Synchronisation de la réponse...');
+      addMessage('system', 'Réponse reçue ; vérification de son enregistrement en cours. N’envoyez pas une nouvelle question pour le moment.', dossier);
+      return;
     }
     dossier._questionEnAttente = null;
     questionResolvedSequence = sequence;
@@ -1676,18 +1785,13 @@ async function sendMessage() {
       endPending(dossier);
       setLiveStatus(dossier, 'question_done');
     } else {
-      endPending(dossier);
-      if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed/i.test(err.message || '')) {
-        addMessage('system', 'Connexion interrompue. Votre question n\'a pas pu être envoyée : réessayez une fois la connexion rétablie.', dossier);
-        setLiveStatus(dossier, null);
-      } else {
-        addMessage('ai', "Une erreur s'est produite. Vérifiez votre connexion et réessayez.", dossier);
-        dossier.status = 'error';
-        setLiveStatus(dossier, null);
-      }
+      attenteConfirmationServeur = true;
+      startPending(dossier, 'Vérification de la demande...');
+      addMessage('system', 'La demande n’a pas reçu de confirmation immédiate. Je vérifie si elle a été enregistrée ; ne la renvoyez pas avant la fin de cette vérification.', dossier);
+      setLiveStatus(dossier, 'question');
     }
   } finally {
-    if (sequence === questionSequence) {
+    if (sequence === questionSequence && (!attenteConfirmationServeur || questionResolvedSequence === sequence)) {
       questionEnCours = false;
       setChatEnabled(true);
     }
