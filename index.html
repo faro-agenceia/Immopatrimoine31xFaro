@@ -26,10 +26,10 @@ html[data-theme="light"] {
   --shadow: 0 18px 50px rgba(15,23,42,0.16);
   --shadow-soft: 0 8px 24px rgba(15,23,42,0.10);
 }
-
+ 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; transition: background 0.2s, color 0.2s; }
-
+ 
 /* SIDEBAR */
 .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.2s ease; }
 .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); position: relative; }
@@ -49,7 +49,7 @@ body.sidebar-collapsed .nav-item,
 body.sidebar-collapsed .new-dossier-btn,
 body.sidebar-collapsed .logout-btn { justify-content: center; padding: 10px 0; }
 body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 24px); }
-
+ 
 /* NAVIGATION */
 .sidebar-nav { padding: 12px 12px 4px; display: flex; flex-direction: column; gap: 4px; }
 .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-muted); transition: background 0.15s, color 0.15s; }
@@ -77,14 +77,14 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (hover: none) { .dossier-delete { opacity: 1; } }
 .dossier-delete:hover { color: var(--red); background: rgba(239,68,68,0.15); }
-
+ 
 /* MAIN */
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); text-align: center; padding: 40px; }
 .empty-icon { opacity: 0.4; display: flex; align-items: center; justify-content: center; }
 .empty-title { font-size: 18px; font-weight: 600; color: var(--text); }
 .empty-sub { font-size: 14px; max-width: 320px; line-height: 1.6; }
-
+ 
 /* HOME */
 .home-view, .dossiers-view { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
 .home-top { display: flex; justify-content: flex-end; padding: 16px 28px 0; }
@@ -128,7 +128,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .search-input { width: 210px; padding: 8px 12px 8px 32px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; }
 .search-input:focus { border-color: var(--accent); }
 .search-input::placeholder { color: var(--text-muted); }
-
+ 
 /* INTERRUPTEUR DE THÈME (ovale soleil / lune) */
 .theme-switch { position: relative; display: inline-flex; align-items: center; justify-content: space-between; width: 62px; height: 30px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; flex-shrink: 0; transition: background 0.2s, border-color 0.2s; }
 .theme-switch:hover { border-color: var(--accent); }
@@ -138,7 +138,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .theme-switch:not(.is-light) .switch-thumb { transform: translateX(30px); }
 .theme-switch:not(.is-light) .switch-moon { color: var(--on-accent); }
 .theme-switch.is-light .switch-sun { color: var(--on-accent); }
-
+ 
 /* AI ORB */
 .ai-orb { position: relative; width: 76px; height: 76px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .orb-core { position: absolute; inset: 12px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #dbeafe 0%, var(--accent-light) 34%, var(--accent) 70%, #1e3a8a 100%); box-shadow: 0 0 26px rgba(59,130,246,0.55), inset -4px -6px 14px rgba(15,23,42,0.35); animation: orbPulse 3.2s ease-in-out infinite; }
@@ -149,7 +149,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .ai-orb.thinking::after { animation: orbRing 1.1s linear infinite reverse; }
 @keyframes orbPulse { 0%,100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.07); filter: brightness(1.15); } }
 @keyframes orbRing { to { transform: rotate(360deg); } }
-
+ 
 /* 3D LOADER */
 .loader { display: inline-flex; align-items: center; justify-content: center; gap: 4px; perspective: 120px; }
 .loader i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: orbBounce3d 1.4s cubic-bezier(0.45,0.05,0.55,0.95) infinite; }
@@ -157,7 +157,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .loader i:nth-child(3) { animation-delay: 0.32s; opacity: 0.6; }
 .loader-inline i { background: var(--on-accent); }
 @keyframes orbBounce3d { 0%,100% { transform: translate3d(0,0,0) scale(0.85); } 45% { transform: translate3d(0,-5px,14px) scale(1.15); } }
-
+ 
 /* COMPTE (bas de la barre latérale) */
 .sidebar-account { position: relative; z-index: 40; margin: 8px 12px 16px; padding-top: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
 .profile-btn { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; background: none; border: 1px solid transparent; border-radius: 10px; cursor: pointer; font-family: inherit; color: var(--text); text-align: left; transition: background 0.15s, border-color 0.15s; }
@@ -183,7 +183,7 @@ body.sidebar-collapsed .profile-caret { display: none; }
 body.unauthenticated .sidebar,
 body.unauthenticated .main { display: none; }
 .auth-note { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 12px; line-height: 1.5; }
-
+ 
 /* DOSSIER VIEW */
 .dossier-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .dossier-header { padding: 16px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
@@ -193,11 +193,11 @@ body.unauthenticated .main { display: none; }
 .btn-icon { padding: 8px 14px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; }
 .btn-icon:hover { border-color: var(--accent); background: var(--surface); }
 .btn-icon.expand:hover { border-color: var(--accent-light); }
-
+ 
 /* DOCS STRIP */
 .docs-strip { padding: 10px 28px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; overflow-x: auto; background: var(--surface); min-height: 44px; align-items: center; }
 .doc-chip { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; white-space: nowrap; color: var(--text-muted); }
-
+ 
 /* CHAT */
 .chat-area { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
 .message { display: flex; gap: 12px; max-width: 760px; }
@@ -215,7 +215,7 @@ body.unauthenticated .main { display: none; }
 .message.user .bubble { background: var(--accent); color: var(--on-accent); border-top-right-radius: 4px; }
 .message.system { align-self: center; max-width: 100%; }
 .message.system .bubble { background: var(--surface2); border: 1px dashed var(--border); color: var(--text-muted); font-size: 12px; text-align: center; border-radius: 10px; }
-
+ 
 .response-section { margin-top: 12px; padding: 12px 16px; border-radius: 8px; font-size: 13px; }
 .section-critical { background: rgba(239,68,68,0.08); border-left: 3px solid var(--red); }
 .section-warning { background: rgba(249,115,22,0.08); border-left: 3px solid var(--orange); }
@@ -226,7 +226,7 @@ body.unauthenticated .main { display: none; }
 .section-warning .section-title { color: var(--orange); }
 .section-ok .section-title { color: var(--green); }
 .section-sources .section-title { color: var(--accent-light); }
-
+ 
 /* INPUT */
 .input-area { padding: 16px 28px; border-top: 1px solid var(--border); background: var(--surface); }
 .bubble ul, .bubble ol { margin: 8px 0; padding-left: 22px; }
@@ -249,7 +249,7 @@ body.unauthenticated .main { display: none; }
 .send-btn.stop { background: var(--surface2); color: var(--text); border-radius: 50%; }
 .send-btn.stop:hover { background: var(--border); }
 @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-
+ 
 /* MODAL */
 .modal-overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
 .legal-overlay { position: fixed; inset: 0; z-index: 250; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--overlay); backdrop-filter: blur(4px); }
@@ -290,7 +290,7 @@ textarea.modal-input { resize: vertical; min-height: 70px; }
 .spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin-icon svg { animation: spin 0.8s linear infinite; display: inline-block; }
-
+ 
 /* TYPING */
 .typing { display: flex; gap: 4px; padding: 6px 0; align-items: flex-end; perspective: 120px; }
 .typing span { width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%; animation: bounce3d 1.4s cubic-bezier(0.45,0.05,0.55,0.95) infinite; }
@@ -298,7 +298,7 @@ textarea.modal-input { resize: vertical; min-height: 70px; }
 .typing span:nth-child(3) { animation-delay: 0.32s; }
 @keyframes bounce3d { 0%,100% { transform: translate3d(0,0,0) scale(0.85); opacity: 0.45; } 45% { transform: translate3d(0,-5px,14px) scale(1.15); opacity: 1; } }
 .typing-orb { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #dbeafe 0%, var(--accent-light) 40%, var(--accent) 100%); box-shadow: 0 0 12px rgba(59,130,246,0.5); animation: orbPulse 1.4s ease-in-out infinite; }
-
+ 
 /* FULLSCREEN */
 .fullscreen-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; padding: 40px; overflow-y: auto; }
 .fullscreen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-shrink: 0; }
@@ -308,7 +308,7 @@ textarea.modal-input { resize: vertical; min-height: 70px; }
 .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); display: flex; flex-direction: column; gap: 20px; }
 .fullscreen-content .message { max-width: 100%; }
 .fullscreen-content .bubble { max-width: 780px; font-size: 15px; }
-
+ 
 /* AUTH */
 .auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; overflow-y: auto; padding: 20px; }
 .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 420px; max-width: 94vw; max-height: calc(100vh - 40px); overflow-y: auto; box-shadow: var(--shadow); }
@@ -322,22 +322,22 @@ textarea.modal-input { resize: vertical; min-height: 70px; }
 .auth-legal-check { display: flex; align-items: flex-start; gap: 9px; color: var(--text-muted); font-size: 11px; line-height: 1.5; cursor: pointer; }
 .auth-legal-check input { flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--accent); }
 .auth-legal-check button { padding: 0; border: 0; background: none; color: var(--accent-light); font: inherit; text-decoration: underline; cursor: pointer; }
-
-
+ 
+ 
 /* MOT DE PASSE : bouton œil */
 .pwd-wrap { position: relative; margin-bottom: 12px; }
 .pwd-wrap.last { margin-bottom: 16px; }
 .pwd-wrap .modal-input { margin-bottom: 0; padding-right: 44px; }
 .pwd-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
 .pwd-toggle:hover { color: var(--text); background: var(--surface); }
-
+ 
 input[type="file"] { display: none; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
+ 
 .icon { flex-shrink: 0; }
-
+ 
 /* RESPONSIVE */
 @media (max-width: 1024px) {
   .home-inner, .view-top, .home-list.in-view { padding-left: 20px; padding-right: 20px; }
@@ -360,7 +360,7 @@ input[type="file"] { display: none; }
   </style>
 </head>
 <body>
-
+ 
 <!-- AUTH -->
 <div class="auth-overlay" id="authOverlay" style="display:none;">
   <div class="auth-box">
@@ -383,7 +383,7 @@ input[type="file"] { display: none; }
     <div class="auth-note">La connexion est obligatoire : sans identifiants, l'accès aux dossiers est bloqué.</div>
   </div>
 </div>
-
+ 
 <!-- RECOVERY -->
 <div class="auth-overlay" id="recoveryOverlay" style="display:none;">
   <div class="auth-box">
@@ -401,7 +401,7 @@ input[type="file"] { display: none; }
     <button class="auth-btn" id="recoverySubmitBtn" onclick="handleRecoverySubmit()">Valider le nouveau mot de passe</button>
   </div>
 </div>
-
+ 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
@@ -445,7 +445,7 @@ input[type="file"] { display: none; }
     </div>
   </div>
 </aside>
-
+ 
 <!-- MAIN -->
 <main class="main" id="main">
   <div class="empty-state" id="emptyState">
@@ -453,7 +453,7 @@ input[type="file"] { display: none; }
     <div class="empty-title">Aucun dossier ouvert</div>
     <div class="empty-sub">Créez un nouveau dossier pour commencer.<br>Ajoutez votre dossier PDF puis lancez l'analyse.</div>
   </div>
-
+ 
   <!-- ACCUEIL -->
   <div class="home-view" id="homeView" style="display:none;">
     <div class="home-top">
@@ -471,7 +471,7 @@ input[type="file"] { display: none; }
           </div>
         </div>
       </section>
-
+ 
       <section class="home-section">
         <div class="home-section-head">
           <h2 class="home-section-title">Vos derniers dossiers</h2>
@@ -481,7 +481,7 @@ input[type="file"] { display: none; }
       </section>
     </div>
   </div>
-
+ 
   <!-- MES DOSSIERS -->
   <div class="dossiers-view" id="dossiersView" style="display:none;">
     <div class="view-top">
@@ -506,7 +506,7 @@ input[type="file"] { display: none; }
     <div class="home-list in-view" id="deletedDossiersList" style="display:none;"></div>
     <div class="list-empty" id="deletedDossiersEmpty" style="display:none;">Aucun dossier dans la corbeille.</div>
   </div>
-
+ 
   <div class="dossier-view" id="dossierView" style="display:none;">
     <div class="dossier-header">
       <div>
@@ -535,7 +535,7 @@ input[type="file"] { display: none; }
     </div>
   </div>
 </main>
-
+ 
 <!-- INFORMATIONS LÉGALES — brouillons à compléter avant l'ouverture commerciale -->
 <div class="legal-overlay" id="legalOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="legalTitle" onclick="if(event.target===this)closeLegalPage()">
   <section class="legal-panel">
@@ -544,7 +544,7 @@ input[type="file"] { display: none; }
     <div id="legalContent"></div>
   </section>
 </div>
-
+ 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" style="display:none;">
   <div class="modal">
@@ -565,7 +565,7 @@ input[type="file"] { display: none; }
     </div>
   </div>
 </div>
-
+ 
 <!-- FULLSCREEN -->
 <div class="fullscreen-overlay" id="fullscreenOverlay" style="display:none;">
   <div class="fullscreen-header">
@@ -574,7 +574,7 @@ input[type="file"] { display: none; }
   </div>
   <div class="fullscreen-content" id="fullscreenContent"></div>
 </div>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 const WEBHOOK_UPLOAD   = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
@@ -582,7 +582,7 @@ const WEBHOOK_QUESTION = 'https://n8n.srv1960518.hstgr.cloud/webhook/reponses-qu
 const LEGAL_ACCEPTANCE_VERSION = 'demo-2026-10-05-v1';
 const SUPABASE_URL      = 'https://zpvxifqbunhaoldkubqn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwdnhpZnFidW5oYW9sZGt1YnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4OTI1NjAsImV4cCI6MjEwNDQ2ODU2MH0.bs-ssIxQm2WRhMXIU_m3z0YvqI-hXj4wAcVj9Bl0NQ4';
-
+ 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let session = null;
 let dossiers = [];
@@ -598,7 +598,7 @@ let rechercheDossier = '';
 let afficherDossiersSupprimes = false;
 let appUserInitialise = null;
 let authInProgress = false;
-
+ 
 // ==========================================
 // ICÔNES SVG
 // ==========================================
@@ -612,7 +612,30 @@ const ICON_SEND = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" s
 const ICON_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>';
 const ICON_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
 const LOADER_3D = '<span class="loader"><i></i><i></i><i></i></span>';
-
+ 
+// ===== MÉMOIRE LOCALE (survit à l'actualisation) =====
+function cleLocale() { return session?.user?.id ? 'assistant-ia-local-' + session.user.id : null; }
+function lireLocal() { try { return JSON.parse(localStorage.getItem(cleLocale()) || '{}'); } catch (e) { return {}; } }
+function majLocal(fn) { if (!cleLocale()) return; const o = lireLocal(); o.dossiers = o.dossiers || {}; o.questions = o.questions || {}; fn(o); try { localStorage.setItem(cleLocale(), JSON.stringify(o)); } catch (e) {} }
+function memoriserDossier(d, extra = {}) { majLocal(o => { o.dossiers[d.id] = Object.assign({ id: d.id, name: d.name, date: d.date, docs: d.docs, start: Date.now(), status: 'processing' }, o.dossiers[d.id] || {}, extra); }); }
+function oublierDossier(id) { majLocal(o => { delete o.dossiers[id]; }); }
+function memoriserQuestion(id, q) { majLocal(o => { o.questions[id] = q; }); }
+function oublierQuestion(id) { majLocal(o => { delete o.questions[id]; }); }
+function notifier(titre, corps) { if (!('Notification' in window) || Notification.permission !== 'granted' || document.visibilityState === 'visible') return; try { new Notification(titre, { body: corps }); } catch (e) {} }
+function proposerNotifications() {
+  if (!('Notification' in window) || Notification.permission !== 'default') return;
+  try { if (localStorage.getItem('assistant-ia-notif-demande')) return; localStorage.setItem('assistant-ia-notif-demande', '1'); } catch (e) {}
+  if (confirm('Voulez-vous être notifié quand votre analyse ou votre réponse est prête ?')) Notification.requestPermission();
+}
+function reprendreQuestion(dossier, q) {
+  questionEnCours = true;
+  const sequence = ++questionSequence;
+  dossier._pending = { label: 'Recherche en cours...', start: q.start };
+  dossier._liveStatus = 'question';
+  surveillerReponseQuestion(dossier, q.baseline, sequence);
+  if (dossier === currentDossier) setChatEnabled(false, 'Question en cours, veuillez patienter…');
+}
+ 
 // ==========================================
 // UTILITAIRES
 // ==========================================
@@ -620,9 +643,9 @@ function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-
+ 
 function getToken() { return session?.access_token || ''; }
-
+ 
 function togglePassword(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -631,7 +654,7 @@ function togglePassword(inputId, btn) {
   btn.innerHTML = afficher ? ICON_EYE_OFF : ICON_EYE;
   btn.setAttribute('aria-label', afficher ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
 }
-
+ 
 // Formate une durée en secondes en texte français ("1 minute 5 secondes")
 function formatDuration(totalSeconds) {
   const m = Math.floor(totalSeconds / 60);
@@ -641,7 +664,7 @@ function formatDuration(totalSeconds) {
   parts.push(`${s} seconde${s > 1 ? 's' : ''}`);
   return parts.join(' ');
 }
-
+ 
 async function fetchAvecDelai(url, options = {}, delaiMs = 120000) {
   const controller = new AbortController();
   const signalInitial = options.signal;
@@ -661,13 +684,13 @@ async function fetchAvecDelai(url, options = {}, delaiMs = 120000) {
     throw err;
   } finally { clearTimeout(timer); }
 }
-
+ 
 async function fetchJson(url, options = {}, delaiMs = 120000) {
   const res = await fetchAvecDelai(url, options, delaiMs);
-  if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
+  if (!res.ok) { const e = new Error(`Erreur HTTP ${res.status}`); e.status = res.status; throw e; }
   return res.json();
 }
-
+ 
 // ==========================================
 // INFORMATIONS LÉGALES — brouillons de démonstration
 // ==========================================
@@ -689,7 +712,7 @@ const LEGAL_PAGES = {
     html: `<h3>Objet et accès</h3><p>Cette version est une démonstration du service d’aide à l’analyse de dossiers immobiliers. L’accès est réservé aux personnes autorisées par l’éditeur. Modalités définitives d’accès, de durée, de prix et de résiliation : <strong>À DÉFINIR avant l’offre payante</strong>.</p><h3>Documents transmis</h3><p>L’utilisateur doit être autorisé à transmettre les documents qu’il importe et doit éviter d’ajouter des informations qui ne sont pas nécessaires à l’analyse. Les documents sont traités par les services techniques et d’IA décrits dans la politique de confidentialité, qui reste à compléter.</p><h3>Résultats générés</h3><p>Les analyses et réponses automatisées peuvent être incomplètes ou erronées. Elles ne remplacent pas la vérification des pièces originales ni les conseils des professionnels compétents. L’utilisateur doit contrôler les informations avant de les communiquer ou de prendre une décision.</p><h3>Conditions commerciales</h3><p>Prix, facturation, renouvellement, résiliation, assistance, disponibilité, responsabilité et suppression des données : <strong>À DÉFINIR avec l’entité qui exploitera le service</strong>. Cette version ne constitue pas les conditions finales d’un abonnement payant.</p>`
   }
 };
-
+ 
 function openLegalPage(key) {
   const page = LEGAL_PAGES[key];
   if (!page) return;
@@ -700,7 +723,7 @@ function openLegalPage(key) {
 function closeLegalPage() {
   document.getElementById('legalOverlay').style.display = 'none';
 }
-
+ 
 // ==========================================
 // NOM D'UTILISATEUR
 // ==========================================
@@ -716,7 +739,7 @@ function initialeAffichage() {
   const source = nom !== 'Mon compte' ? nom : (session?.user?.email || 'U');
   return (source.trim().charAt(0) || 'U').toUpperCase();
 }
-
+ 
 // ==========================================
 // THÈME CLAIR / SOMBRE
 // ==========================================
@@ -734,19 +757,19 @@ function applyTheme(theme) {
     if (lune) lune.innerHTML = ICON_MOON;
   });
 }
-
+ 
 function toggleTheme() {
   const actuel = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   applyTheme(actuel === 'light' ? 'dark' : 'light');
 }
-
+ 
 function initTheme() {
   let stocke = null;
   try { stocke = localStorage.getItem('assistant-ia-theme'); } catch (e) {}
   const prefere = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   applyTheme(stocke || prefere);
 }
-
+ 
 // ==========================================
 // BARRE LATÉRALE REPLIABLE
 // ==========================================
@@ -754,14 +777,14 @@ function toggleSidebar() {
   const replie = document.body.classList.toggle('sidebar-collapsed');
   try { localStorage.setItem('assistant-ia-sidebar', replie ? 'collapsed' : 'open'); } catch (e) {}
 }
-
+ 
 function initSidebar() {
   let etat = null;
   try { etat = localStorage.getItem('assistant-ia-sidebar'); } catch (e) {}
   const etroit = window.innerWidth < 1024;
   if (etat === 'collapsed' || (!etat && etroit)) document.body.classList.add('sidebar-collapsed');
 }
-
+ 
 // ==========================================
 // NAVIGATION ENTRE VUES
 // ==========================================
@@ -775,7 +798,7 @@ function setView(view) {
   document.getElementById('navDossiers').classList.toggle('active', view === 'dossiers' || view === 'chat');
   sauvegarderVue(view);
 }
-
+ 
 function cleEtatUtilisateur(type) {
   return session?.user?.id ? `assistant-ia-${type}-${session.user.id}` : null;
 }
@@ -797,7 +820,7 @@ function restaurerDerniereVue() {
   if (vue === 'dossiers') return openDossiersView();
   openAccueil();
 }
-
+ 
 function openAccueil() {
   currentDossier = null;
   const cleDossier = cleEtatUtilisateur('dossier-ouvert');
@@ -837,25 +860,25 @@ function onSearchChange(value) {
   rechercheDossier = (value || '').toLowerCase();
   renderAllDossiers();
 }
-
+ 
 // ==========================================
 // STATUT DYNAMIQUE
 // ==========================================
 // Chaque dossier a un champ _liveStatus : null | 'analyse' | 'question'
 // Quand null → on affiche le dernier état géré localement par le site.
-
+ 
 function setLiveStatus(dossier, status) {
   dossier._liveStatus = status; // null | 'analyse' | 'question'
   renderDossiers();
   renderHome();
   renderAllDossiers();
 }
-
+ 
 const ICON_CHECK = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 const ICON_MSG_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
 const ICON_ERR_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
 const DOT = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>';
-
+ 
 function statusLabel(dossier) {
   if (dossier._liveStatus === 'analyse') return '<span class="dossier-status status-processing">' + LOADER_3D + ' Analyse en cours</span>';
   if (dossier._liveStatus === 'question') return '<span class="dossier-status status-question">' + LOADER_3D + ' Question en cours</span>';
@@ -865,7 +888,7 @@ function statusLabel(dossier) {
   if (dossier.status === 'ready') return '<span class="dossier-status status-ready">' + DOT + ' Analyse prête</span>';
   return '<span class="dossier-status status-processing">' + LOADER_3D + ' Analyse en cours</span>';
 }
-
+ 
 // ==========================================
 // AUTH
 // ==========================================
@@ -879,7 +902,7 @@ async function initAuth() {
     if (s) showApp(); else showAuthScreen();
   });
 }
-
+ 
 function showAuthScreen() {
   appUserInitialise = null;
   document.getElementById('recoveryOverlay').style.display = 'none';
@@ -914,7 +937,7 @@ async function showApp() {
   await loadDossiers();
   await restaurerDerniereVue();
 }
-
+ 
 function messageErreurAuth(err, contexte = 'connexion') {
   const detail = String(err?.code || err?.message || '').toLowerCase();
   if (/invalid login credentials|invalid_credentials|email not confirmed/.test(detail)) return 'Email ou mot de passe incorrect.';
@@ -923,7 +946,7 @@ function messageErreurAuth(err, contexte = 'connexion') {
   if (/network|fetch|timeout/.test(detail)) return 'Le service est momentanément injoignable. Vérifiez votre connexion puis réessayez.';
   return contexte === 'connexion' ? 'Connexion impossible. Vérifiez vos informations puis réessayez.' : 'Une erreur est survenue. Réessayez.';
 }
-
+ 
 async function handleAuthSubmit() {
   const username = document.getElementById('authUsername').value.trim();
   const email = document.getElementById('authEmail').value.trim();
@@ -975,7 +998,7 @@ async function handleAuthSubmit() {
     errBox.style.display = 'block';
   } finally { authInProgress = false; btn.disabled = false; btn.textContent = 'Se connecter'; }
 }
-
+ 
 async function handleForgotPassword() {
   const email = document.getElementById('authEmail').value.trim();
   const errBox = document.getElementById('authError');
@@ -993,7 +1016,7 @@ async function handleForgotPassword() {
     errBox.style.display = 'block';
   } finally { btn.disabled = false; }
 }
-
+ 
 async function handleRecoverySubmit() {
   const pwd = document.getElementById('recoveryPassword').value;
   const pwdC = document.getElementById('recoveryPasswordConfirm').value;
@@ -1010,7 +1033,7 @@ async function handleRecoverySubmit() {
   } catch (err) { errBox.textContent = messageErreurAuth(err, 'récupération'); errBox.style.display = 'block'; }
   finally { btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe'; }
 }
-
+ 
 async function handleLogout() {
   let erreurDeconnexion = null;
   try {
@@ -1034,7 +1057,7 @@ async function handleLogout() {
   }
   if (erreurDeconnexion) alert('La session locale a été fermée, mais la déconnexion du serveur a échoué. Reconnectez-vous uniquement après avoir vérifié votre connexion.');
 }
-
+ 
 // ==========================================
 // COMPTE (profil en bas de la barre latérale)
 // ==========================================
@@ -1048,7 +1071,7 @@ function renderAccount() {
   document.getElementById('profileMail').textContent = email || 'Compte connecté';
   document.getElementById('accountEmail').textContent = email || 'Compte connecté';
 }
-
+ 
 function toggleAccountPopover(event) {
   if (event) event.stopPropagation();
   const popover = document.getElementById('accountPopover');
@@ -1056,7 +1079,7 @@ function toggleAccountPopover(event) {
   popover.style.display = ouvert ? 'flex' : 'none';
   document.getElementById('sidebarAccount')?.classList.toggle('open', ouvert);
 }
-
+ 
 document.addEventListener('click', (e) => {
   const popover = document.getElementById('accountPopover');
   if (!popover || popover.style.display === 'none') return;
@@ -1065,7 +1088,7 @@ document.addEventListener('click', (e) => {
     document.getElementById('sidebarAccount')?.classList.remove('open');
   }
 });
-
+ 
 // ==========================================
 // CHARGEMENT DOSSIERS
 // ==========================================
@@ -1083,19 +1106,19 @@ function dossierVide(row, countMap) {
     _pending: null
   };
 }
-
+ 
 async function loadDossiers() {
   if (!session) return;
   const { data, error } = await sb.from('dossiers').select('*').eq('user_id', session.user.id).order('date_creation', { ascending: false });
   if (error) { console.error('Chargement dossiers :', error); renderDossiers(); renderHome(); renderAllDossiers(); return; }
-
+ 
   const ids = (data || []).map(r => r.dossier_id);
   let countMap = {};
   if (ids.length > 0) {
     const { data: docsData } = await sb.from('documents').select('dossier_id').in('dossier_id', ids);
     (docsData || []).forEach(d => { countMap[d.dossier_id] = (countMap[d.dossier_id] || 0) + 1; });
   }
-
+ 
   const anciens = [...dossiers, ...dossiersSupprimes];
   const convertir = (rows) => rows.map(row => {
     const nouveau = dossierVide(row, countMap);
@@ -1111,14 +1134,29 @@ async function loadDossiers() {
   const idsActifs = actifs.map(r => r.dossier_id);
   const enCreation = anciens.filter(d => d._pending && !idsActifs.includes(d.id));
   dossiers = [...enCreation, ...convertir(actifs)];
+  const local = lireLocal().dossiers || {};
+  Object.values(local).forEach(l => {
+    if (l.status === 'processing' && Date.now() - l.start > 30 * 60 * 1000) {
+      l.status = 'error'; l.message = "L'analyse n'a pas abouti. Supprimez ce dossier et relancez-le.";
+      memoriserDossier(l, { status: 'error', message: l.message });
+    }
+    const existant = dossiers.find(d => d.id === l.id);
+    if (existant) {
+      if (l.status === 'error') existant.status = 'error';
+      else { existant.status = 'processing'; existant._liveStatus = 'analyse'; }
+      return;
+    }
+    dossiers.unshift({ id: l.id, name: l.name, date: l.date, docs: l.docs || [], docsCount: (l.docs || []).length, status: l.status,
+      messages: l.status === 'error' ? [{ role: 'system', content: l.message }] : [], _loaded: true, _liveStatus: l.status === 'processing' ? 'analyse' : null, _pending: null, _local: true });
+  });
   dossiersSupprimes = convertir(supprimes);
-
+ 
   suivreAnalysesServeur();
   renderDossiers();
   renderHome();
   renderAllDossiers();
 }
-
+ 
 async function loadDossierDetails(dossier) {
   if (dossier._loaded) return;
   const [docsRes, convRes] = await Promise.all([
@@ -1131,8 +1169,19 @@ async function loadDossierDetails(dossier) {
   dossier.docsCount = dossier.docs.length;
   dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
   dossier._loaded = true;
+  const q = (lireLocal().questions || {})[dossier.id];
+  if (q) {
+    if (compterReponsesIA(dossier.messages) > q.baseline) oublierQuestion(dossier.id);
+    else {
+      const dernier = [...dossier.messages].reverse().find(m => m.role === 'user');
+      if (!dernier || dernier.content !== q.question) dossier.messages.push({ role: 'user', content: q.question });
+      if (q.erreur) dossier.messages.push({ role: 'system', content: q.erreur });
+      else if (!dossier._pending && Date.now() - q.start < 15 * 60 * 1000) reprendreQuestion(dossier, q);
+      else if (!dossier._pending) { oublierQuestion(dossier.id); dossier.messages.push({ role: 'system', content: "La réponse n'est jamais arrivée. Réessayez." }); }
+    }
+  }
 }
-
+ 
 // Force le rechargement du dossier actuellement ouvert depuis Supabase
 // (source de vérité), utilisé notamment quand l'onglet redevient visible.
 async function resyncCurrentDossier() {
@@ -1146,14 +1195,14 @@ async function resyncCurrentDossier() {
   }
   loadDossiers();
 }
-
+ 
 // ==========================================
 // ANALYSE CÔTÉ SERVEUR (ordinateur fermé, connexion perdue…)
 // L'analyse continue côté serveur et le résultat est récupéré
 // automatiquement dès que le serveur a terminé.
 // ==========================================
 let pollTimer = null;
-
+ 
 function startPendingServeur(dossier) {
   dossier.status = 'processing';
   dossier._liveStatus = 'analyse';
@@ -1163,7 +1212,7 @@ function startPendingServeur(dossier) {
   renderDossiers(); renderHome(); renderAllDossiers();
   startPolling();
 }
-
+ 
 function suivreAnalysesServeur() {
   let besoin = false;
   dossiers.forEach(d => {
@@ -1182,7 +1231,7 @@ function suivreAnalysesServeur() {
     startPolling();
   }
 }
-
+ 
 function startPolling() {
   if (pollTimer) return;
   pollTimer = setInterval(async () => {
@@ -1200,22 +1249,24 @@ function startPolling() {
       const nouvelleSynthese = compterReponsesIA(messages) > nbReponsesAvant;
       // Le suivi se termine uniquement quand une nouvelle réponse IA est enregistrée.
       if (!nouvelleSynthese) continue;
-
+ 
       appliquerConversationServeur(d, messages);
       endPending(d);
       d.status = 'ready';
       d._liveStatus = 'analyse_done';
+      oublierDossier(d.id); notifier('Analyse prête', d.name);
+      if (currentDossier?.id === d.id) setChatEnabled(true);
       if (currentDossier?.id === d.id) { updateDocsStrip(); renderMessages(); }
       renderDossiers(); renderHome(); renderAllDossiers();
     }
   }, 2500);
 }
-
+ 
 function stopPolling() {
   clearInterval(pollTimer);
   pollTimer = null;
 }
-
+ 
 // Si l'onglet a été mis en veille (ordinateur fermé, changement d'onglet
 // prolongé...) pendant qu'aucune opération n'était réellement en cours
 // dans CET onglet, on revient sur l'état réel enregistré côté serveur
@@ -1226,11 +1277,11 @@ document.addEventListener('visibilitychange', () => {
   }
   if (document.visibilityState === 'visible' && session) suivreAnalysesServeur();
 });
-
+ 
 // Connexion perdue puis retrouvée : l'analyse continue côté serveur.
 window.addEventListener('offline', () => { suiviConnexion(false); });
 window.addEventListener('online', () => { suiviConnexion(true); });
-
+ 
 function suiviConnexion(enLigne) {
   if (enLigne) {
     suivreAnalysesServeur();
@@ -1241,7 +1292,7 @@ function suiviConnexion(enLigne) {
     addMessage('system', "Connexion interrompue : l'analyse continue sur le serveur. Vous serez prévenu dès qu'elle aboutit.", currentDossier);
   }
 }
-
+ 
 // ==========================================
 // VOCAL
 // ==========================================
@@ -1263,7 +1314,7 @@ function toggleSpeech() {
   if (!recognition) { alert("Reconnaissance vocale non supportée."); return; }
   if (isListening) { recognition.stop(); } else { recognition.start(); isListening = true; document.getElementById('micBtn').classList.add('recording'); }
 }
-
+ 
 // ==========================================
 // DOSSIERS — SIDEBAR
 // ==========================================
@@ -1284,7 +1335,7 @@ function renderDossiers() {
       </div>`;
   }).join('');
 }
-
+ 
 function renderListeDossiers(containerId, emptyId, source, corbeille = false) {
   const conteneur = document.getElementById(containerId);
   if (!conteneur) return;
@@ -1315,13 +1366,13 @@ function renderListeDossiers(containerId, emptyId, source, corbeille = false) {
       </div>`;
   }).join('');
 }
-
+ 
 function renderHome() {
   renderListeDossiers('homeList', null, dossiers.slice(0, 5));
   const el = document.getElementById('helloName');
   if (el) el.textContent = nomAffichage();
 }
-
+ 
 function renderAllDossiers() {
   const filtres = searchFiltres();
   renderListeDossiers('dossiersFullList', 'dossiersFullEmpty', filtres);
@@ -1337,12 +1388,12 @@ function renderAllDossiers() {
   if (compteurActifs) compteurActifs.textContent = `(${dossiers.length})`;
   afficherCorbeille(afficherDossiersSupprimes);
 }
-
+ 
 function searchFiltres() {
   if (!rechercheDossier) return dossiers;
   return dossiers.filter(d => (d.name || '').toLowerCase().includes(rechercheDossier));
 }
-
+ 
 async function toggleDossier(id) {
   if (currentDossier?.id === id) {
     currentDossier = null;
@@ -1353,7 +1404,7 @@ async function toggleDossier(id) {
   }
   await openDossier(id);
 }
-
+ 
 async function openDossier(id) {
   currentDossier = dossiers.find(d => d.id === id);
   if (!currentDossier) return;
@@ -1361,6 +1412,7 @@ async function openDossier(id) {
   if (cleDossier) { try { localStorage.setItem(cleDossier, id); } catch (e) {} }
   if (creationEnCours) setChatEnabled(false, 'Analyse en cours, veuillez patienter…');
   else if (questionEnCours) setChatEnabled(false, 'Question en cours, veuillez patienter…');
+  else if (currentDossier.status === 'processing') setChatEnabled(false, 'Analyse en cours, veuillez patienter…');
   else setChatEnabled(true);
   setView('chat');
   document.getElementById('currentDossierName').textContent = currentDossier.name;
@@ -1380,7 +1432,7 @@ async function openDossier(id) {
     }
   }
 }
-
+ 
 async function deleteDossier(event, id) {
   if (event) event.stopPropagation();
   const dossier = dossiers.find(d => d.id === id);
@@ -1388,12 +1440,19 @@ async function deleteDossier(event, id) {
     alert('Ce dossier est encore en cours d’analyse. Vous pourrez le supprimer lorsque l’analyse sera terminée.');
     return;
   }
+  if (dossier && dossier._local) {
+    if (!confirm('Supprimer ce dossier ?')) return;
+    oublierDossier(id); dossiers = dossiers.filter(d => d.id !== id);
+    if (currentDossier?.id === id) { currentDossier = null; removeTyping(); openAccueil(); }
+    renderDossiers(); renderHome(); renderAllDossiers(); return;
+  }
   if (!confirm('Déplacer ce dossier dans les dossiers supprimés ? Vous pourrez le récupérer avec ses documents et sa conversation.')) return;
   const { data: lignesModifiees, error } = await sb.from('dossiers').update({ deleted_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id).select('dossier_id, deleted_at');
   if (error) { console.error('Mise en corbeille échouée :', error); alert('Le déplacement a échoué. Vérifiez que la colonne deleted_at existe dans Supabase et que les autorisations permettent la modification.'); return; }
   if (!lignesModifiees?.length) { alert('Supabase n’a confirmé aucune modification. Vérifiez les règles d’accès (RLS), les colonnes SQL et que le site publié utilise la dernière version du code.'); return; }
   const dossierSupprime = dossiers.find(d => d.id === id);
   dossiers = dossiers.filter(d => d.id !== id);
+  oublierDossier(id);
   if (dossierSupprime) dossiersSupprimes.unshift(dossierSupprime);
   if (currentDossier?.id === id) {
     currentDossier = null;
@@ -1404,7 +1463,7 @@ async function deleteDossier(event, id) {
   renderHome();
   renderAllDossiers();
 }
-
+ 
 async function restaurerDossier(event, id) {
   if (event) event.stopPropagation();
   const dossier = dossiersSupprimes.find(d => d.id === id);
@@ -1419,7 +1478,7 @@ async function restaurerDossier(event, id) {
   renderHome();
   renderAllDossiers();
 }
-
+ 
 async function archiverDossier(event, id) {
   if (event) event.stopPropagation();
   if (!confirm('Archiver définitivement ce dossier ? Il disparaîtra du site et ne pourra plus être récupéré depuis l’interface. Ses données resteront conservées dans Supabase.')) return;
@@ -1429,7 +1488,7 @@ async function archiverDossier(event, id) {
   dossiersSupprimes = dossiersSupprimes.filter(d => d.id !== id);
   renderAllDossiers();
 }
-
+ 
 function updateDocsStrip() {
   const strip = document.getElementById('docsStrip');
   const count = document.getElementById('docsCount');
@@ -1439,7 +1498,7 @@ function updateDocsStrip() {
   strip.innerHTML = docs.map(d => `<div class="doc-chip">${ICON_DOC}<span>${escapeHtml(d)}</span></div>`).join('')
     || '<span style="font-size:12px;color:var(--text-muted)">Aucun document</span>';
 }
-
+ 
 // ==========================================
 // MESSAGES
 // ==========================================
@@ -1459,7 +1518,7 @@ function renderMessages() {
   }
   if (currentDossier._pending) addTyping(currentDossier._pending.label, currentDossier._pending.start);
 }
-
+ 
 function parseMarkdown(text) {
   // Convertit les balises <u> émises par le modèle en marqueurs compris ci-dessous,
   // puis échappe le reste du texte pour qu'aucune balise brute ne s'affiche.
@@ -1469,13 +1528,13 @@ function parseMarkdown(text) {
   const sortie = [];
   let typeListe = null;
   let elementsListe = [];
-
+ 
   const inline = (ligne) => ligne
     .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
     .replace(/__([^_\n]+)__/g, '<u>$1</u>')
     .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
     .replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
-
+ 
   const fermerListe = () => {
     if (!typeListe) return;
     const balise = typeListe === 'ol' ? 'ol' : 'ul';
@@ -1483,7 +1542,7 @@ function parseMarkdown(text) {
     typeListe = null;
     elementsListe = [];
   };
-
+ 
   for (const ligne of lignes) {
     if (/^\s*(?:-{3,}|_{3,}|\*{3,})\s*$/.test(ligne)) {
       fermerListe();
@@ -1510,7 +1569,7 @@ function parseMarkdown(text) {
   fermerListe();
   return sortie.join('<br>');
 }
-
+ 
 function renderMessage(m) {
   if (m.role === 'user') {
     const contenuUser = parseMarkdown(m.content);
@@ -1522,14 +1581,14 @@ function renderMessage(m) {
   const contenu = parseMarkdown(m.content);
   return `<div class="message ai"><div class="avatar ai" aria-hidden="true"><span class="orb-core"></span></div><div class="bubble">${contenu}</div></div>`;
 }
-
+ 
 function addMessage(role, content, dossier = currentDossier) {
   if (!dossier) return;
   if (!dossier.messages) dossier.messages = [];
   dossier.messages.push({ role, content });
   if (dossier === currentDossier) renderMessages();
 }
-
+ 
 // ==========================================
 // CHAT DÉSACTIVÉ PENDANT OPÉRATION
 // ==========================================
@@ -1552,12 +1611,12 @@ function setChatEnabled(enabled, message = 'Analyse en cours, veuillez patienter
     input.placeholder = message;
   }
 }
-
+ 
 // ==========================================
 // TYPING INDICATOR
 // ==========================================
 let typingTimer = null, typingSeconds = 0;
-
+ 
 function addTyping(label, start = Date.now()) {
   const area = document.getElementById('chatArea');
   if (!area) return;
@@ -1575,12 +1634,12 @@ function addTyping(label, start = Date.now()) {
     if (el) el.textContent = (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds);
   }, 1000);
 }
-
+ 
 function removeTyping() {
   clearInterval(typingTimer); typingTimer = null;
   document.getElementById('typingIndicator')?.remove();
 }
-
+ 
 function startPending(dossier, label) {
   dossier._pending = { label, start: Date.now() };
   if (dossier === currentDossier) addTyping(label, dossier._pending.start);
@@ -1589,7 +1648,7 @@ function endPending(dossier) {
   dossier._pending = null;
   if (dossier === currentDossier) removeTyping();
 }
-
+ 
 // ==========================================
 // RÉCUPÉRATION DE LA RÉPONSE CÔTÉ SERVEUR
 // Dès que n8n a répondu, le dossier va directement chercher la réponse
@@ -1615,15 +1674,15 @@ function extraireTexteReponse(data, profondeur = 0) {
   if (data.choices) return extraireTexteReponse(data.choices, profondeur + 1);
   return '';
 }
-
+ 
 function compterReponsesIA(messages = []) {
   return messages.filter(m => m.role === 'ai' || m.role === 'assistant').length;
 }
-
+ 
 function normaliserConversation(data = []) {
   return data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content }));
 }
-
+ 
 function appliquerConversationServeur(dossier, messagesServeur) {
   const messages = normaliserConversation(messagesServeur);
   // Conserve la question optimiste si le workflow n'a enregistré que sa réponse.
@@ -1636,7 +1695,7 @@ function appliquerConversationServeur(dossier, messagesServeur) {
   dossier._loaded = true;
   if (dossier === currentDossier) renderMessages();
 }
-
+ 
 async function attendreReponseServeur(dossier, messagesAvant, tentatives = 12) {
   // Le workflow peut enregistrer la réponse quelques instants après son retour.
   for (let i = 0; i < tentatives; i++) {
@@ -1644,7 +1703,7 @@ async function attendreReponseServeur(dossier, messagesAvant, tentatives = 12) {
       .select('role, content, timestamp')
       .eq('dossier_id', dossier.id)
       .order('timestamp', { ascending: true });
-
+ 
     if (!error) {
       const messages = normaliserConversation(data || []);
       const reponses = messages.filter(m => m.role === 'ai');
@@ -1655,12 +1714,12 @@ async function attendreReponseServeur(dossier, messagesAvant, tentatives = 12) {
         return nouvellesReponses[nouvellesReponses.length - 1].content;
       }
     }
-
+ 
     if (i < tentatives - 1) await new Promise(resolve => setTimeout(resolve, 1500));
   }
   return null;
 }
-
+ 
 function ajouterMessageSiAbsent(role, content, dossier) {
   if (!dossier) return;
   if (!dossier.messages) dossier.messages = [];
@@ -1668,7 +1727,7 @@ function ajouterMessageSiAbsent(role, content, dossier) {
   if (dernier?.role === role && dernier?.content === content) return;
   addMessage(role, content, dossier);
 }
-
+ 
 async function synchroniserConversation(dossier, roleAttendu = 'ai') {
   if (!dossier) return null;
   try {
@@ -1691,7 +1750,7 @@ async function synchroniserConversation(dossier, roleAttendu = 'ai') {
     return null;
   }
 }
-
+ 
 // ==========================================
 // ENVOI QUESTION
 // ==========================================
@@ -1710,6 +1769,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence) {
           dossier._questionEnAttente = null;
           if (sequence === questionSequence) {
             questionResolvedSequence = sequence;
+            oublierQuestion(dossier.id); notifier('Réponse prête', dossier.name);
             endPending(dossier);
             setLiveStatus(dossier, 'question_done');
             questionEnCours = false;
@@ -1732,25 +1792,27 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence) {
     if (dossier === currentDossier) setChatEnabled(true);
   }
 }
-
+ 
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
   if (!msg || !currentDossier || creationEnCours || questionEnCours) return;
-
+  proposerNotifications();
+ 
   const dossier = currentDossier;
   const messagesAvant = compterReponsesIA(dossier.messages || []);
   const sequence = ++questionSequence;
   let attenteConfirmationServeur = false;
   dossier._questionEnAttente = msg;
   questionEnCours = true;
+  memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, start: Date.now() });
   input.value = ''; input.style.height = 'auto';
   addMessage('user', msg, dossier);
   setLiveStatus(dossier, 'question');
   startPending(dossier, 'Recherche en cours...');
   setChatEnabled(false, 'Question en cours, veuillez patienter…');
   surveillerReponseQuestion(dossier, messagesAvant, sequence);
-
+ 
   try {
     const data = await fetchJson(WEBHOOK_QUESTION, {
       method: 'POST',
@@ -1777,6 +1839,13 @@ async function sendMessage() {
     setLiveStatus(dossier, 'question_done');
   } catch(err) {
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
+    if (err.status) {
+      questionSequence++;
+      const m = 'La question a échoué (erreur serveur ' + err.status + '). Réessayez ; si le problème continue, contactez le support.';
+      memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, erreur: m });
+      endPending(dossier); addMessage('system', m, dossier); setLiveStatus(dossier, null);
+      questionEnCours = false; setChatEnabled(true); return;
+    }
     const reponseEnregistree = await attendreReponseServeur(dossier, messagesAvant, 4);
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
     if (reponseEnregistree) {
@@ -1797,10 +1866,10 @@ async function sendMessage() {
     }
   }
 }
-
+ 
 function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
-
+ 
 // ==========================================
 // MODAL
 // ==========================================
@@ -1812,7 +1881,7 @@ function lockModal(lock) {
   document.getElementById('cancelBtn').disabled = lock;
   document.querySelectorAll('.file-remove').forEach(el => el.classList.toggle('disabled', lock));
 }
-
+ 
 function triggerFileInput() {
   if (creationEnCours) return;
   if (selectedFiles.length >= MAX_PDF_CREATION) {
@@ -1821,7 +1890,7 @@ function triggerFileInput() {
   }
   document.getElementById('fileInput').click();
 }
-
+ 
 function openModal() {
   if (creationEnCours) return;
   document.getElementById('modalOverlay').style.display = 'flex';
@@ -1831,7 +1900,7 @@ function openModal() {
   hideModalError();
   lockModal(false);
 }
-
+ 
 function closeModal() {
   if (creationEnCours) return;
   document.getElementById('modalOverlay').style.display = 'none';
@@ -1841,9 +1910,9 @@ function closeModal() {
   renderFilesList();
   hideModalError();
 }
-
+ 
 const MAX_PDF_CREATION = 1;
-
+ 
 function showModalError(msg) {
   const el = document.getElementById('modalError');
   if (!el) return;
@@ -1854,7 +1923,7 @@ function hideModalError() {
   const el = document.getElementById('modalError');
   if (el) el.style.display = 'none';
 }
-
+ 
 function handleFiles(files) {
   if (creationEnCours) return;
   const tousLesFichiers = Array.from(files);
@@ -1874,7 +1943,7 @@ function handleFiles(files) {
   renderFilesList();
   if (refuse) showModalError("Un seul document PDF par dossier.");
 }
-
+ 
 function renderFilesList() {
   const dropZone = document.getElementById('dropZone');
   const fichierAjoute = selectedFiles.length >= MAX_PDF_CREATION;
@@ -1895,12 +1964,12 @@ function renderFilesList() {
     </div>
   `).join('');
 }
-
+ 
 function removeFile(i) {
   if (creationEnCours) return;
   selectedFiles.splice(i, 1); renderFilesList(); hideModalError();
 }
-
+ 
 // ==========================================
 // CRÉATION DOSSIER
 // ==========================================
@@ -1913,7 +1982,7 @@ function setCreateButtonLoading(chargement) {
   loader.style.display = chargement ? 'inline-flex' : 'none';
   if (!chargement) lbl.textContent = 'Créer et analyser';
 }
-
+ 
 async function surveillerSyntheseAnalyse(dossier, reponsesAvant) {
   if (dossier._analysisWatcher) return;
   dossier._analysisWatcher = true;
@@ -1945,27 +2014,28 @@ async function surveillerSyntheseAnalyse(dossier, reponsesAvant) {
     dossier._analysisWatcher = false;
   }
 }
-
+ 
 async function createDossier() {
   const name = document.getElementById('dossierNameInput').value.trim();
   const notes = document.getElementById('dossierNotesInput').value.trim();
   hideModalError();
-
+  proposerNotifications();
+ 
   // Un dossier n'est créé que si les deux champs obligatoires sont fournis.
   if (!name) { showModalError('Veuillez saisir un nom de dossier.'); return; }
   if (selectedFiles.length === 0) { showModalError('Veuillez ajouter un document pour commencer l\'analyse.'); return; }
-
+ 
   creationEnCours = true;
   lockModal(true);
   await requestWakeLock();
-
+ 
   const btn = document.getElementById('createBtn');
   const lbl = document.getElementById('btnLbl');
   setCreateButtonLoading(true);
   lbl.textContent = 'Analyse en cours… ' + formatDuration(0);
   let sec = 0;
   const timer = setInterval(() => { sec++; if (lbl) lbl.textContent = 'Analyse en cours… ' + formatDuration(sec); }, 1000);
-
+ 
   const id = 'dossier_' + Date.now();
   const dossier = {
     id, name,
@@ -1979,11 +2049,12 @@ async function createDossier() {
     _liveStatus: 'analyse',
     _pending: null
   };
-
+ 
   if (notes) dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
   const messagesAvantAnalyse = compterReponsesIA(dossier.messages);
-
+ 
   dossiers.unshift(dossier);
+  memoriserDossier(dossier);
   currentDossier = dossier;
   document.getElementById('modalOverlay').style.display = 'none';
   setView('chat');
@@ -1996,7 +2067,7 @@ async function createDossier() {
   setChatEnabled(false);
   startPending(dossier, 'Analyse en cours...');
   surveillerSyntheseAnalyse(dossier, messagesAvantAnalyse);
-
+ 
   try {
     let dernierData = null;
     for (const file of selectedFiles) {
@@ -2011,11 +2082,12 @@ async function createDossier() {
       dernierData = await res.json();
       console.log('RÉPONSE N8N :', dernierData);
     }
-
+ 
     dossier.status = 'ready';
+    oublierDossier(id); notifier('Analyse prête', name);
     endPending(dossier);
     setLiveStatus(dossier, 'analyse_done');
-
+ 
     // Dès que n8n a répondu, le dossier va chercher la synthèse
     // enregistrée côté serveur ; le contenu du webhook sert de secours.
     const syntheseServeur = await attendreReponseServeur(dossier, messagesAvantAnalyse);
@@ -2026,7 +2098,7 @@ async function createDossier() {
         : `Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
       ajouterMessageSiAbsent('ai', msg, dossier);
     }
-
+ 
   } catch (err) {
     console.error(err);
     const perteConnexion = !navigator.onLine || /Failed to fetch|NetworkError|Load failed|network/i.test(err.message || '');
@@ -2043,7 +2115,9 @@ async function createDossier() {
       else if (err.message.includes('401') || err.message.includes('403')) msgErr = "Erreur d'authentification. Veuillez vous reconnecter.";
       else if (err.message.includes('404')) msgErr = "Le service d'analyse est introuvable. Contactez le support.";
       else if (err.message.includes('500')) msgErr = "Erreur serveur lors de l'analyse. Réessayez ou contactez le support.";
-      addMessage('ai', msgErr, dossier);
+      msgErr += ' (' + err.message + ')';
+      memoriserDossier(dossier, { status: 'error', message: msgErr });
+      addMessage('system', msgErr, dossier);
     }
   } finally {
     clearInterval(timer);
@@ -2059,7 +2133,7 @@ async function createDossier() {
     loadDossiers().then(() => { suivreAnalysesServeur(); });
   }
 }
-
+ 
 // ==========================================
 // FULLSCREEN
 // ==========================================
@@ -2080,7 +2154,7 @@ function openFullscreen() {
   overlay.scrollTop = 0;
 }
 function closeFullscreen() { document.getElementById('fullscreenOverlay').style.display = 'none'; }
-
+ 
 // ==========================================
 // DRAG & DROP — uniquement sur la modal (dropZone)
 // ==========================================
@@ -2092,7 +2166,7 @@ dropZone?.addEventListener('drop', e => {
   dropZone.classList.remove('drag-over');
   if (!creationEnCours) handleFiles(e.dataTransfer.files);
 });
-
+ 
 // WAKE LOCK — empêche la veille pendant une analyse
 let wakeLock = null;
 async function requestWakeLock() {
@@ -2106,10 +2180,11 @@ function releaseWakeLock() {
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && creationEnCours && !wakeLock) await requestWakeLock();
 });
-
+ 
 initTheme();
 initSidebar();
 initAuth();
 </script>
 </body>
 </html>
+ 
