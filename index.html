@@ -909,7 +909,8 @@ function statusLabel(dossier) {
   if (dossier._liveStatus === 'analyse') return '<span class="dossier-status status-processing">' + LOADER_3D + ' Analyse en cours</span>';
   if (dossier._liveStatus === 'question') return '<span class="dossier-status status-question">' + LOADER_3D + ' Question en cours</span>';
   if (dossier._liveStatus === 'analyse_done') return '<span class="dossier-status status-ready">' + DOT + ' Analyse prête</span>';
-  if (dossier._liveStatus === 'question_done') return '<span class="dossier-status status-ready">' + DOT + ' Réponse prête</span>';
+  if (dossier._liveStatus === 'question_done') return '<span class="dossier-status status-ready">' + DOT + ' Question prête</span>';
+  if (dossier._liveStatus === 'question_error') return '<span class="dossier-status status-error">' + ICON_ERR_SM + ' Erreur</span>';
   if (dossier.status === 'error') return '<span class="dossier-status status-error">' + ICON_ERR_SM + ' Erreur</span>';
   if (dossier.status === 'ready') return '<span class="dossier-status status-ready">' + DOT + ' Analyse prête</span>';
   return '<span class="dossier-status status-processing">' + LOADER_3D + ' Analyse en cours</span>';
@@ -1840,7 +1841,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
           dossier._questionEnAttente = null;
           questionResolvedSequence = sequence;
           oublierQuestion(dossier.id);
-          setLiveStatus(dossier, null);
+          setLiveStatus(dossier, 'question_error');
           questionEnCours = false;
           setChatEnabled(true);
           return;
@@ -1855,7 +1856,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
     dossier._questionEnAttente = null;
     endPending(dossier);
     addMessage('system', 'Je n’ai pas pu confirmer l’enregistrement de la réponse. Vérifiez la conversation et actualisez le dossier avant de renvoyer la question, pour éviter un doublon.', dossier);
-    setLiveStatus(dossier, null);
+    setLiveStatus(dossier, 'question_error');
     questionEnCours = false;
     if (dossier === currentDossier) setChatEnabled(true);
   }
@@ -1911,7 +1912,7 @@ async function sendMessage() {
       questionSequence++;
       const m = 'La question a échoué (erreur serveur ' + err.status + '). Réessayez ; si le problème continue, contactez le support.';
       memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, erreur: m });
-      endPending(dossier); addMessage('system', m, dossier); setLiveStatus(dossier, null);
+      endPending(dossier); addMessage('system', m, dossier); setLiveStatus(dossier, 'question_error');
       questionEnCours = false; setChatEnabled(true); return;
     }
     const reponseEnregistree = await attendreReponseServeur(dossier, messagesAvant, 4);
