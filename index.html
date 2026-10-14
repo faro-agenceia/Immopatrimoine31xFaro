@@ -1,14 +1,22 @@
 <!DOCTYPE html>
 <html lang="fr" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Assistant IA - Analyse de dossiers immobiliers</title>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assistant IA - Analyse de dossiers immobiliers</title>
+<style>
 :root {
-  --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --border: #475569;
-  --text: #f8fafc; --text-muted: #94a3b8; --accent: #3b82f6; --accent-light: #60a5fa;
-  --red: #ef4444; --orange: #f97316; --green: #10b981;
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #334155;
+  --border: #475569;
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent: #3b82f6;
+  --accent-light: #60a5fa;
+  --red: #ef4444;
+  --orange: #f97316;
+  --green: #10b981;
   --accent-soft: rgba(59,130,246,0.14);
   --hover: rgba(148,163,184,0.10);
   --overlay: rgba(0,0,0,0.6);
@@ -17,19 +25,35 @@
   --on-accent: #ffffff;
 }
 html[data-theme="light"] {
-  --bg: #f1f5f9; --surface: #ffffff; --surface2: #f1f5f9; --border: #e2e8f0;
-  --text: #0f172a; --text-muted: #64748b; --accent: #2563eb; --accent-light: #3b82f6;
-  --red: #dc2626; --orange: #ea580c; --green: #059669;
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --accent: #2563eb;
+  --accent-light: #3b82f6;
+  --red: #dc2626;
+  --orange: #ea580c;
+  --green: #059669;
   --accent-soft: rgba(37,99,235,0.10);
   --hover: rgba(15,23,42,0.06);
   --overlay: rgba(15,23,42,0.45);
   --shadow: 0 18px 50px rgba(15,23,42,0.16);
   --shadow-soft: 0 8px 24px rgba(15,23,42,0.10);
 }
- 
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; transition: background 0.2s, color 0.2s; }
- 
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  -webkit-font-smoothing: antialiased;
+}
+
 /* SIDEBAR */
 .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.2s ease; }
 .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); position: relative; }
@@ -48,8 +72,8 @@ body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 body.sidebar-collapsed .nav-item,
 body.sidebar-collapsed .new-dossier-btn,
 body.sidebar-collapsed .logout-btn { justify-content: center; padding: 10px 0; }
-body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 24px); }
- 
+body.sidebar-collapsed .new-dossier-btn { width: calc(100% - 24px); margin: 12px auto 16px; }
+
 /* NAVIGATION */
 .sidebar-nav { padding: 12px 12px 4px; display: flex; flex-direction: column; gap: 4px; }
 .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-muted); transition: background 0.15s, color 0.15s; }
@@ -73,18 +97,19 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .status-error { background: rgba(239,68,68,0.15); color: var(--red); }
 .status-question { background: rgba(249,115,22,0.15); color: var(--orange); }
 .dossier-delete { opacity: 0; color: var(--text-muted); border: none; background: none; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; transition: opacity 0.15s, color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.dossier-item:hover .dossier-delete, .dossier-item:focus-within .dossier-delete { opacity: 1; }
+.dossier-item:hover .dossier-delete,
+.dossier-item:focus-within .dossier-delete { opacity: 1; }
 .nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (hover: none) { .dossier-delete { opacity: 1; } }
-.dossier-delete:hover { color: var(--red); background: rgba(239,68,68,0.15); }
- 
+.dossier-delete:hover { color: var(--red); background: var(--hover); }
+
 /* MAIN */
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); text-align: center; padding: 40px; }
 .empty-icon { opacity: 0.4; display: flex; align-items: center; justify-content: center; }
 .empty-title { font-size: 18px; font-weight: 600; color: var(--text); }
-.empty-sub { font-size: 14px; max-width: 320px; line-height: 1.6; }
- 
+.empty-sub { font-size: 13px; line-height: 1.7; }
+
 /* HOME */
 .home-view, .dossiers-view { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
 .home-top { display: flex; justify-content: flex-end; padding: 16px 28px 0; }
@@ -128,7 +153,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .search-input { width: 210px; padding: 8px 12px 8px 32px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; }
 .search-input:focus { border-color: var(--accent); }
 .search-input::placeholder { color: var(--text-muted); }
- 
+
 /* INTERRUPTEUR DE THÈME (ovale soleil / lune) */
 .theme-switch { position: relative; display: inline-flex; align-items: center; justify-content: space-between; width: 62px; height: 30px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; flex-shrink: 0; transition: background 0.2s, border-color 0.2s; }
 .theme-switch:hover { border-color: var(--accent); }
@@ -138,7 +163,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .theme-switch:not(.is-light) .switch-thumb { transform: translateX(30px); }
 .theme-switch:not(.is-light) .switch-moon { color: var(--on-accent); }
 .theme-switch.is-light .switch-sun { color: var(--on-accent); }
- 
+
 /* AI ORB */
 .ai-orb { position: relative; width: 76px; height: 76px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .orb-core { position: absolute; inset: 12px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #dbeafe 0%, var(--accent-light) 34%, var(--accent) 70%, #1e3a8a 100%); box-shadow: 0 0 26px rgba(59,130,246,0.55), inset -4px -6px 14px rgba(15,23,42,0.35); animation: orbPulse 3.2s ease-in-out infinite; }
@@ -149,7 +174,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .ai-orb.thinking::after { animation: orbRing 1.1s linear infinite reverse; }
 @keyframes orbPulse { 0%,100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.07); filter: brightness(1.15); } }
 @keyframes orbRing { to { transform: rotate(360deg); } }
- 
+
 /* 3D LOADER */
 .loader { display: inline-flex; align-items: center; justify-content: center; gap: 4px; perspective: 120px; }
 .loader i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: orbBounce3d 1.4s cubic-bezier(0.45,0.05,0.55,0.95) infinite; }
@@ -157,7 +182,7 @@ body.sidebar-collapsed .new-dossier-btn { margin: 16px 12px; width: calc(100% - 
 .loader i:nth-child(3) { animation-delay: 0.32s; opacity: 0.6; }
 .loader-inline i { background: var(--on-accent); }
 @keyframes orbBounce3d { 0%,100% { transform: translate3d(0,0,0) scale(0.85); } 45% { transform: translate3d(0,-5px,14px) scale(1.15); } }
- 
+
 /* COMPTE (bas de la barre latérale) */
 .sidebar-account { position: relative; z-index: 40; margin: 8px 12px 16px; padding-top: 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
 .profile-btn { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; background: none; border: 1px solid transparent; border-radius: 10px; cursor: pointer; font-family: inherit; color: var(--text); text-align: left; transition: background 0.15s, border-color 0.15s; }
@@ -182,40 +207,34 @@ body.sidebar-collapsed .profile-caret { display: none; }
 /* Aucun accès à l'application tant que l'utilisateur n'est pas connecté */
 body.unauthenticated .sidebar,
 body.unauthenticated .main { display: none; }
-.auth-note { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 12px; line-height: 1.5; }
- 
+.auth-note { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 14px; line-height: 1.6; }
+
 /* DOSSIER VIEW */
 .dossier-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .dossier-header { padding: 16px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
 .dossier-title { font-size: 16px; font-weight: 600; }
 .docs-count { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
-.btn-icon { padding: 8px 14px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s; }
+.btn-icon { padding: 8px 14px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.15s, background 0.15s, color 0.15s; }
 .btn-icon:hover { border-color: var(--accent); background: var(--surface); }
-.btn-icon.expand:hover { border-color: var(--accent-light); }
- 
+.btn-icon.expand:hover { border-color: var(--accent); }
+.btn-icon.danger:hover { border-color: var(--red); color: var(--red); }
+
 /* DOCS STRIP */
 .docs-strip { padding: 10px 28px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; overflow-x: auto; background: var(--surface); min-height: 44px; align-items: center; }
-.doc-chip { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; white-space: nowrap; color: var(--text-muted); }
- 
+.doc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--text); white-space: nowrap; }
 /* CHAT */
 .chat-area { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
 .message { display: flex; gap: 12px; max-width: 760px; }
 .message.user { flex-direction: row-reverse; align-self: flex-end; }
 .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-.avatar.ai { width: 46px; height: 46px; flex-basis: 46px; background: transparent; color: var(--on-accent); position: relative; overflow: visible; border-radius: 50%; }
-.avatar.ai::before, .avatar.ai::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; border: 1px solid var(--accent-soft); pointer-events: none; animation: orbRing 4.5s linear infinite; }
-.avatar.ai::after { inset: 0; border-color: transparent; border-top-color: var(--accent-light); animation-duration: 2.6s; animation-direction: reverse; }
-.avatar.ai .orb-core { position: absolute; inset: 8px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #dbeafe 0%, var(--accent-light) 34%, var(--accent) 70%, #1e3a8a 100%); box-shadow: 0 0 14px rgba(59,130,246,0.5), inset -3px -4px 9px rgba(15,23,42,0.35); animation: orbPulse 3.2s ease-in-out infinite; }
-.avatar.ai.thinking .orb-core { animation-duration: 1.1s; }
-.avatar.ai.thinking::after { animation-duration: 0.8s; }
 .avatar.user { background: var(--surface2); }
 .bubble { padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.7; max-width: 600px; }
 .message.ai .bubble { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 4px; }
 .message.user .bubble { background: var(--accent); color: var(--on-accent); border-top-right-radius: 4px; }
 .message.system { align-self: center; max-width: 100%; }
-.message.system .bubble { background: var(--surface2); border: 1px dashed var(--border); color: var(--text-muted); font-size: 12px; text-align: center; border-radius: 10px; }
- 
+.message.system .bubble { background: var(--surface2); border: 1px solid var(--border); font-size: 12px; color: var(--text-muted); text-align: center; }
+
 .response-section { margin-top: 12px; padding: 12px 16px; border-radius: 8px; font-size: 13px; }
 .section-critical { background: rgba(239,68,68,0.08); border-left: 3px solid var(--red); }
 .section-warning { background: rgba(249,115,22,0.08); border-left: 3px solid var(--orange); }
@@ -226,7 +245,7 @@ body.unauthenticated .main { display: none; }
 .section-warning .section-title { color: var(--orange); }
 .section-ok .section-title { color: var(--green); }
 .section-sources .section-title { color: var(--accent-light); }
- 
+
 /* INPUT */
 .input-area { padding: 16px 28px; border-top: 1px solid var(--border); background: var(--surface); }
 .bubble ul, .bubble ol { margin: 8px 0; padding-left: 22px; }
@@ -249,7 +268,7 @@ body.unauthenticated .main { display: none; }
 .send-btn.stop { background: var(--surface2); color: var(--text); border-radius: 50%; }
 .send-btn.stop:hover { background: var(--border); }
 @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
- 
+
 /* MODAL */
 .modal-overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
 .legal-overlay { position: fixed; inset: 0; z-index: 250; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--overlay); backdrop-filter: blur(4px); }
@@ -268,9 +287,9 @@ body.unauthenticated .main { display: none; }
 .modal-input:disabled { opacity: 0.45; cursor: not-allowed; }
 textarea.modal-input { resize: vertical; min-height: 70px; }
 .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 24px; text-align: center; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, background 0.15s; margin-bottom: 16px; }
-.drop-zone:hover:not(.disabled):not(.has-file), .drop-zone.drag-over:not(.has-file) { border-color: var(--accent); background: var(--accent-soft); }
+.drop-zone:hover:not(.disabled):not(.has-file),
+.drop-zone.drag-over:not(.has-file) { border-color: var(--accent); background: var(--accent-soft); }
 .drop-zone.has-file { opacity: 0.58; cursor: not-allowed; border-style: solid; pointer-events: none; }
-.drop-zone.has-file:hover { border-color: var(--border); background: transparent; }
 .drop-zone.disabled { opacity: 0.4; pointer-events: none; }
 .drop-icon { margin-bottom: 8px; display: flex; align-items: center; justify-content: center; }
 .drop-text { font-size: 13px; }
@@ -289,16 +308,16 @@ textarea.modal-input { resize: vertical; min-height: 70px; }
 .btn-create:disabled { opacity: 0.7; cursor: not-allowed; }
 .spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.spin-icon svg { animation: spin 0.8s linear infinite; display: inline-block; }
- 
+.spin-icon svg { animation: spin 1s linear infinite; }
+
 /* TYPING */
 .typing { display: flex; gap: 4px; padding: 6px 0; align-items: flex-end; perspective: 120px; }
 .typing span { width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%; animation: bounce3d 1.4s cubic-bezier(0.45,0.05,0.55,0.95) infinite; }
 .typing span:nth-child(2) { animation-delay: 0.16s; }
 .typing span:nth-child(3) { animation-delay: 0.32s; }
 @keyframes bounce3d { 0%,100% { transform: translate3d(0,0,0) scale(0.85); opacity: 0.45; } 45% { transform: translate3d(0,-5px,14px) scale(1.15); opacity: 1; } }
-.typing-orb { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #dbeafe 0%, var(--accent-light) 40%, var(--accent) 100%); box-shadow: 0 0 12px rgba(59,130,246,0.5); animation: orbPulse 1.4s ease-in-out infinite; }
- 
+.typing-orb { display: flex; align-items: center; justify-content: center; }
+
 /* FULLSCREEN */
 .fullscreen-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 300; display: flex; flex-direction: column; padding: 40px; overflow-y: auto; }
 .fullscreen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-shrink: 0; }
@@ -307,37 +326,134 @@ textarea.modal-input { resize: vertical; min-height: 70px; }
 .fullscreen-close:hover { border-color: var(--red); color: var(--red); }
 .fullscreen-content { max-width: 860px; margin: 0 auto; width: 100%; font-size: 15px; line-height: 1.9; color: var(--text); display: flex; flex-direction: column; gap: 20px; }
 .fullscreen-content .message { max-width: 100%; }
-.fullscreen-content .bubble { max-width: 780px; font-size: 15px; }
- 
+.fullscreen-content .bubble { max-width: 100%; }
+
 /* AUTH */
 .auth-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; overflow-y: auto; padding: 20px; }
 .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 420px; max-width: 94vw; max-height: calc(100vh - 40px); overflow-y: auto; box-shadow: var(--shadow); }
 .auth-logo { font-size: 15px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-light); margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .auth-logo-sub { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 24px; }
-.auth-error { background: rgba(239,68,68,0.1); border: 1px solid var(--red); color: var(--red); font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; display: none; }
+.auth-error { background: rgba(239,68,68,0.1); border: 1px solid var(--red); color: var(--red); font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; display: none; line-height: 1.5; }
 .auth-btn { width: 100%; padding: 10px 16px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 4px; transition: background 0.15s; }
 .auth-btn:hover { background: var(--accent-light); }
 .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .auth-legal-checks { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 14px; }
 .auth-legal-check { display: flex; align-items: flex-start; gap: 9px; color: var(--text-muted); font-size: 11px; line-height: 1.5; cursor: pointer; }
 .auth-legal-check input { flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--accent); }
-.auth-legal-check button { padding: 0; border: 0; background: none; color: var(--accent-light); font: inherit; text-decoration: underline; cursor: pointer; }
- 
- 
+.auth-legal-check button { background: none; border: none; padding: 0; color: var(--accent-light); font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; }
+
 /* MOT DE PASSE : bouton œil */
 .pwd-wrap { position: relative; margin-bottom: 12px; }
 .pwd-wrap.last { margin-bottom: 16px; }
 .pwd-wrap .modal-input { margin-bottom: 0; padding-right: 44px; }
 .pwd-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
-.pwd-toggle:hover { color: var(--text); background: var(--surface); }
- 
+.pwd-toggle:hover { color: var(--text); background: var(--hover); }
+
 input[type="file"] { display: none; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
- 
 .icon { flex-shrink: 0; }
- 
+
+/* TABLEAUX MARKDOWN */
+.md-table-wrap { margin: 12px 0; max-width: 100%; overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+.md-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.md-table th, .md-table td { padding: 9px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); line-height: 1.6; }
+.md-table thead th { background: var(--surface2); font-weight: 600; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+.md-table tbody tr:last-child td { border-bottom: none; }
+.md-table tbody tr:nth-child(even) td { background: var(--hover); }
+.message.user .bubble .md-table-wrap { border-color: rgba(255,255,255,0.35); }
+.message.user .bubble .md-table th, .message.user .bubble .md-table td { border-bottom-color: rgba(255,255,255,0.3); }
+.message.user .bubble .md-table thead th { background: rgba(255,255,255,0.16); color: var(--on-accent); }
+.message.user .bubble .md-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.08); }
+
+/* LENTILLE DE PHARE (indicateur IA) */
+.ai-orb { position: relative; width: 76px; height: 76px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; animation: lensFloat 8s ease-in-out infinite; }
+.ai-orb .lens-glass { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 34% 26%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 62%); border: 1px solid var(--border); overflow: hidden; }
+.ai-orb .orb-core,
+.avatar.ai .orb-core { position: absolute; border-radius: 50%; background: radial-gradient(circle at 40% 34%, #ffffff 0%, var(--accent) 58%, var(--border) 100%); box-shadow: 0 0 14px var(--accent-soft); animation: lensCorePulse 3.4s ease-in-out infinite; }
+.ai-orb .orb-core { inset: 30px; }
+.ai-orb .lens-ring { position: absolute; border-radius: 50%; border: 1px solid var(--border); animation: lensBreath 7s ease-in-out infinite; }
+.ai-orb .lens-ring.r1 { inset: 24px; }
+.ai-orb .lens-ring.r2 { inset: 15px; animation-delay: 0.7s; }
+.ai-orb .lens-ring.r3 { inset: 6px; animation-delay: 1.4s; }
+.ai-orb .lens-beam { position: absolute; inset: 0; border-radius: 50%; opacity: 0; pointer-events: none; background: conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 286deg, var(--accent-soft) 330deg, rgba(255,255,255,0) 360deg); transition: opacity 0.6s ease; }
+.ai-orb.thinking .lens-beam { opacity: 1; animation: lensSpin 2.8s linear infinite; }
+.ai-orb.thinking .orb-core { animation: lensCorePulse 1.2s ease-in-out infinite; }
+.ai-orb.thinking .lens-ring { animation-duration: 2.6s; }
+.ai-orb.thinking::after { content: ''; position: absolute; inset: 10px; border-radius: 50%; border: 1px solid var(--accent-soft); animation: lensWave 2.6s ease-out infinite; pointer-events: none; }
+
+/* Version réduite de la lentille, à côté des réponses */
+.avatar.ai { width: 46px; height: 46px; flex-basis: 46px; background: transparent; border-radius: 50%; position: relative; overflow: visible; display: flex; align-items: center; justify-content: center; }
+.avatar.ai .orb-core { inset: 16px; box-shadow: 0 0 8px var(--accent-soft); animation: lensCorePulse 3.8s ease-in-out infinite; }
+.avatar.ai .lens-ring { position: absolute; border-radius: 50%; border: 1px solid var(--border); animation: lensBreath 7s ease-in-out infinite; }
+.avatar.ai .lens-ring.r2 { inset: 10px; }
+.avatar.ai .lens-beam { position: absolute; inset: 0; border-radius: 50%; opacity: 0; pointer-events: none; background: conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 286deg, var(--accent-soft) 330deg, rgba(255,255,255,0) 360deg); }
+.avatar.ai.thinking .orb-core { animation: lensCorePulse 1.1s ease-in-out infinite; }
+.avatar.ai.thinking .lens-beam { opacity: 1; animation: lensSpin 2.4s linear infinite; }
+.avatar.ai.thinking::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; border: 1px solid var(--accent-soft); animation: lensWaveSm 2.4s ease-out infinite; pointer-events: none; }
+
+@keyframes lensFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes lensBreath { 0%,100% { opacity: 0.4; transform: scale(0.97); } 50% { opacity: 0.9; transform: scale(1.02); } }
+@keyframes lensCorePulse { 0%,100% { opacity: 0.85; transform: scale(0.97); } 50% { opacity: 1; transform: scale(1.05); } }
+@keyframes lensSpin { to { transform: rotate(360deg); } }
+@keyframes lensWave { 0% { transform: scale(0.6); opacity: 0.75; } 100% { transform: scale(1.12); opacity: 0; } }
+@keyframes lensWaveSm { 0% { transform: scale(0.6); opacity: 0.75; } 100% { transform: scale(1.25); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ai-orb, .ai-orb .orb-core, .ai-orb .lens-ring, .ai-orb .lens-beam, .ai-orb::after,
+  .avatar.ai .orb-core, .avatar.ai .lens-ring, .avatar.ai .lens-beam, .avatar.ai::after { animation: none !important; }
+}
+
+/* THÈME MONOCHROME */
+:root {
+  --bg: #1b1b1a;
+  --surface: #242422;
+  --surface2: #2f2f2c;
+  --border: #3e3e3a;
+  --text: #f3f2ee;
+  --text-muted: #a09e96;
+  --accent: #f3f2ee;
+  --accent-light: #d6d4cc;
+  --red: #ef4444;
+  --orange: #f59e0b;
+  --green: #34d399;
+  --accent-soft: rgba(243,242,238,0.10);
+  --hover: rgba(243,242,238,0.07);
+  --overlay: rgba(0,0,0,0.6);
+  --shadow: 0 18px 50px rgba(0,0,0,0.5);
+  --shadow-soft: 0 6px 18px rgba(0,0,0,0.25);
+  --on-accent: #1b1b1a;
+}
+html[data-theme="light"] {
+  --bg: #faf9f6;
+  --surface: #ffffff;
+  --surface2: #f1efe9;
+  --border: #e4e1d9;
+  --text: #1c1c1a;
+  --text-muted: #6f6d66;
+  --accent: #1c1c1a;
+  --accent-light: #3d3d3a;
+  --red: #dc2626;
+  --orange: #d97706;
+  --green: #059669;
+  --accent-soft: rgba(28,28,26,0.07);
+  --hover: rgba(28,28,26,0.05);
+  --overlay: rgba(28,28,26,0.4);
+  --shadow: 0 18px 50px rgba(28,28,26,0.14);
+  --shadow-soft: 0 4px 14px rgba(28,28,26,0.08);
+  --on-accent: #ffffff;
+}
+.new-dossier-btn:hover { box-shadow: var(--shadow-soft); }
+.ai-orb .orb-core, .avatar.ai .orb-core { background: radial-gradient(circle at 38% 30%, #ffffff 0%, #a8a49b 46%, #1c1c1a 100%); box-shadow: 0 0 10px rgba(0,0,0,0.25); }
+html[data-theme="dark"] .ai-orb .orb-core,
+html[data-theme="dark"] .avatar.ai .orb-core { background: radial-gradient(circle at 38% 30%, #ffffff 0%, #bdb9ae 48%, #6b685f 100%); }
+.message.ai .bubble { background: transparent; border: none; padding-left: 0; padding-right: 0; }
+.message.user .bubble { background: var(--accent); color: var(--on-accent); }
+.message.user .bubble .md-table-wrap { border-color: var(--border); }
+.message.user .bubble .md-table th, .message.user .bubble .md-table td { border-bottom-color: var(--border); }
+.message.user .bubble .md-table thead th { background: var(--surface2); color: var(--text-muted); }
+.message.user .bubble .md-table tbody tr:nth-child(even) td { background: var(--surface2); }
+
 /* RESPONSIVE */
 @media (max-width: 1024px) {
   .home-inner, .view-top, .home-list.in-view { padding-left: 20px; padding-right: 20px; }
@@ -356,65 +472,11 @@ input[type="file"] { display: none; }
   .list-card { flex-wrap: wrap; }
   .list-card-actions { width: 100%; justify-content: flex-end; }
   .fullscreen-overlay { padding: 20px; }
+  .bubble { max-width: 100%; }
 }
-
-/* THÈME MONOCHROME */
-:root {
-  --bg: #1b1b1a; --surface: #242422; --surface2: #2f2f2c; --border: #3e3e3a;
-  --text: #f3f2ee; --text-muted: #a09e96; --accent: #f3f2ee; --accent-light: #d6d4cc;
-  --red: #ef4444; --orange: #f59e0b; --green: #34d399;
-  --accent-soft: rgba(243,242,238,0.10); --hover: rgba(243,242,238,0.07);
-  --overlay: rgba(0,0,0,0.6); --shadow: 0 18px 50px rgba(0,0,0,0.5); --shadow-soft: 0 6px 18px rgba(0,0,0,0.25);
-  --on-accent: #1b1b1a;
-}
-html[data-theme="light"] {
-  --bg: #faf9f6; --surface: #ffffff; --surface2: #f1efe9; --border: #e4e1d9;
-  --text: #1c1c1a; --text-muted: #6f6d66; --accent: #1c1c1a; --accent-light: #3d3d3a;
-  --red: #dc2626; --orange: #d97706; --green: #059669;
-  --accent-soft: rgba(28,28,26,0.07); --hover: rgba(28,28,26,0.05);
-  --overlay: rgba(28,28,26,0.4); --shadow: 0 18px 50px rgba(28,28,26,0.14); --shadow-soft: 0 4px 14px rgba(28,28,26,0.08);
-  --on-accent: #ffffff;
-}
-.new-dossier-btn:hover { box-shadow: var(--shadow-soft); }
-.orb-core, .avatar.ai .orb-core { background: radial-gradient(circle at 32% 28%, #ffffff 0%, #a8a49b 40%, #1c1c1a 100%); box-shadow: 0 4px 14px rgba(0,0,0,0.2), inset -3px -4px 9px rgba(0,0,0,0.25); }
-html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core { background: radial-gradient(circle at 32% 28%, #ffffff 0%, #bdb9ae 45%, #6b685f 100%); }
-.message.ai .bubble { background: transparent; border: none; padding-left: 0; padding-right: 0; }
-.message.user .bubble { background: var(--surface2); color: var(--text); border-top-right-radius: 4px; }
-
-/* BOULE IA — effets (les couleurs de la boule restent celles définies plus haut) */
-.ai-orb { animation: orbFloat 6s ease-in-out infinite; }
-.orb-core { overflow: hidden; animation: orbPulse 3.2s ease-in-out infinite, orbRipple 3.2s ease-out infinite; }
-.avatar.ai .orb-core { animation: orbPulse 3.2s ease-in-out infinite; }
-.ai-orb.thinking .orb-core { animation: orbPulse 1.4s ease-in-out infinite, orbRipple 1.4s ease-out infinite; }
-.avatar.ai.thinking .orb-core { animation: orbPulse 1.1s ease-in-out infinite, orbRippleSm 1.1s ease-out infinite; }
-/* reflet brillant */
-.orb-core::before { content: ''; position: absolute; top: 10%; left: 14%; width: 38%; height: 28%; border-radius: 50%; background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 72%); transform: rotate(-28deg); pointer-events: none; z-index: 2; }
-/* lueur qui tourne à la surface */
-.orb-core::after { content: ''; position: absolute; inset: -35%; background: conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 250deg, rgba(255,255,255,0.35) 310deg, rgba(255,255,255,0) 360deg); mix-blend-mode: soft-light; animation: orbSheen 6s linear infinite; pointer-events: none; }
-.ai-orb.thinking .orb-core::after { animation-duration: 2.2s; }
-.avatar.ai .orb-core::after { animation: none; }
-.avatar.ai.thinking .orb-core::after { animation: orbSheen 2.4s linear infinite; }
-/* petit point qui orbite sur l'anneau */
-.ai-orb::before { background: radial-gradient(circle at 50% 2px, var(--accent-light) 0, var(--accent-light) 2.5px, rgba(0,0,0,0) 3.5px); }
-.avatar.ai::before { background: radial-gradient(circle at 50% 1px, var(--accent-light) 0, var(--accent-light) 1.8px, rgba(0,0,0,0) 2.6px); }
-@keyframes orbFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-@keyframes orbSheen { to { transform: rotate(360deg); } }
-@keyframes orbRipple {
-  0% { box-shadow: 0 4px 14px rgba(0,0,0,0.2), inset -3px -4px 9px rgba(0,0,0,0.25), 0 0 0 0 var(--accent-soft); }
-  80%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.2), inset -3px -4px 9px rgba(0,0,0,0.25), 0 0 0 14px rgba(0,0,0,0); }
-}
-@keyframes orbRippleSm {
-  0% { box-shadow: 0 4px 14px rgba(0,0,0,0.2), inset -3px -4px 9px rgba(0,0,0,0.25), 0 0 0 0 var(--accent-soft); }
-  80%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.2), inset -3px -4px 9px rgba(0,0,0,0.25), 0 0 0 8px rgba(0,0,0,0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ai-orb, .orb-core, .orb-core::after, .ai-orb::before, .ai-orb::after, .avatar.ai::before, .avatar.ai::after { animation: none !important; }
-}
-  </style>
+</style>
 </head>
 <body>
- 
-<!-- AUTH -->
 <div class="auth-overlay" id="authOverlay" style="display:none;">
   <div class="auth-box">
     <div class="auth-logo"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"></rect><rect x="9" y="6" width="2" height="2"></rect><rect x="13" y="6" width="2" height="2"></rect><rect x="9" y="11" width="2" height="2"></rect><rect x="13" y="11" width="2" height="2"></rect><path d="M9 22v-4h6v4"></path></svg>ASSISTANT IA</div>
@@ -429,15 +491,14 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
     <button type="button" class="link-btn" id="forgotPasswordBtn" onclick="handleForgotPassword()">Mot de passe oublié ?</button>
     <div class="auth-legal-checks">
       <div class="auth-legal-check"><input type="checkbox" id="authPrivacyAck" aria-label="Je confirme avoir pris connaissance de la politique de confidentialité" /><span>Je confirme avoir pris connaissance de la</span><button type="button" onclick="openLegalPage('confidentialite')">politique de confidentialité</button>.</div>
-      <div class="auth-legal-check"><input type="checkbox" id="authTermsAccepted" aria-label="J’accepte les conditions d’utilisation" /><span>J’accepte les</span><button type="button" onclick="openLegalPage('conditions')">conditions d’utilisation</button>.</div>
+      <div class="auth-legal-check"><input type="checkbox" id="authTermsAccepted" aria-label="J'accepte les conditions d'utilisation" /><span>J'accepte les</span><button type="button" onclick="openLegalPage('conditions')">conditions d'utilisation</button>.</div>
       <div class="auth-legal-check"><span>Lire les <button type="button" onclick="openLegalPage('mentions')">mentions légales</button> et les informations sur les <button type="button" onclick="openLegalPage('cookies')">cookies et le stockage local</button>.</span></div>
     </div>
     <button class="auth-btn" id="authSubmitBtn" onclick="handleAuthSubmit()">Se connecter</button>
     <div class="auth-note">La connexion est obligatoire : sans identifiants, l'accès aux dossiers est bloqué.</div>
   </div>
 </div>
- 
-<!-- RECOVERY -->
+
 <div class="auth-overlay" id="recoveryOverlay" style="display:none;">
   <div class="auth-box">
     <div class="auth-logo"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"></rect><rect x="9" y="6" width="2" height="2"></rect><rect x="13" y="6" width="2" height="2"></rect><rect x="9" y="11" width="2" height="2"></rect><rect x="13" y="11" width="2" height="2"></rect><path d="M9 22v-4h6v4"></path></svg>ASSISTANT IA</div>
@@ -454,8 +515,7 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
     <button class="auth-btn" id="recoverySubmitBtn" onclick="handleRecoverySubmit()">Valider le nouveau mot de passe</button>
   </div>
 </div>
- 
-<!-- SIDEBAR -->
+
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="logo"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"></rect><rect x="9" y="6" width="2" height="2"></rect><rect x="13" y="6" width="2" height="2"></rect><rect x="9" y="11" width="2" height="2"></rect><rect x="13" y="11" width="2" height="2"></rect><path d="M9 22v-4h6v4"></path></svg><span class="logo-text">ASSISTANT IA</span></div>
@@ -491,32 +551,37 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
       <div class="account-legal-links" aria-label="Informations légales du compte">
         <button type="button" onclick="openLegalPage('mentions')">Mentions légales</button>
         <button type="button" onclick="openLegalPage('confidentialite')">Politique de confidentialité</button>
-        <button type="button" onclick="openLegalPage('conditions')">Conditions d’utilisation</button>
+        <button type="button" onclick="openLegalPage('conditions')">Conditions d'utilisation</button>
         <button type="button" onclick="openLegalPage('cookies')">Cookies et stockage local</button>
       </div>
       <button class="account-logout" type="button" onclick="handleLogout()"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Se déconnecter</button>
     </div>
   </div>
 </aside>
- 
-<!-- MAIN -->
+
 <main class="main" id="main">
   <div class="empty-state" id="emptyState">
     <div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"></rect><rect x="9" y="6" width="2" height="2"></rect><rect x="13" y="6" width="2" height="2"></rect><rect x="9" y="11" width="2" height="2"></rect><rect x="13" y="11" width="2" height="2"></rect><path d="M9 22v-4h6v4"></path></svg></div>
     <div class="empty-title">Aucun dossier ouvert</div>
     <div class="empty-sub">Créez un nouveau dossier pour commencer.<br>Ajoutez votre dossier PDF puis lancez l'analyse.</div>
   </div>
- 
-  <!-- ACCUEIL -->
+
   <div class="home-view" id="homeView" style="display:none;">
     <div class="home-top">
       <button class="theme-switch" id="themeToggle" type="button" onclick="toggleTheme()" title="Passer en thème clair" aria-label="Passer en thème clair"><span class="switch-ico switch-sun"></span><span class="switch-ico switch-moon"></span><span class="switch-thumb"></span></button>
     </div>
     <div class="home-inner">
       <section class="home-hero">
-        <div class="ai-orb" id="homeOrb" aria-hidden="true"><span class="orb-core"></span></div>
+        <div class="ai-orb" id="homeOrb" aria-hidden="true">
+          <span class="lens-glass"></span>
+          <span class="lens-ring r3"></span>
+          <span class="lens-ring r2"></span>
+          <span class="lens-ring r1"></span>
+          <span class="orb-core"></span>
+          <span class="lens-beam"></span>
+        </div>
         <div class="hero-text">
-          <h1 class="hero-title">Bonjour <span id="helloName">Gilles</span>, prêt à analyser vos dossiers&nbsp;?</h1>
+          <h1 class="hero-title">Bonjour <span id="helloName">Gilles</span>, prêt à analyser vos dossiers ?</h1>
           <p class="hero-sub">Votre assistant examine les pièces de vos dossiers immobiliers et répond à vos questions.</p>
           <div class="hero-actions">
             <button class="btn-primary" onclick="openModal()"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Nouveau dossier</button>
@@ -524,7 +589,7 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
           </div>
         </div>
       </section>
- 
+
       <section class="home-section">
         <div class="home-section-head">
           <h2 class="home-section-title">Vos derniers dossiers</h2>
@@ -534,8 +599,7 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
       </section>
     </div>
   </div>
- 
-  <!-- MES DOSSIERS -->
+
   <div class="dossiers-view" id="dossiersView" style="display:none;">
     <div class="view-top">
       <div class="view-head">
@@ -559,7 +623,7 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
     <div class="home-list in-view" id="deletedDossiersList" style="display:none;"></div>
     <div class="list-empty" id="deletedDossiersEmpty" style="display:none;">Aucun dossier dans la corbeille.</div>
   </div>
- 
+
   <div class="dossier-view" id="dossierView" style="display:none;">
     <div class="dossier-header">
       <div>
@@ -567,6 +631,7 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
         <div class="docs-count" id="docsCount">0 document</div>
       </div>
       <div class="header-actions">
+        <button class="btn-icon" id="headerDeleteBtn" onclick="supprimerDossierCourant(event)" title="Supprimer ce dossier" aria-label="Supprimer ce dossier"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>Supprimer</button>
         <button class="btn-icon expand" onclick="openFullscreen()"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M16 3h3a2 2 0 0 1 2 2v3"></path><path d="M21 16v3a2 2 0 0 1-2 2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path></svg>Agrandir</button>
       </div>
     </div>
@@ -588,8 +653,7 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
     </div>
   </div>
 </main>
- 
-<!-- INFORMATIONS LÉGALES — brouillons à compléter avant l'ouverture commerciale -->
+
 <div class="legal-overlay" id="legalOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="legalTitle" onclick="if(event.target===this)closeLegalPage()">
   <section class="legal-panel">
     <div class="legal-panel-head"><h2 id="legalTitle">Informations</h2><button class="legal-close" type="button" onclick="closeLegalPage()">Fermer</button></div>
@@ -597,8 +661,7 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
     <div id="legalContent"></div>
   </section>
 </div>
- 
-<!-- MODAL -->
+
 <div class="modal-overlay" id="modalOverlay" style="display:none;">
   <div class="modal">
     <div class="modal-title"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Nouveau dossier</div>
@@ -617,8 +680,7 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
     </div>
   </div>
 </div>
- 
-<!-- FULLSCREEN -->
+
 <div class="fullscreen-overlay" id="fullscreenOverlay" style="display:none;">
   <div class="fullscreen-header">
     <div class="fullscreen-title" id="fullscreenTitle">—</div>
@@ -626,23 +688,32 @@ html[data-theme="dark"] .orb-core, html[data-theme="dark"] .avatar.ai .orb-core 
   </div>
   <div class="fullscreen-content" id="fullscreenContent"></div>
 </div>
- 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const WEBHOOK_UPLOAD   = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
+const WEBHOOK_UPLOAD = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
 const WEBHOOK_QUESTION = 'https://n8n.srv1960518.hstgr.cloud/webhook/reponses-questions';
 const LEGAL_ACCEPTANCE_VERSION = 'demo-2026-10-05-v1';
-const SUPABASE_URL      = 'https://zpvxifqbunhaoldkubqn.supabase.co';
+const SUPABASE_URL = 'https://zpvxifqbunhaoldkubqn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwdnhpZnFidW5oYW9sZGt1YnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4OTI1NjAsImV4cCI6MjEwNDQ2ODU2MH0.bs-ssIxQm2WRhMXIU_m3z0YvqI-hXj4wAcVj9Bl0NQ4';
- 
+
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Coupures possibles d'un relais entre le site et n8n : l'analyse continue côté serveur.
+const STATUTS_COUPURE = [502, 504, 524];
+// Une erreur survenue après ce délai, ou une coupure, n'est plus considérée comme un échec.
+const DELAI_ERREUR_NON_DEFINITIVE = 60000;
+// Durées de suivi allongées pour les gros modèles.
+const DUREE_SUIVI_ANALYSE = 60 * 60 * 1000;
+const DUREE_SUIVI_QUESTION = 30 * 60 * 1000;
+const INTERVALLE_POLLING = 2500;
+
 let session = null;
 let dossiers = [];
 let dossiersSupprimes = [];
 let currentDossier = null;
 let selectedFiles = [];
 let creationEnCours = false;
-let questionEnCours = false;
 let questionSequence = 0;
 let questionResolvedSequence = 0;
 let currentView = 'accueil';
@@ -651,10 +722,11 @@ let afficherDossiersSupprimes = false;
 let appUserInitialise = null;
 let authInProgress = false;
 let creationDebut = 0;
+
 window.addEventListener('beforeunload', (e) => {
   if (creationEnCours && Date.now() - creationDebut < 20000) { e.preventDefault(); e.returnValue = ''; }
 });
- 
+
 // ==========================================
 // ICÔNES SVG
 // ==========================================
@@ -664,52 +736,74 @@ const ICON_USER = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" s
 const ICON_TRASH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
 const ICON_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
 const ICON_EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
-const ICON_SEND = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
 const ICON_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>';
 const ICON_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
 const LOADER_3D = '<span class="loader"><i></i><i></i><i></i></span>';
- 
+const LENTILLE = '<span class="lens-ring r2"></span><span class="orb-core"></span><span class="lens-beam"></span>';
+
 // ===== MÉMOIRE LOCALE (survit à l'actualisation) =====
 function cleLocale() { return session?.user?.id ? 'assistant-ia-local-' + session.user.id : null; }
 function lireLocal() { try { return JSON.parse(localStorage.getItem(cleLocale()) || '{}'); } catch (e) { return {}; } }
-function majLocal(fn) { if (!cleLocale()) return; const o = lireLocal(); o.dossiers = o.dossiers || {}; o.questions = o.questions || {}; fn(o); try { localStorage.setItem(cleLocale(), JSON.stringify(o)); } catch (e) {} }
-function memoriserDossier(d, extra = {}) { majLocal(o => { o.dossiers[d.id] = Object.assign({ id: d.id, name: d.name, date: d.date, docs: d.docs, start: Date.now(), status: 'processing' }, o.dossiers[d.id] || {}, extra); }); }
+function majLocal(fn) {
+  if (!cleLocale()) return;
+  const o = lireLocal();
+  o.dossiers = o.dossiers || {};
+  o.questions = o.questions || {};
+  o.suppressions = o.suppressions || {};
+  fn(o);
+  try { localStorage.setItem(cleLocale(), JSON.stringify(o)); } catch (e) {}
+}
+function memoriserDossier(d, extra = {}) {
+  majLocal(o => { o.dossiers[d.id] = Object.assign({ id: d.id, name: d.name, date: d.date, docs: d.docs, start: Date.now(), status: 'processing' }, o.dossiers[d.id] || {}, extra); });
+}
 function oublierDossier(id) { majLocal(o => { delete o.dossiers[id]; if (o.statuts) delete o.statuts[id]; }); }
 function memoriserQuestion(id, q) { majLocal(o => { o.questions[id] = q; }); }
 function oublierQuestion(id) { majLocal(o => { delete o.questions[id]; }); }
-// Mémorise le dernier statut de question (prête / erreur) pour qu'il survive à l'actualisation.
 function persisterStatut(d, status) {
   majLocal(o => {
     o.statuts = o.statuts || {};
-    if (status === 'question_done' || status === 'question_error') o.statuts[d.id] = status;
-    else delete o.statuts[d.id];
+    if (status === 'question_done' || status === 'question_error') o.statuts[d.id] = status; else delete o.statuts[d.id];
   });
 }
-function notifier(titre, corps) { if (!('Notification' in window) || Notification.permission !== 'granted' || document.visibilityState === 'visible') return; try { new Notification(titre, { body: corps }); } catch (e) {} }
+// Suppression demandée avant que n8n ait créé la ligne du dossier : on la retient
+// et on l'applique dès que la ligne apparaît, pour que le dossier ne ressuscite pas.
+function retenirSuppression(id) { majLocal(o => { o.suppressions[id] = Date.now(); }); }
+function oublierSuppressionRetenue(id) { majLocal(o => { delete o.suppressions[id]; }); }
+function suppressionsRetenues() { return lireLocal().suppressions || {}; }
+
+function notifier(titre, corps) {
+  if (!('Notification' in window) || Notification.permission !== 'granted' || document.visibilityState === 'visible') return;
+  try { new Notification(titre, { body: corps }); } catch (e) {}
+}
 function proposerNotifications() {
   if (!('Notification' in window) || Notification.permission !== 'default') return;
   try { if (localStorage.getItem('assistant-ia-notif-demande')) return; localStorage.setItem('assistant-ia-notif-demande', '1'); } catch (e) {}
   if (confirm('Voulez-vous être notifié quand votre analyse ou votre réponse est prête ?')) Notification.requestPermission();
 }
 function reprendreQuestion(dossier, q) {
-  questionEnCours = true;
+  dossier.questionActive = true;
   const sequence = ++questionSequence;
-  dossier._pending = { label: 'Recherche en cours...', start: q.start };
+  dossier._pending = { label: 'Recherche en cours…', start: q.start };
   dossier._liveStatus = 'question';
-  surveillerReponseQuestion(dossier, q.baseline, sequence, q.start);
+  surveillerReponseQuestion(dossier, q.baseline, sequence, q.start || Date.now());
   if (dossier === currentDossier) setChatEnabled(false, 'Question en cours, veuillez patienter…');
 }
- 
+
 // ==========================================
 // UTILITAIRES
 // ==========================================
 function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
- 
+
 function getToken() { return session?.access_token || ''; }
- 
+
 function togglePassword(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -718,17 +812,16 @@ function togglePassword(inputId, btn) {
   btn.innerHTML = afficher ? ICON_EYE_OFF : ICON_EYE;
   btn.setAttribute('aria-label', afficher ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
 }
- 
-// Formate une durée en secondes en texte français ("1 minute 5 secondes")
+
 function formatDuration(totalSeconds) {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
   const parts = [];
-  if (m > 0) parts.push(`${m} minute${m > 1 ? 's' : ''}`);
-  parts.push(`${s} seconde${s > 1 ? 's' : ''}`);
+  if (m > 0) parts.push(m + ' minute' + (m > 1 ? 's' : ''));
+  parts.push(s + ' seconde' + (s > 1 ? 's' : ''));
   return parts.join(' ');
 }
- 
+
 async function fetchAvecDelai(url, options = {}, delaiMs = 120000) {
   const controller = new AbortController();
   const signalInitial = options.signal;
@@ -741,42 +834,54 @@ async function fetchAvecDelai(url, options = {}, delaiMs = 120000) {
     return await fetch(url, { ...options, signal: controller.signal });
   } catch (err) {
     if (controller.signal.aborted) {
-      const timeout = new Error('La demande dépasse le délai de réponse prévu.');
+      const timeout = new Error("La demande dépasse le délai de réponse prévu.");
       timeout.name = 'TimeoutError';
       throw timeout;
     }
     throw err;
   } finally { clearTimeout(timer); }
 }
- 
+
 async function fetchJson(url, options = {}, delaiMs = 120000) {
   const res = await fetchAvecDelai(url, options, delaiMs);
-  if (!res.ok) { const e = new Error(`Erreur HTTP ${res.status}`); e.status = res.status; throw e; }
+  if (!res.ok) {
+    const e = new Error('Erreur HTTP ' + res.status);
+    e.status = res.status;
+    throw e;
+  }
   return res.json();
 }
- 
+
+// Une erreur de transport est-elle non définitive (l'analyse peut encore aboutir) ?
+function estErreurNonDefinitive(err, debutMs) {
+  const status = err && err.status;
+  if (STATUTS_COUPURE.includes(status)) return true;
+  if (!status) return true; // coupure réseau, délai dépassé : le serveur continue
+  return Date.now() - (debutMs || Date.now()) > DELAI_ERREUR_NON_DEFINITIVE;
+}
+
 // ==========================================
 // INFORMATIONS LÉGALES — brouillons de démonstration
 // ==========================================
 const LEGAL_PAGES = {
   mentions: {
     title: 'Mentions légales',
-    html: `<h3>Éditeur du service</h3><p>Éditeur : <strong>À COMPLÉTER</strong> (nom légal de la personne ou dénomination de la société).</p><p>Adresse : <strong>À COMPLÉTER</strong>. Numéro d’immatriculation : <strong>À COMPLÉTER si applicable</strong>. Contact : <strong>À COMPLÉTER</strong>.</p><p>Directeur ou directrice de la publication : <strong>À COMPLÉTER</strong>.</p><h3>Hébergement</h3><p>Hébergeur du site : <strong>À CONFIRMER</strong>. Cette copie de démonstration est publiée via GitHub Pages ; l’hébergeur de production devra être indiqué si le site est migré.</p><h3>Contact</h3><p>Pour toute question sur le service ou les présentes informations : <strong>À COMPLÉTER</strong>.</p>`
+    html: '<h3>Éditeur du service</h3><p>Éditeur : <strong>À COMPLÉTER</strong> (nom légal de la personne ou dénomination de la société).</p><p>Adresse : <strong>À COMPLÉTER</strong>. Numéro d\'immatriculation : <strong>À COMPLÉTER si applicable</strong>. Contact : <strong>À COMPLÉTER</strong>.</p><p>Directeur ou directrice de la publication : <strong>À COMPLÉTER</strong>.</p><h3>Hébergement</h3><p>Hébergeur du site : <strong>À CONFIRMER</strong>. Cette copie de démonstration est publiée via GitHub Pages ; l\'hébergeur de production devra être indiqué si le site est migré.</p><h3>Contact</h3><p>Pour toute question sur le service ou les présentes informations : <strong>À COMPLÉTER</strong>.</p>'
   },
   confidentialite: {
     title: 'Politique de confidentialité',
-    html: `<h3>Responsable et périmètre</h3><p>Responsable du traitement : <strong>À DÉTERMINER</strong>. Les rôles peuvent différer entre la gestion des comptes et le traitement des dossiers immobiliers déposés par un client professionnel ; ils doivent être confirmés dans les contrats.</p><h3>Données susceptibles d’être traitées</h3><p>Le service gère des données de compte, les noms de dossiers, les PDF transmis, le texte extrait, les analyses, les questions et les réponses. Les dossiers peuvent contenir des données concernant des personnes autres que l’utilisateur qui les importe.</p><h3>Finalités et base juridique</h3><p>Les données sont utilisées pour gérer l’accès, recevoir et conserver les dossiers, produire une analyse assistée par IA, répondre aux questions et assurer le fonctionnement et la sécurité du service. Base juridique applicable à chaque usage : <strong>À CONFIRMER</strong>.</p><h3>Destinataires et prestataires</h3><p>Le code de démonstration communique avec Supabase et des webhooks n8n ; il charge aussi la bibliothèque Supabase depuis jsDelivr. Les PDF ou leur contenu peuvent être transmis au fournisseur de modèle d’IA configuré, notamment via OpenRouter. Fournisseurs exacts, sous-traitants, régions de traitement, garanties de transfert et conditions d’utilisation : <strong>À VÉRIFIER ET COMPLÉTER</strong>.</p><h3>Durées de conservation</h3><p>Comptes, dossiers, PDF, extractions, conversations, journaux techniques et sauvegardes : durées et règles de suppression <strong>À DÉFINIR</strong>.</p><h3>Droits et contact</h3><p>Selon la situation et la base juridique, les personnes peuvent exercer leurs droits d’accès, de rectification, d’effacement, de limitation, d’opposition ou de portabilité. Contact pour les demandes : <strong>À COMPLÉTER</strong>. Une réclamation peut être adressée à la CNIL.</p><h3>Décisions assistées par IA</h3><p>Les analyses et réponses sont des aides à la lecture des documents. Elles peuvent comporter des erreurs et doivent être vérifiées par un professionnel avant toute décision. Le service ne prend pas la décision d’achat à la place de l’acquéreur.</p>`
+    html: '<h3>Responsable et périmètre</h3><p>Responsable du traitement : <strong>À DÉTERMINER</strong>. Les rôles peuvent différer entre la gestion des comptes et le traitement des dossiers immobiliers déposés par un client professionnel ; ils doivent être confirmés dans les contrats.</p><h3>Données susceptibles d\'être traitées</h3><p>Le service gère des données de compte, les noms de dossiers, les PDF transmis, le texte extrait, les analyses, les questions et les réponses. Les dossiers peuvent contenir des données concernant des personnes autres que l\'utilisateur qui les importe.</p><h3>Finalités et base juridique</h3><p>Les données sont utilisées pour gérer l\'accès, recevoir et conserver les dossiers, produire une analyse assistée par IA, répondre aux questions et assurer le fonctionnement et la sécurité du service. Base juridique applicable à chaque usage : <strong>À CONFIRMER</strong>.</p><h3>Destinataires et prestataires</h3><p>Le code de démonstration communique avec Supabase et des webhooks n8n ; il charge aussi la bibliothèque Supabase depuis jsDelivr. Les PDF ou leur contenu peuvent être transmis au fournisseur de modèle d\'IA configuré, notamment via OpenRouter. Fournisseurs exacts, sous-traitants, régions de traitement, garanties de transfert et conditions d\'utilisation : <strong>À VÉRIFIER ET COMPLÉTER</strong>.</p><h3>Durées de conservation</h3><p>Comptes, dossiers, PDF, extractions, conversations, journaux techniques et sauvegardes : durées et règles de suppression <strong>À DÉFINIR</strong>.</p><h3>Droits et contact</h3><p>Selon la situation et la base juridique, les personnes peuvent exercer leurs droits d\'accès, de rectification, d\'effacement, de limitation, d\'opposition ou de portabilité. Contact pour les demandes : <strong>À COMPLÉTER</strong>. Une réclamation peut être adressée à la CNIL.</p><h3>Décisions assistées par IA</h3><p>Les analyses et réponses sont des aides à la lecture des documents. Elles peuvent comporter des erreurs et doivent être vérifiées par un professionnel avant toute décision. Le service ne prend pas la décision d\'achat à la place de l\'acquéreur.</p>'
   },
   cookies: {
     title: 'Cookies et stockage local',
-    html: `<h3>État observé dans la copie du site</h3><p>Le code utilise le stockage local du navigateur pour conserver des préférences d’interface (thème, barre latérale et nom d’affichage) et le client Supabase pour la session d’authentification. Aucun outil publicitaire ou de mesure d’audience n’est visible dans cette copie du code.</p><p>Cette observation ne remplace pas un audit du site publié et de ses services tiers. Les traceurs réellement déposés doivent être vérifiés en fonctionnement. Les traceurs strictement nécessaires peuvent être exemptés de consentement ; les autres nécessitent un choix préalable conforme.</p><h3>Gestion du choix</h3><p>Aucun bandeau de consentement n’est activé dans cette version de démonstration. Si un traceur soumis au consentement est ajouté, le dispositif de choix et de retrait devra être mis en place avant sa mise en service. Contact : <strong>À COMPLÉTER</strong>.</p>`
+    html: '<h3>État observé dans la copie du site</h3><p>Le code utilise le stockage local du navigateur pour conserver des préférences d\'interface (thème, barre latérale et nom d\'affichage) et le client Supabase pour la session d\'authentification. Aucun outil publicitaire ou de mesure d\'audience n\'est visible dans cette copie du code.</p><p>Cette observation ne remplace pas un audit du site publié et de ses services tiers. Les traceurs réellement déposés doivent être vérifiés en fonctionnement. Les traceurs strictement nécessaires peuvent être exemptés de consentement ; les autres nécessitent un choix préalable conforme.</p><h3>Gestion du choix</h3><p>Aucun bandeau de consentement n\'est activé dans cette version de démonstration. Si un traceur soumis au consentement est ajouté, le dispositif de choix et de retrait devra être mis en place avant sa mise en service. Contact : <strong>À COMPLÉTER</strong>.</p>'
   },
   conditions: {
-    title: 'Conditions d’utilisation — version démo',
-    html: `<h3>Objet et accès</h3><p>Cette version est une démonstration du service d’aide à l’analyse de dossiers immobiliers. L’accès est réservé aux personnes autorisées par l’éditeur. Modalités définitives d’accès, de durée, de prix et de résiliation : <strong>À DÉFINIR avant l’offre payante</strong>.</p><h3>Documents transmis</h3><p>L’utilisateur doit être autorisé à transmettre les documents qu’il importe et doit éviter d’ajouter des informations qui ne sont pas nécessaires à l’analyse. Les documents sont traités par les services techniques et d’IA décrits dans la politique de confidentialité, qui reste à compléter.</p><h3>Résultats générés</h3><p>Les analyses et réponses automatisées peuvent être incomplètes ou erronées. Elles ne remplacent pas la vérification des pièces originales ni les conseils des professionnels compétents. L’utilisateur doit contrôler les informations avant de les communiquer ou de prendre une décision.</p><h3>Conditions commerciales</h3><p>Prix, facturation, renouvellement, résiliation, assistance, disponibilité, responsabilité et suppression des données : <strong>À DÉFINIR avec l’entité qui exploitera le service</strong>. Cette version ne constitue pas les conditions finales d’un abonnement payant.</p>`
+    title: 'Conditions d\'utilisation — version démo',
+    html: '<h3>Objet et accès</h3><p>Cette version est une démonstration du service d\'aide à l\'analyse de dossiers immobiliers. L\'accès est réservé aux personnes autorisées par l\'éditeur. Modalités définitives d\'accès, de durée, de prix et de résiliation : <strong>À DÉFINIR avant l\'offre payante</strong>.</p><h3>Documents transmis</h3><p>L\'utilisateur doit être autorisé à transmettre les documents qu\'il importe et doit éviter d\'ajouter des informations qui ne sont pas nécessaires à l\'analyse. Les documents sont traités par les services techniques et d\'IA décrits dans la politique de confidentialité, qui reste à compléter.</p><h3>Résultats générés</h3><p>Les analyses et réponses automatisées peuvent être incomplètes ou erronées. Elles ne remplacent pas la vérification des pièces originales ni les conseils des professionnels compétents. L\'utilisateur doit contrôler les informations avant de les communiquer ou de prendre une décision.</p><h3>Conditions commerciales</h3><p>Prix, facturation, renouvellement, résiliation, assistance, disponibilité, responsabilité et suppression des données : <strong>À DÉFINIR avec l\'entité qui exploitera le service</strong>. Cette version ne constitue pas les conditions finales d\'un abonnement payant.</p>'
   }
 };
- 
+
 function openLegalPage(key) {
   const page = LEGAL_PAGES[key];
   if (!page) return;
@@ -784,16 +889,12 @@ function openLegalPage(key) {
   document.getElementById('legalContent').innerHTML = page.html;
   document.getElementById('legalOverlay').style.display = 'flex';
 }
-function closeLegalPage() {
-  document.getElementById('legalOverlay').style.display = 'none';
-}
- 
+function closeLegalPage() { document.getElementById('legalOverlay').style.display = 'none'; }
+
 // ==========================================
 // NOM D'UTILISATEUR
 // ==========================================
-function lireNomUtilisateur() {
-  return '';
-}
+function lireNomUtilisateur() { return ''; }
 function nomAffichage() {
   const brut = (session?.user?.user_metadata?.username || session?.user?.user_metadata?.nom || '').trim();
   return brut || (session?.user?.email || 'Mon compte');
@@ -803,7 +904,7 @@ function initialeAffichage() {
   const source = nom !== 'Mon compte' ? nom : (session?.user?.email || 'U');
   return (source.trim().charAt(0) || 'U').toUpperCase();
 }
- 
+
 // ==========================================
 // THÈME CLAIR / SOMBRE
 // ==========================================
@@ -821,19 +922,16 @@ function applyTheme(theme) {
     if (lune) lune.innerHTML = ICON_MOON;
   });
 }
- 
 function toggleTheme() {
   const actuel = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   applyTheme(actuel === 'light' ? 'dark' : 'light');
 }
- 
 function initTheme() {
   let stocke = null;
   try { stocke = localStorage.getItem('assistant-ia-theme'); } catch (e) {}
-  const prefere = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   applyTheme(stocke || 'light');
 }
- 
+
 // ==========================================
 // BARRE LATÉRALE REPLIABLE
 // ==========================================
@@ -841,14 +939,13 @@ function toggleSidebar() {
   const replie = document.body.classList.toggle('sidebar-collapsed');
   try { localStorage.setItem('assistant-ia-sidebar', replie ? 'collapsed' : 'open'); } catch (e) {}
 }
- 
 function initSidebar() {
   let etat = null;
   try { etat = localStorage.getItem('assistant-ia-sidebar'); } catch (e) {}
   const etroit = window.innerWidth < 1024;
   if (etat === 'collapsed' || (!etat && etroit)) document.body.classList.add('sidebar-collapsed');
 }
- 
+
 // ==========================================
 // NAVIGATION ENTRE VUES
 // ==========================================
@@ -862,10 +959,8 @@ function setView(view) {
   document.getElementById('navDossiers').classList.toggle('active', view === 'dossiers' || view === 'chat');
   sauvegarderVue(view);
 }
- 
-function cleEtatUtilisateur(type) {
-  return session?.user?.id ? `assistant-ia-${type}-${session.user.id}` : null;
-}
+
+function cleEtatUtilisateur(type) { return session?.user?.id ? 'assistant-ia-' + type + '-' + session.user.id : null; }
 function sauvegarderVue(view) {
   const cle = cleEtatUtilisateur('vue');
   if (!cle) return;
@@ -876,15 +971,12 @@ function restaurerDerniereVue() {
   const cleDossier = cleEtatUtilisateur('dossier-ouvert');
   let vue = 'accueil';
   let dossierId = null;
-  try {
-    vue = localStorage.getItem(cleVue) || 'accueil';
-    dossierId = localStorage.getItem(cleDossier);
-  } catch (e) {}
+  try { vue = localStorage.getItem(cleVue) || 'accueil'; dossierId = localStorage.getItem(cleDossier); } catch (e) {}
   if (vue === 'chat' && dossierId && dossiers.some(d => d.id === dossierId)) return openDossier(dossierId);
   if (vue === 'dossiers') return openDossiersView();
   openAccueil();
 }
- 
+
 function openAccueil() {
   currentDossier = null;
   const cleDossier = cleEtatUtilisateur('dossier-ouvert');
@@ -894,11 +986,7 @@ function openAccueil() {
   renderDossiers();
   renderHome();
 }
-function openDossiersView() {
-  afficherCorbeille(false);
-  setView('dossiers');
-  renderAllDossiers();
-}
+function openDossiersView() { afficherCorbeille(false); setView('dossiers'); renderAllDossiers(); }
 function afficherCorbeille(afficher) {
   afficherDossiersSupprimes = !!afficher;
   const actifs = document.getElementById('activeDossiersTab');
@@ -913,37 +1001,30 @@ function afficherCorbeille(afficher) {
   const supprimesVisibles = dossiersSupprimes.filter(d => !rechercheDossier || (d.name || '').toLowerCase().includes(rechercheDossier)).length;
   const compteurVue = document.getElementById('dossiersViewCount');
   if (compteurVue) compteurVue.textContent = afficherDossiersSupprimes
-    ? `${supprimesVisibles} dossier${supprimesVisibles !== 1 ? 's' : ''} dans la corbeille`
-    : `${actifsVisibles} dossier${actifsVisibles !== 1 ? 's' : ''}`;
+    ? supprimesVisibles + ' dossier' + (supprimesVisibles !== 1 ? 's' : '') + ' dans la corbeille'
+    : actifsVisibles + ' dossier' + (actifsVisibles !== 1 ? 's' : '');
   if (listeActifs) listeActifs.style.display = afficherDossiersSupprimes ? 'none' : 'flex';
   if (videActifs) videActifs.style.display = !afficherDossiersSupprimes && actifsVisibles === 0 ? 'block' : 'none';
   if (listeSupprimes) listeSupprimes.style.display = afficherDossiersSupprimes ? 'flex' : 'none';
   if (videSupprimes) videSupprimes.style.display = afficherDossiersSupprimes && supprimesVisibles === 0 ? 'block' : 'none';
 }
-function onSearchChange(value) {
-  rechercheDossier = (value || '').toLowerCase();
-  renderAllDossiers();
-}
- 
+function onSearchChange(value) { rechercheDossier = (value || '').toLowerCase(); renderAllDossiers(); }
+
 // ==========================================
 // STATUT DYNAMIQUE
 // ==========================================
-// Chaque dossier a un champ _liveStatus : null | 'analyse' | 'question'
-// Quand null → on affiche le dernier état géré localement par le site.
- 
 function setLiveStatus(dossier, status) {
-  dossier._liveStatus = status; // null | 'analyse' | 'question' | ...
+  dossier._liveStatus = status;
   persisterStatut(dossier, status);
   renderDossiers();
   renderHome();
   renderAllDossiers();
+  majOrbAccueil();
 }
- 
-const ICON_CHECK = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-const ICON_MSG_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+
 const ICON_ERR_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
 const DOT = '<span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>';
- 
+
 function statusLabel(dossier) {
   if (dossier._liveStatus === 'analyse') return '<span class="dossier-status status-processing">' + LOADER_3D + ' Analyse en cours</span>';
   if (dossier._liveStatus === 'question') return '<span class="dossier-status status-question">' + LOADER_3D + ' Question en cours</span>';
@@ -954,7 +1035,15 @@ function statusLabel(dossier) {
   if (dossier.status === 'ready') return '<span class="dossier-status status-ready">' + DOT + ' Analyse prête</span>';
   return '<span class="dossier-status status-processing">' + LOADER_3D + ' Analyse en cours</span>';
 }
- 
+
+// La lentille de l'accueil réagit dès qu'une analyse ou une question est en cours.
+function majOrbAccueil() {
+  const orb = document.getElementById('homeOrb');
+  if (!orb) return;
+  const actif = creationEnCours || dossiers.some(d => d._pending || d.status === 'processing' || d.questionActive);
+  orb.classList.toggle('thinking', !!actif);
+}
+
 // ==========================================
 // AUTH
 // ==========================================
@@ -968,7 +1057,7 @@ async function initAuth() {
     if (s) showApp(); else showAuthScreen();
   });
 }
- 
+
 function showAuthScreen() {
   appUserInitialise = null;
   document.getElementById('recoveryOverlay').style.display = 'none';
@@ -992,7 +1081,10 @@ async function showApp() {
   if (!accepted) {
     showAuthScreen();
     const errBox = document.getElementById('authError');
-    if (errBox) { errBox.textContent = 'Avant d’accéder aux dossiers, confirmez la lecture de la politique et acceptez les conditions.'; errBox.style.display = 'block'; }
+    if (errBox) {
+      errBox.textContent = "Avant d'accéder aux dossiers, confirmez la lecture de la politique et acceptez les conditions.";
+      errBox.style.display = 'block';
+    }
     return;
   }
   appUserInitialise = userId;
@@ -1003,7 +1095,7 @@ async function showApp() {
   await loadDossiers();
   await restaurerDerniereVue();
 }
- 
+
 function messageErreurAuth(err, contexte = 'connexion') {
   const detail = String(err?.code || err?.message || '').toLowerCase();
   if (/invalid login credentials|invalid_credentials|email not confirmed/.test(detail)) return 'Email ou mot de passe incorrect.';
@@ -1012,7 +1104,7 @@ function messageErreurAuth(err, contexte = 'connexion') {
   if (/network|fetch|timeout/.test(detail)) return 'Le service est momentanément injoignable. Vérifiez votre connexion puis réessayez.';
   return contexte === 'connexion' ? 'Connexion impossible. Vérifiez vos informations puis réessayez.' : 'Une erreur est survenue. Réessayez.';
 }
- 
+
 async function handleAuthSubmit() {
   const username = document.getElementById('authUsername').value.trim();
   const email = document.getElementById('authEmail').value.trim();
@@ -1020,31 +1112,31 @@ async function handleAuthSubmit() {
   const errBox = document.getElementById('authError');
   const btn = document.getElementById('authSubmitBtn');
   errBox.style.display = 'none';
-  // La connexion est obligatoire : nom d'utilisateur + email + mot de passe.
-  if (!email || !password) { errBox.textContent = 'Merci de renseigner votre email et votre mot de passe.'; errBox.style.display = 'block'; return; }
-  btn.disabled = true; btn.textContent = '…';
+  if (!email || !password) {
+    errBox.textContent = 'Merci de renseigner votre email et votre mot de passe.';
+    errBox.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '…';
   authInProgress = true;
   try {
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
     const user = data?.user || session?.user;
-    if (!user) throw new Error('Utilisateur absent de la réponse d’authentification.');
+    if (!user) throw new Error("Utilisateur absent de la réponse d'authentification.");
     const ancienneAcceptation = user.user_metadata?.legal_acceptance;
     const dejaAccepte = ancienneAcceptation?.version === LEGAL_ACCEPTANCE_VERSION;
     if (!dejaAccepte && (!document.getElementById('authPrivacyAck').checked || !document.getElementById('authTermsAccepted').checked)) {
       await sb.auth.signOut();
       authInProgress = false;
       showAuthScreen();
-      errBox.textContent = "Pour cette première connexion, confirmez la lecture de la politique de confidentialité et acceptez les conditions d’utilisation.";
+      errBox.textContent = "Pour cette première connexion, confirmez la lecture de la politique de confidentialité et acceptez les conditions d'utilisation.";
       errBox.style.display = 'block';
       return;
     }
     const maintenant = new Date().toISOString();
-    const legalAcceptance = dejaAccepte ? ancienneAcceptation : {
-      version: LEGAL_ACCEPTANCE_VERSION,
-      privacy_acknowledged_at: maintenant,
-      terms_accepted_at: maintenant
-    };
+    const legalAcceptance = dejaAccepte ? ancienneAcceptation : { version: LEGAL_ACCEPTANCE_VERSION, privacy_acknowledged_at: maintenant, terms_accepted_at: maintenant };
     const metadataToSave = { legal_acceptance: legalAcceptance };
     if (username) { metadataToSave.username = username; metadataToSave.nom = username; }
     const { data: updateData, error: updateError } = await sb.auth.updateUser({ data: metadataToSave });
@@ -1062,14 +1154,22 @@ async function handleAuthSubmit() {
     }
     errBox.textContent = messageErreurAuth(err, 'connexion');
     errBox.style.display = 'block';
-  } finally { authInProgress = false; btn.disabled = false; btn.textContent = 'Se connecter'; }
+  } finally {
+    authInProgress = false;
+    btn.disabled = false;
+    btn.textContent = 'Se connecter';
+  }
 }
- 
+
 async function handleForgotPassword() {
   const email = document.getElementById('authEmail').value.trim();
   const errBox = document.getElementById('authError');
   errBox.style.display = 'none';
-  if (!email) { errBox.textContent = 'Saisissez votre adresse email pour recevoir le lien de réinitialisation.'; errBox.style.display = 'block'; return; }
+  if (!email) {
+    errBox.textContent = 'Saisissez votre adresse email pour recevoir le lien de réinitialisation.';
+    errBox.style.display = 'block';
+    return;
+  }
   const btn = document.getElementById('forgotPasswordBtn');
   btn.disabled = true;
   try {
@@ -1082,7 +1182,7 @@ async function handleForgotPassword() {
     errBox.style.display = 'block';
   } finally { btn.disabled = false; }
 }
- 
+
 async function handleRecoverySubmit() {
   const pwd = document.getElementById('recoveryPassword').value;
   const pwdC = document.getElementById('recoveryPasswordConfirm').value;
@@ -1091,15 +1191,21 @@ async function handleRecoverySubmit() {
   errBox.style.display = 'none';
   if (!pwd || pwd.length < 6) { errBox.textContent = 'Minimum 6 caractères.'; errBox.style.display = 'block'; return; }
   if (pwd !== pwdC) { errBox.textContent = 'Les mots de passe ne correspondent pas.'; errBox.style.display = 'block'; return; }
-  btn.disabled = true; btn.textContent = '…';
+  btn.disabled = true;
+  btn.textContent = '…';
   try {
     const { error } = await sb.auth.updateUser({ password: pwd });
     if (error) throw error;
     showApp();
-  } catch (err) { errBox.textContent = messageErreurAuth(err, 'récupération'); errBox.style.display = 'block'; }
-  finally { btn.disabled = false; btn.textContent = 'Valider le nouveau mot de passe'; }
+  } catch (err) {
+    errBox.textContent = messageErreurAuth(err, 'récupération');
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Valider le nouveau mot de passe';
+  }
 }
- 
+
 async function handleLogout() {
   let erreurDeconnexion = null;
   try {
@@ -1110,20 +1216,27 @@ async function handleLogout() {
     console.error('Déconnexion distante impossible :', err);
     try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
   } finally {
+    // La déconnexion arrête les suivis en cours.
+    stopperSuivis();
     appUserInitialise = null;
     authInProgress = false;
-    session = null; currentDossier = null; dossiers = []; dossiersSupprimes = [];
-    afficherDossiersSupprimes = false; questionEnCours = false; creationEnCours = false;
-    stopPolling(); removeTyping();
+    session = null;
+    currentDossier = null;
+    dossiers = [];
+    dossiersSupprimes = [];
+    afficherDossiersSupprimes = false;
+    creationEnCours = false;
+    removeTyping();
     document.getElementById('accountPopover').style.display = 'none';
     document.getElementById('sidebarAccount')?.classList.remove('open');
     document.body.classList.add('unauthenticated');
+    majOrbAccueil();
     renderDossiers();
     showAuthScreen();
   }
   if (erreurDeconnexion) alert('La session locale a été fermée, mais la déconnexion du serveur a échoué. Reconnectez-vous uniquement après avoir vérifié votre connexion.');
 }
- 
+
 // ==========================================
 // COMPTE (profil en bas de la barre latérale)
 // ==========================================
@@ -1137,7 +1250,7 @@ function renderAccount() {
   document.getElementById('profileMail').textContent = email || 'Compte connecté';
   document.getElementById('accountEmail').textContent = email || 'Compte connecté';
 }
- 
+
 function toggleAccountPopover(event) {
   if (event) event.stopPropagation();
   const popover = document.getElementById('accountPopover');
@@ -1145,7 +1258,7 @@ function toggleAccountPopover(event) {
   popover.style.display = ouvert ? 'flex' : 'none';
   document.getElementById('sidebarAccount')?.classList.toggle('open', ouvert);
 }
- 
+
 document.addEventListener('click', (e) => {
   const popover = document.getElementById('accountPopover');
   if (!popover || popover.style.display === 'none') return;
@@ -1154,7 +1267,6 @@ document.addEventListener('click', (e) => {
     document.getElementById('sidebarAccount')?.classList.remove('open');
   }
 });
- 
 // ==========================================
 // CHARGEMENT DOSSIERS
 // ==========================================
@@ -1169,22 +1281,23 @@ function dossierVide(row, countMap) {
     messages: null,
     _loaded: false,
     _liveStatus: null,
-    _pending: null
+    _pending: null,
+    questionActive: false
   };
 }
- 
+
 async function loadDossiers() {
   if (!session) return;
   const { data, error } = await sb.from('dossiers').select('*').eq('user_id', session.user.id).order('date_creation', { ascending: false });
-  if (error) { console.error('Chargement dossiers :', error); renderDossiers(); renderHome(); renderAllDossiers(); return; }
- 
+  if (error) console.error('Chargement des dossiers impossible :', error);
+
   const ids = (data || []).map(r => r.dossier_id);
   let countMap = {};
   if (ids.length > 0) {
     const { data: docsData } = await sb.from('documents').select('dossier_id').in('dossier_id', ids);
     (docsData || []).forEach(d => { countMap[d.dossier_id] = (countMap[d.dossier_id] || 0) + 1; });
   }
- 
+
   const anciens = [...dossiers, ...dossiersSupprimes];
   const convertir = (rows) => rows.map(row => {
     const nouveau = dossierVide(row, countMap);
@@ -1200,7 +1313,19 @@ async function loadDossiers() {
   const idsActifs = actifs.map(r => r.dossier_id);
   const enCreation = anciens.filter(d => d._pending && !idsActifs.includes(d.id));
   dossiers = [...enCreation, ...convertir(actifs)];
-  // Restaure les statuts mémorisés (question prête / erreur) après une actualisation.
+
+  // Applique les suppressions demandées avant que n8n ait créé la ligne du dossier.
+  const retenues = suppressionsRetenues();
+  for (const id of Object.keys(retenues)) {
+    const d = dossiers.find(x => x.id === id);
+    if (d && !d._pending) {
+      await mettreEnCorbeille(id, true);
+      oublierSuppressionRetenue(id);
+    } else if (!d && Date.now() - retenues[id] > DUREE_SUIVI_ANALYSE) {
+      oublierSuppressionRetenue(id);
+    }
+  }
+
   const etatLocal = lireLocal();
   const statutsLocaux = etatLocal.statuts || {};
   const questionsLocales = etatLocal.questions || {};
@@ -1210,20 +1335,26 @@ async function loadDossiers() {
     if (q && q.erreur) d._liveStatus = 'question_error';
     else if (statutsLocaux[d.id]) d._liveStatus = statutsLocaux[d.id];
   });
-  const local = lireLocal().dossiers || {};
+
+  const local = etatLocal.dossiers || {};
   Object.values(local).forEach(l => {
-    if (l.status === 'processing' && Date.now() - l.start > 30 * 60 * 1000) {
-      l.status = 'error'; l.message = "L'analyse n'a pas abouti. Supprimez ce dossier et relancez-le.";
+    if (l.status === 'processing' && Date.now() - l.start > DUREE_SUIVI_ANALYSE) {
+      l.status = 'error';
+      l.message = "L'analyse n'a pas abouti. Supprimez ce dossier et relancez-le.";
       memoriserDossier(l, { status: 'error', message: l.message });
     }
     const existant = dossiers.find(d => d.id === l.id);
     if (existant) {
       if (l.status === 'error') { existant.status = 'error'; existant._liveStatus = null; }
-      else { existant.status = 'processing'; existant._liveStatus = 'analyse'; }
+      else { existant.status = 'processing'; existant._liveStatus = existant._liveStatus || 'analyse'; }
       return;
     }
-    dossiers.unshift({ id: l.id, name: l.name, date: l.date, docs: l.docs || [], docsCount: (l.docs || []).length, status: l.status,
-      messages: l.status === 'error' ? [{ role: 'system', content: l.message }] : [], _loaded: true, _liveStatus: l.status === 'processing' ? 'analyse' : null, _pending: null, _local: true });
+    if (l.status === 'error') return;
+    dossiers.unshift({
+      id: l.id, name: l.name, date: l.date, docs: l.docs || [], docsCount: (l.docs || []).length,
+      status: l.status, messages: [], _loaded: true,
+      _liveStatus: l.status === 'processing' ? 'analyse' : null, _pending: null, _local: true, questionActive: false
+    });
   });
   dossiersSupprimes = convertir(supprimes);
 
@@ -1231,7 +1362,6 @@ async function loadDossiers() {
   // tout de suite (sans attendre l'ouverture du dossier) et on règle son statut.
   if (!creationEnCours) {
     for (const [qid, q] of Object.entries(questionsLocales)) {
-      if (questionEnCours) break;
       if (!q || q.erreur) continue;
       const d = dossiers.find(x => x.id === qid);
       if (!d || d._pending || d._loaded) continue;
@@ -1243,13 +1373,14 @@ async function loadDossiers() {
       }
     }
   }
- 
+
   suivreAnalysesServeur();
   renderDossiers();
   renderHome();
   renderAllDossiers();
+  majOrbAccueil();
 }
- 
+
 async function loadDossierDetails(dossier) {
   if (dossier._loaded) return;
   const [docsRes, convRes] = await Promise.all([
@@ -1269,52 +1400,53 @@ async function loadDossierDetails(dossier) {
       const dernier = [...dossier.messages].reverse().find(m => m.role === 'user');
       if (!dernier || dernier.content !== q.question) dossier.messages.push({ role: 'user', content: q.question });
       if (q.erreur) dossier.messages.push({ role: 'system', content: q.erreur });
-      else if (!dossier._pending && Date.now() - q.start < 15 * 60 * 1000) reprendreQuestion(dossier, q);
-      else if (!dossier._pending) { oublierQuestion(dossier.id); dossier.messages.push({ role: 'system', content: "La réponse n'est jamais arrivée. Réessayez." }); }
+      else if (!dossier._pending && Date.now() - q.start < DUREE_SUIVI_QUESTION) reprendreQuestion(dossier, q);
+      else if (!dossier._pending) {
+        oublierQuestion(dossier.id);
+        dossier.messages.push({ role: 'system', content: "La réponse n'est jamais arrivée. Réessayez." });
+      }
     }
   }
 }
- 
-// Force le rechargement du dossier actuellement ouvert depuis Supabase
-// (source de vérité), utilisé notamment quand l'onglet redevient visible.
+
 async function resyncCurrentDossier() {
   if (!currentDossier || currentDossier._local) return;
   const id = currentDossier.id;
   currentDossier._loaded = false;
   await loadDossierDetails(currentDossier);
-  if (currentDossier?.id === id) {
-    updateDocsStrip();
-    renderMessages();
-  }
+  if (currentDossier?.id === id) { updateDocsStrip(); renderMessages(); }
   loadDossiers();
 }
- 
+
 // ==========================================
 // ANALYSE CÔTÉ SERVEUR (ordinateur fermé, connexion perdue…)
 // L'analyse continue côté serveur et le résultat est récupéré
 // automatiquement dès que le serveur a terminé.
 // ==========================================
 let pollTimer = null;
- 
+
 function startPendingServeur(dossier) {
   dossier.status = 'processing';
   dossier._liveStatus = 'analyse';
-  if (!dossier._pending) dossier._pending = { label: 'Analyse en cours...', start: Date.now(), server: true };
+  if (!dossier._pending) dossier._pending = { label: 'Analyse en cours…', start: Date.now(), server: true };
   else dossier._pending.server = true;
-  if (dossier === currentDossier) { renderMessages(); }
-  renderDossiers(); renderHome(); renderAllDossiers();
+  if (dossier === currentDossier) renderMessages();
+  renderDossiers();
+  renderHome();
+  renderAllDossiers();
+  majOrbAccueil();
   startPolling();
 }
- 
+
 function suivreAnalysesServeur() {
   let besoin = false;
   const local = lireLocal().dossiers || {};
   dossiers.forEach(d => {
-    if (d.status === 'processing' && !creationEnCours) {
-      d._liveStatus = d._liveStatus || 'analyse';
+    if (d._pending) { besoin = true; return; }
+    if (d.status === 'processing') {
+      d._liveStatus = 'analyse';
       const debut = local[d.id]?.start || Date.now();
-      if (!d._pending) d._pending = { label: 'Analyse en cours...', start: debut, server: true };
-      else d._pending.server = true;
+      d._pending = { label: 'Analyse en cours…', start: debut, server: true, baseline: d._analysisAnswerBaseline || 0 };
       besoin = true;
     }
   });
@@ -1325,8 +1457,9 @@ function suivreAnalysesServeur() {
     }
     startPolling();
   }
+  majOrbAccueil();
 }
- 
+
 function startPolling() {
   if (pollTimer) return;
   pollTimer = setInterval(async () => {
@@ -1340,8 +1473,9 @@ function startPolling() {
         .order('timestamp', { ascending: true });
       if (error) continue;
       const messages = normaliserConversation(data || []);
-      const nbReponsesAvant = d._analysisAnswerBaseline || 0;
-      const nouvelleSynthese = compterReponsesIA(messages) > nbReponsesAvant;
+      const baseline = d._pending.baseline || 0;
+      const nouvelleSynthese = compterReponsesIA(messages) > baseline;
+
       // Le suivi se termine uniquement quand une nouvelle réponse IA est enregistrée.
       if (!nouvelleSynthese) {
         const msgErreur = erreurServeurDepuis(data, d._pending?.start);
@@ -1352,30 +1486,46 @@ function startPolling() {
           d._liveStatus = null;
           memoriserDossier(d, { status: 'error', message: msgErreur });
           if (currentDossier?.id === d.id) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
-          renderDossiers(); renderHome(); renderAllDossiers();
+          renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
         }
         continue;
       }
- 
+
       appliquerConversationServeur(d, messages);
+      const etaitQuestion = !!d._pending?.question;
       endPending(d);
-      d.status = 'ready';
-      d._liveStatus = 'analyse_done';
-      oublierDossier(d.id); notifier('Analyse prête', d.name);
-      if (currentDossier?.id === d.id) setChatEnabled(true);
-      if (currentDossier?.id === d.id) { updateDocsStrip(); renderMessages(); }
-      renderDossiers(); renderHome(); renderAllDossiers();
+      if (etaitQuestion) {
+        d._questionEnAttente = null;
+        d.questionActive = false;
+        oublierQuestion(d.id);
+        setLiveStatus(d, 'question_done');
+        notifier('Réponse prête', d.name);
+      } else {
+        d.status = 'ready';
+        d._liveStatus = 'analyse_done';
+        oublierDossier(d.id);
+        notifier('Analyse prête', d.name);
+      }
+      if (currentDossier?.id === d.id) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
+      renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
     }
-  }, 2500);
+  }, INTERVALLE_POLLING);
 }
- 
-function stopPolling() {
-  clearInterval(pollTimer);
-  pollTimer = null;
+
+function stopPolling() { clearInterval(pollTimer); pollTimer = null; }
+
+// Arrête tous les suivis en cours (déconnexion, changement de session).
+function stopperSuivis() {
+  stopPolling();
+  dossiers.forEach(d => { d._pending = null; d.questionActive = false; });
+  questionSequence++;
+  questionResolvedSequence = questionSequence;
+  removeTyping();
+  majOrbAccueil();
 }
- 
+
 // Si l'onglet a été mis en veille (ordinateur fermé, changement d'onglet
-// prolongé...) pendant qu'aucune opération n'était réellement en cours
+// prolongé…) pendant qu'aucune opération n'était réellement en cours
 // dans CET onglet, on revient sur l'état réel enregistré côté serveur
 // plutôt que de garder un affichage local potentiellement périmé.
 document.addEventListener('visibilitychange', () => {
@@ -1384,11 +1534,11 @@ document.addEventListener('visibilitychange', () => {
   }
   if (document.visibilityState === 'visible' && session) suivreAnalysesServeur();
 });
- 
+
 // Connexion perdue puis retrouvée : l'analyse continue côté serveur.
 window.addEventListener('offline', () => { suiviConnexion(false); });
 window.addEventListener('online', () => { suiviConnexion(true); });
- 
+
 function suiviConnexion(enLigne) {
   if (enLigne) {
     suivreAnalysesServeur();
@@ -1399,7 +1549,7 @@ function suiviConnexion(enLigne) {
     addMessage('system', "Connexion interrompue : l'analyse continue sur le serveur. Vous serez prévenu dès qu'elle aboutit.", currentDossier);
   }
 }
- 
+
 // ==========================================
 // VOCAL
 // ==========================================
@@ -1407,7 +1557,9 @@ let recognition = null, isListening = false;
 if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SR();
-  recognition.lang = 'fr-FR'; recognition.continuous = false; recognition.interimResults = false;
+  recognition.lang = 'fr-FR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
   recognition.onresult = (e) => {
     const t = e.results[0][0].transcript;
     const inp = document.getElementById('chatInput');
@@ -1418,31 +1570,39 @@ if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
   recognition.onerror = () => { isListening = false; document.getElementById('micBtn').classList.remove('recording'); };
 }
 function toggleSpeech() {
-  if (!recognition) { alert("Reconnaissance vocale non supportée."); return; }
-  if (isListening) { recognition.stop(); } else { recognition.start(); isListening = true; document.getElementById('micBtn').classList.add('recording'); }
+  if (!recognition) { alert('Reconnaissance vocale non supportée.'); return; }
+  if (isListening) recognition.stop();
+  else {
+    recognition.start();
+    isListening = true;
+    document.getElementById('micBtn').classList.add('recording');
+  }
 }
- 
+
 // ==========================================
 // DOSSIERS — SIDEBAR
 // ==========================================
 function renderDossiers() {
   const list = document.getElementById('dossiersList');
-  if (dossiers.length === 0) { list.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Aucun dossier</div>'; return; }
+  if (!list) return;
+  if (dossiers.length === 0) {
+    list.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text-muted)">Aucun dossier</div>';
+    return;
+  }
   list.innerHTML = dossiers.slice(0, 5).map(d => {
     const nb = d._loaded ? d.docs.length : d.docsCount;
     const isActive = currentView === 'chat' && currentDossier?.id === d.id;
-    return `
-      <div class="dossier-item ${isActive ? 'active' : ''}" onclick="toggleDossier('${d.id}')">
-        <div class="dossier-info">
-          <div class="dossier-name">${escapeHtml(d.name)}</div>
-          <div class="dossier-meta">${nb} doc${nb !== 1 ? 's' : ''} · ${d.date}</div>
-          <div class="dossier-meta">${statusLabel(d)}</div>
-        </div>
-        <button class="dossier-delete" onclick="deleteDossier(event, '${d.id}')" title="Supprimer" aria-label="Supprimer le dossier">${ICON_TRASH}</button>
-      </div>`;
+    return '<div class="dossier-item ' + (isActive ? 'active' : '') + '" onclick="toggleDossier(\'' + d.id + '\')">' +
+      '<div class="dossier-info">' +
+      '<div class="dossier-name">' + escapeHtml(d.name) + '</div>' +
+      '<div class="dossier-meta">' + nb + ' doc' + (nb !== 1 ? 's' : '') + ' · ' + d.date + '</div>' +
+      '<div class="dossier-meta">' + statusLabel(d) + '</div>' +
+      '</div>' +
+      '<button class="dossier-delete" onclick="deleteDossier(event, \'' + d.id + '\')" title="Supprimer" aria-label="Supprimer le dossier">' + ICON_TRASH + '</button>' +
+      '</div>';
   }).join('');
 }
- 
+
 function renderListeDossiers(containerId, emptyId, source, corbeille = false) {
   const conteneur = document.getElementById(containerId);
   if (!conteneur) return;
@@ -1455,31 +1615,31 @@ function renderListeDossiers(containerId, emptyId, source, corbeille = false) {
   if (vide) vide.style.display = 'none';
   conteneur.innerHTML = source.map(d => {
     const nb = d._loaded ? d.docs.length : d.docsCount;
-    return `
-      <div class="list-card" role="button" tabindex="0" onclick="openDossier('${d.id}')" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openDossier('${d.id}')}">
-        <div class="list-card-main">
-          <div class="list-card-name">${escapeHtml(d.name)}</div>
-          <div class="list-card-meta">
-            <span style="display:inline-flex;align-items:center;gap:6px">${ICON_DOC_SM}${nb} doc${nb !== 1 ? 's' : ''}</span>
-            <span>${d.date || '—'}</span>
-            ${statusLabel(d)}
-          </div>
-        </div>
-        <div class="list-card-actions">
-          ${corbeille
-            ? `<button class="mini-btn" onclick="event.stopPropagation();restaurerDossier(event, '${d.id}')">Récupérer</button><button class="mini-btn danger" onclick="event.stopPropagation();archiverDossier(event, '${d.id}')">Archiver</button>`
-            : `<button class="mini-btn" onclick="event.stopPropagation();openDossier('${d.id}')">Voir</button><button class="mini-btn danger" onclick="deleteDossier(event, '${d.id}')">Supprimer</button>`}
-        </div>
-      </div>`;
+    const actions = corbeille
+      ? '<button class="mini-btn" onclick="event.stopPropagation();restaurerDossier(event, \'' + d.id + '\')">Récupérer</button>' +
+        '<button class="mini-btn danger" onclick="event.stopPropagation();archiverDossier(event, \'' + d.id + '\')">Archiver</button>'
+      : '<button class="mini-btn" onclick="event.stopPropagation();openDossier(\'' + d.id + '\')">Voir</button>' +
+        '<button class="mini-btn danger" onclick="deleteDossier(event, \'' + d.id + '\')">Supprimer</button>';
+    return '<div class="list-card" role="button" tabindex="0" onclick="openDossier(\'' + d.id + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();openDossier(\'' + d.id + '\')}">' +
+      '<div class="list-card-main">' +
+      '<div class="list-card-name">' + escapeHtml(d.name) + '</div>' +
+      '<div class="list-card-meta">' +
+      '<span style="display:inline-flex;align-items:center;gap:6px">' + ICON_DOC_SM + nb + ' doc' + (nb !== 1 ? 's' : '') + '</span>' +
+      '<span>' + (d.date || '—') + '</span>' +
+      statusLabel(d) +
+      '</div>' +
+      '</div>' +
+      '<div class="list-card-actions">' + actions + '</div>' +
+      '</div>';
   }).join('');
 }
- 
+
 function renderHome() {
   renderListeDossiers('homeList', null, dossiers.slice(0, 5));
   const el = document.getElementById('helloName');
   if (el) el.textContent = nomAffichage().split('@')[0];
 }
- 
+
 function renderAllDossiers() {
   const filtres = searchFiltres();
   renderListeDossiers('dossiersFullList', 'dossiersFullEmpty', filtres);
@@ -1487,39 +1647,32 @@ function renderAllDossiers() {
   renderListeDossiers('deletedDossiersList', 'deletedDossiersEmpty', filtresSupprimes, true);
   const compteur = document.getElementById('dossiersViewCount');
   if (compteur) compteur.textContent = afficherDossiersSupprimes
-    ? `${filtresSupprimes.length} dossier${filtresSupprimes.length !== 1 ? 's' : ''} dans la corbeille`
-    : `${filtres.length} dossier${filtres.length !== 1 ? 's' : ''}`;
+    ? filtresSupprimes.length + ' dossier' + (filtresSupprimes.length !== 1 ? 's' : '') + ' dans la corbeille'
+    : filtres.length + ' dossier' + (filtres.length !== 1 ? 's' : '');
   const compteurCorbeille = document.getElementById('deletedDossiersCount');
-  if (compteurCorbeille) compteurCorbeille.textContent = `(${dossiersSupprimes.length})`;
+  if (compteurCorbeille) compteurCorbeille.textContent = '(' + dossiersSupprimes.length + ')';
   const compteurActifs = document.getElementById('activeDossiersCount');
-  if (compteurActifs) compteurActifs.textContent = `(${dossiers.length})`;
+  if (compteurActifs) compteurActifs.textContent = '(' + dossiers.length + ')';
   afficherCorbeille(afficherDossiersSupprimes);
 }
- 
+
 function searchFiltres() {
   if (!rechercheDossier) return dossiers;
   return dossiers.filter(d => (d.name || '').toLowerCase().includes(rechercheDossier));
 }
- 
+
 async function toggleDossier(id) {
-  if (currentDossier?.id === id) {
-    currentDossier = null;
-    removeTyping();
-    openAccueil();
-    renderDossiers();
-    return;
-  }
+  if (currentDossier?.id === id) { currentDossier = null; removeTyping(); openAccueil(); renderDossiers(); return; }
   await openDossier(id);
 }
- 
+
 async function openDossier(id) {
   currentDossier = dossiers.find(d => d.id === id);
   if (!currentDossier) return;
   const cleDossier = cleEtatUtilisateur('dossier-ouvert');
   if (cleDossier) { try { localStorage.setItem(cleDossier, id); } catch (e) {} }
-  if (creationEnCours) setChatEnabled(false, 'Analyse en cours, veuillez patienter…');
-  else if (questionEnCours) setChatEnabled(false, 'Question en cours, veuillez patienter…');
-  else if (currentDossier.status === 'processing') setChatEnabled(false, 'Analyse en cours, veuillez patienter…');
+  if (currentDossier._pending) setChatEnabled(false, currentDossier._liveStatus === 'question' ? 'Question en cours, veuillez patienter…' : 'Analyse en cours, veuillez patienter…');
+  else if (currentDossier.questionActive) setChatEnabled(false, 'Question en cours, veuillez patienter…');
   else setChatEnabled(true);
   setView('chat');
   document.getElementById('currentDossierName').textContent = currentDossier.name;
@@ -1539,129 +1692,216 @@ async function openDossier(id) {
     }
   }
 }
- 
+
+async function mettreEnCorbeille(id, silencieux = false) {
+  const dossier = dossiers.find(d => d.id === id);
+  const { data: lignesModifiees, error } = await sb.from('dossiers')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('dossier_id', id)
+    .eq('user_id', session.user.id)
+    .select('dossier_id, deleted_at');
+  if (error) {
+    console.error('Mise en corbeille échouée :', error);
+    if (!silencieux) alert("Le déplacement a échoué. Vérifiez que la colonne deleted_at existe dans Supabase et que les autorisations permettent la modification.");
+    return false;
+  }
+  if (!lignesModifiees?.length) {
+    if (!silencieux) alert("Supabase n'a confirmé aucune modification. Vérifiez les règles d'accès (RLS), les colonnes SQL et que le site publié utilise la dernière version du code.");
+    return false;
+  }
+  dossiers = dossiers.filter(d => d.id !== id);
+  oublierDossier(id);
+  if (dossier) dossiersSupprimes.unshift(dossier);
+  if (currentDossier?.id === id) { currentDossier = null; removeTyping(); openAccueil(); }
+  renderDossiers(); renderHome(); renderAllDossiers();
+  return true;
+}
+
+// Suppression disponible partout, y compris pendant une analyse ou une question :
+// le suivi est annulé et la saisie est débloquée.
 async function deleteDossier(event, id) {
   if (event) event.stopPropagation();
   const dossier = dossiers.find(d => d.id === id);
-  if (dossier && (dossier.status === 'processing' || dossier._pending?.server || (creationEnCours && currentDossier?.id === id))) {
-    alert('Ce dossier est encore en cours d’analyse. Vous pourrez le supprimer lorsque l’analyse sera terminée.');
+  const etaitEnCours = !!(dossier && (dossier._pending || dossier.questionActive || dossier.status === 'processing'));
+  if (!confirm(etaitEnCours
+    ? "Une opération est encore en cours sur ce dossier. La supprimer annule le suivi ici ; l'analyse continue côté serveur mais son résultat ne sera plus affiché. Continuer ?"
+    : 'Déplacer ce dossier dans les dossiers supprimés ? Vous pourrez le récupérer avec ses documents et sa conversation.')) return;
+
+  if (etaitEnCours) annulerSuiviDossier(dossier);
+
+  if (dossier?._local) {
+    oublierDossier(id);
+    oublierSuppressionRetenue(id);
+    dossiers = dossiers.filter(d => d.id !== id);
+    if (currentDossier?.id === id) { currentDossier = null; removeTyping(); openAccueil(); }
+    renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
     return;
   }
-  if (dossier && dossier._local) {
-    if (!confirm('Supprimer ce dossier ?')) return;
-    oublierDossier(id); dossiers = dossiers.filter(d => d.id !== id);
-    if (currentDossier?.id === id) { currentDossier = null; removeTyping(); openAccueil(); }
-    renderDossiers(); renderHome(); renderAllDossiers(); return;
+  // La ligne n'existe pas encore côté Supabase (analyse en cours) : on essaie
+  // la mise en corbeille et, à défaut de confirmation, on retient la suppression
+  // pour l'appliquer dès que la ligne apparaît.
+  const ok = await mettreEnCorbeille(id, true);
+  if (!ok) {
+    retenirSuppression(id);
+    if (dossier) {
+      dossiers = dossiers.filter(d => d.id !== id);
+      oublierDossier(id);
+      if (currentDossier?.id === id) { currentDossier = null; removeTyping(); openAccueil(); }
+      renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+    }
   }
-  if (!confirm('Déplacer ce dossier dans les dossiers supprimés ? Vous pourrez le récupérer avec ses documents et sa conversation.')) return;
-  const { data: lignesModifiees, error } = await sb.from('dossiers').update({ deleted_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id).select('dossier_id, deleted_at');
-  if (error) { console.error('Mise en corbeille échouée :', error); alert('Le déplacement a échoué. Vérifiez que la colonne deleted_at existe dans Supabase et que les autorisations permettent la modification.'); return; }
-  if (!lignesModifiees?.length) { alert('Supabase n’a confirmé aucune modification. Vérifiez les règles d’accès (RLS), les colonnes SQL et que le site publié utilise la dernière version du code.'); return; }
-  const dossierSupprime = dossiers.find(d => d.id === id);
-  dossiers = dossiers.filter(d => d.id !== id);
-  oublierDossier(id);
-  if (dossierSupprime) dossiersSupprimes.unshift(dossierSupprime);
-  if (currentDossier?.id === id) {
-    currentDossier = null;
-    removeTyping();
-    openAccueil();
-  }
-  renderDossiers();
-  renderHome();
-  renderAllDossiers();
 }
- 
+
+function supprimerDossierCourant(event) {
+  if (event) event.stopPropagation();
+  if (!currentDossier) return;
+  deleteDossier(event, currentDossier.id);
+}
+
+function annulerSuiviDossier(dossier) {
+  if (!dossier) return;
+  dossier._pending = null;
+  dossier.questionActive = false;
+  dossier.status = 'ready';
+  dossier._liveStatus = 'question_error';
+  oublierQuestion(dossier.id);
+  if (dossier === currentDossier) { removeTyping(); setChatEnabled(true); renderMessages(); }
+  majOrbAccueil();
+}
+
 async function restaurerDossier(event, id) {
   if (event) event.stopPropagation();
   const dossier = dossiersSupprimes.find(d => d.id === id);
   if (!dossier) return;
-  const { data: lignesModifiees, error } = await sb.from('dossiers').update({ deleted_at: null }).eq('dossier_id', id).eq('user_id', session.user.id).select('dossier_id, deleted_at');
-  if (error) { console.error('Restauration échouée :', error); alert('La récupération a échoué. Vérifiez que la colonne deleted_at existe et que les autorisations Supabase permettent la modification.'); return; }
-  if (!lignesModifiees?.length) { alert('Supabase n’a confirmé aucune modification. Vérifiez les règles d’accès (RLS) et que le site publié utilise la dernière version du code.'); return; }
+  const { data: lignesModifiees, error } = await sb.from('dossiers')
+    .update({ deleted_at: null })
+    .eq('dossier_id', id)
+    .eq('user_id', session.user.id)
+    .select('dossier_id, deleted_at');
+  if (error) {
+    console.error('Restauration échouée :', error);
+    alert("La récupération a échoué. Vérifiez que la colonne deleted_at existe et que les autorisations Supabase permettent la modification.");
+    return;
+  }
+  if (!lignesModifiees?.length) {
+    alert("Supabase n'a confirmé aucune modification. Vérifiez les règles d'accès (RLS) et que le site publié utilise la dernière version du code.");
+    return;
+  }
   dossiersSupprimes = dossiersSupprimes.filter(d => d.id !== id);
   dossiers.unshift(dossier);
   afficherCorbeille(true);
-  renderDossiers();
-  renderHome();
-  renderAllDossiers();
+  renderDossiers(); renderHome(); renderAllDossiers();
 }
- 
+
 async function archiverDossier(event, id) {
   if (event) event.stopPropagation();
-  if (!confirm('Archiver définitivement ce dossier ? Il disparaîtra du site et ne pourra plus être récupéré depuis l’interface. Ses données resteront conservées dans Supabase.')) return;
-  const { data: lignesModifiees, error } = await sb.from('dossiers').update({ archived_at: new Date().toISOString() }).eq('dossier_id', id).eq('user_id', session.user.id).select('dossier_id, archived_at');
-  if (error) { console.error('Archivage échoué :', error); alert('L’archivage a échoué. Vérifiez que la colonne archived_at existe dans Supabase et que les autorisations permettent la modification.'); return; }
-  if (!lignesModifiees?.length) { alert('Supabase n’a confirmé aucune modification. Vérifiez les règles d’accès (RLS) et que le site publié utilise la dernière version du code.'); return; }
+  if (!confirm("Archiver définitivement ce dossier ? Il disparaîtra du site et ne pourra plus être récupéré depuis l'interface. Ses données resteront conservées dans Supabase.")) return;
+  const { data: lignesModifiees, error } = await sb.from('dossiers')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('dossier_id', id)
+    .eq('user_id', session.user.id)
+    .select('dossier_id, archived_at');
+  if (error) {
+    console.error('Archivage échoué :', error);
+    alert("L'archivage a échoué. Vérifiez que la colonne archived_at existe dans Supabase et que les autorisations permettent la modification.");
+    return;
+  }
+  if (!lignesModifiees?.length) {
+    alert("Supabase n'a confirmé aucune modification. Vérifiez les règles d'accès (RLS) et que le site publié utilise la dernière version du code.");
+    return;
+  }
   dossiersSupprimes = dossiersSupprimes.filter(d => d.id !== id);
   renderAllDossiers();
 }
- 
+
 function updateDocsStrip() {
   const strip = document.getElementById('docsStrip');
   const count = document.getElementById('docsCount');
+  if (!strip || !count || !currentDossier) return;
   const docs = currentDossier.docs || [];
   const nb = currentDossier._loaded ? docs.length : currentDossier.docsCount;
-  count.textContent = `${nb} document${nb !== 1 ? 's' : ''}`;
-  strip.innerHTML = docs.map(d => `<div class="doc-chip">${ICON_DOC}<span>${escapeHtml(d)}</span></div>`).join('')
+  count.textContent = nb + ' document' + (nb !== 1 ? 's' : '');
+  strip.innerHTML = docs.map(d => '<div class="doc-chip">' + ICON_DOC + '<span>' + escapeHtml(d) + '</span></div>').join('')
     || '<span style="font-size:12px;color:var(--text-muted)">Aucun document</span>';
 }
- 
+
 // ==========================================
 // MESSAGES
 // ==========================================
 function renderMessages() {
   const area = document.getElementById('chatArea');
+  if (!area) return;
   removeTyping();
   if (!currentDossier || !currentDossier._loaded) {
-    area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px">Chargement de la conversation…</div>`;
+    area.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px">Chargement de la conversation…</div>';
     return;
   }
   const msgs = currentDossier.messages || [];
   if (msgs.length === 0) {
-    area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="margin-bottom:12px;opacity:0.4"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>Posez une question sur ce dossier</div>`;
+    area.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="margin-bottom:12px;opacity:0.4"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>Posez une question sur ce dossier</div>';
   } else {
     area.innerHTML = msgs.map(m => renderMessage(m)).join('');
     area.scrollTop = area.scrollHeight;
   }
   if (currentDossier._pending) addTyping(currentDossier._pending.label, currentDossier._pending.start);
 }
- 
+
+// Rend les titres, listes, gras/italique/souligné/barré et les tableaux.
 function parseMarkdown(text) {
-  // Convertit les balises <u> émises par le modèle en marqueurs compris ci-dessous,
-  // puis échappe le reste du texte pour qu'aucune balise brute ne s'affiche.
-  const texteNormalise = String(text || '').replace(/<u>([\s\S]*?)<\/u>/gi, '__$1__');
+  const texteNormalise = String(text || '').replace(/<u>([\s\S]*?)<\/u>/gi, '__U__$1__/U__');
   const safe = escapeHtml(texteNormalise).replace(/\r\n?/g, '\n');
   const lignes = safe.split('\n');
   const sortie = [];
   let typeListe = null;
   let elementsListe = [];
- 
+
   const inline = (ligne) => ligne
-    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_\n]+)__/g, '<u>$1</u>')
-    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
-    .replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
- 
+    .replace(/__U__(.+?)__\/U__/g, '<u>$1</u>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+    .replace(/~~(.+?)~~/g, '<del>$1</del>');
+
   const fermerListe = () => {
     if (!typeListe) return;
     const balise = typeListe === 'ol' ? 'ol' : 'ul';
-    sortie.push(`<${balise}>${elementsListe.map(item => `<li>${inline(item)}</li>`).join('')}</${balise}>`);
+    sortie.push('<' + balise + '>' + elementsListe.map(item => '<li>' + inline(item) + '</li>').join('') + '</' + balise + '>');
     typeListe = null;
     elementsListe = [];
   };
- 
-  for (const ligne of lignes) {
-    if (/^\s*(?:-{3,}|_{3,}|\*{3,})\s*$/.test(ligne)) {
+
+  // Cellules d'une ligne de tableau : | a | b |
+  const cellules = (ligne) => ligne.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+  const estSeparateur = (ligne) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(ligne);
+
+  for (let i = 0; i < lignes.length; i++) {
+    const ligne = lignes[i];
+
+    // Bloc tableau : ligne d'en-tête suivie d'une ligne de séparation.
+    if (ligne.includes('|') && i + 1 < lignes.length && estSeparateur(lignes[i + 1])) {
       fermerListe();
+      const entetes = cellules(ligne);
+      const corps = [];
+      let j = i + 2;
+      while (j < lignes.length && lignes[j].includes('|') && lignes[j].trim() !== '') {
+        corps.push(cellules(lignes[j]));
+        j++;
+      }
+      const html = '<div class="md-table-wrap"><table class="md-table"><thead><tr>' +
+        entetes.map(c => '<th>' + inline(c) + '</th>').join('') +
+        '</tr></thead><tbody>' +
+        corps.map(r => '<tr>' + entetes.map((_, k) => '<td>' + inline(r[k] || '') + '</td>').join('') + '</tr>').join('') +
+        '</tbody></table></div>';
+      sortie.push(html);
+      i = j - 1;
       continue;
     }
+
+    if (/^\s*(?:-{3,}|_{3,}|\*{3,})\s*$/.test(ligne)) { fermerListe(); continue; }
+
     const titre = ligne.match(/^\s*#{1,6}\s+(.+)$/);
-    if (titre) {
-      fermerListe();
-      sortie.push(`<div class="message-heading">${inline(titre[1])}</div>`);
-      continue;
-    }
-    const puce = ligne.match(/^\s*(?:[-*+]\s+|•\s+)(.+)$/);
+    if (titre) { fermerListe(); sortie.push('<div class="message-heading">' + inline(titre[1]) + '</div>'); continue; }
+
+    const puce = ligne.match(/^\s*(?:[-+]\s+|•\s+)(.+)$/);
     const numerote = ligne.match(/^\s*\d+[.)]\s+(.+)$/);
     if (puce || numerote) {
       const nouveauType = numerote ? 'ol' : 'ul';
@@ -1670,6 +1910,7 @@ function parseMarkdown(text) {
       elementsListe.push((puce || numerote)[1]);
       continue;
     }
+
     fermerListe();
     if (ligne.trim()) sortie.push(inline(ligne));
     else if (sortie.length && sortie[sortie.length - 1] !== '') sortie.push('');
@@ -1677,34 +1918,33 @@ function parseMarkdown(text) {
   fermerListe();
   return sortie.join('<br>');
 }
- 
+
 function renderMessage(m) {
   if (m.role === 'user') {
-    const contenuUser = parseMarkdown(m.content);
-    return `<div class="message user"><div class="avatar user">${ICON_USER}</div><div class="bubble">${contenuUser}</div></div>`;
+    return '<div class="message user"><div class="avatar user">' + ICON_USER + '</div><div class="bubble">' + parseMarkdown(m.content) + '</div></div>';
   }
   if (m.role === 'system') {
-    return `<div class="message system"><div class="bubble">${escapeHtml(m.content)}</div></div>`;
+    return '<div class="message system"><div class="bubble">' + escapeHtml(m.content) + '</div></div>';
   }
-  const contenu = parseMarkdown(m.content);
-  return `<div class="message ai"><div class="avatar ai" aria-hidden="true"><span class="orb-core"></span></div><div class="bubble">${contenu}</div></div>`;
+  return '<div class="message ai"><div class="avatar ai" aria-hidden="true">' + LENTILLE + '</div><div class="bubble">' + parseMarkdown(m.content) + '</div></div>';
 }
- 
+
 function addMessage(role, content, dossier = currentDossier) {
   if (!dossier) return;
   if (!dossier.messages) dossier.messages = [];
   dossier.messages.push({ role, content });
   if (dossier === currentDossier) renderMessages();
 }
- 
+
 // ==========================================
-// CHAT DÉSACTIVÉ PENDANT OPÉRATION
+// CHAT DÉSACTIVÉ PENDANT OPÉRATION (par dossier)
 // ==========================================
 function setChatEnabled(enabled, message = 'Analyse en cours, veuillez patienter…') {
   const wrap = document.getElementById('inputWrap');
   const btn = document.getElementById('sendBtn');
   const input = document.getElementById('chatInput');
   const mic = document.getElementById('micBtn');
+  if (!wrap) return;
   if (enabled) {
     wrap.classList.remove('disabled');
     btn.disabled = false;
@@ -1719,12 +1959,12 @@ function setChatEnabled(enabled, message = 'Analyse en cours, veuillez patienter
     input.placeholder = message;
   }
 }
- 
+
 // ==========================================
 // TYPING INDICATOR
 // ==========================================
 let typingTimer = null, typingSeconds = 0;
- 
+
 function addTyping(label, start = Date.now()) {
   const area = document.getElementById('chatArea');
   if (!area) return;
@@ -1732,35 +1972,41 @@ function addTyping(label, start = Date.now()) {
   document.getElementById('typingIndicator')?.remove();
   typingSeconds = Math.floor((Date.now() - start) / 1000);
   const div = document.createElement('div');
-  div.className = 'message ai'; div.id = 'typingIndicator';
-  div.innerHTML = '<div class="avatar ai thinking" aria-hidden="true"><span class="orb-core"></span></div><div class="bubble"><div style="display:flex;align-items:center;gap:10px;"><div class="typing"><span></span><span></span><span></span></div><span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds) + '</span></div></div>';
+  div.className = 'message ai';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<div class="avatar ai thinking" aria-hidden="true">' + LENTILLE + '</div>' +
+    '<div class="bubble"><div style="display:flex;align-items:center;gap:10px;">' +
+    '<div class="typing"><span></span><span></span><span></span></div>' +
+    '<span id="typingLabel" style="font-size:13px;color:var(--text-muted);">' + (label || 'Analyse en cours…') + ' ' + formatDuration(typingSeconds) + '</span>' +
+    '</div></div>';
   area.appendChild(div);
   area.scrollTop = area.scrollHeight;
   typingTimer = setInterval(() => {
     typingSeconds++;
     const el = document.getElementById('typingLabel');
-    if (el) el.textContent = (label||'Analyse en cours...') + ' ' + formatDuration(typingSeconds);
+    if (el) el.textContent = (label || 'Analyse en cours…') + ' ' + formatDuration(typingSeconds);
   }, 1000);
 }
- 
+
 function removeTyping() {
-  clearInterval(typingTimer); typingTimer = null;
+  clearInterval(typingTimer);
+  typingTimer = null;
   document.getElementById('typingIndicator')?.remove();
 }
- 
-function startPending(dossier, label) {
-  dossier._pending = { label, start: Date.now() };
+
+function startPending(dossier, label, baseline = null) {
+  dossier._pending = Object.assign({ label, start: Date.now() }, baseline === null ? {} : { baseline });
   if (dossier === currentDossier) addTyping(label, dossier._pending.start);
+  majOrbAccueil();
 }
 function endPending(dossier) {
   dossier._pending = null;
   if (dossier === currentDossier) removeTyping();
+  majOrbAccueil();
 }
- 
+
 // ==========================================
 // RÉCUPÉRATION DE LA RÉPONSE CÔTÉ SERVEUR
-// Dès que n8n a répondu, le dossier va directement chercher la réponse
-// enregistrée par le serveur (source de vérité) et rafraîchit l'affichage.
 // ==========================================
 function extraireTexteReponse(data, profondeur = 0) {
   if (typeof data === 'string') return data.trim();
@@ -1782,33 +2028,24 @@ function extraireTexteReponse(data, profondeur = 0) {
   if (data.choices) return extraireTexteReponse(data.choices, profondeur + 1);
   return '';
 }
- 
-function compterReponsesIA(messages = []) {
-  return messages.filter(m => m.role === 'ai' || m.role === 'assistant').length;
-}
- 
-function normaliserConversation(data = []) {
-  return data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content }));
-}
- 
+
+function compterReponsesIA(messages = []) { return messages.filter(m => m.role === 'ai' || m.role === 'assistant').length; }
+
+function normaliserConversation(data = []) { return data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content })); }
+
 // Une erreur côté serveur (n8n) est lue directement dans Supabase :
-// toute ligne role system/error enregistrée après le début de l'opération.
+// toute ligne system/error enregistrée après le début de l'opération.
+// Les erreurs sont comptées par rapport à l'état de départ, sans se fier aux horloges.
 const ROLES_ERREUR = ['system', 'error', 'erreur'];
 function erreurServeurDepuis(rows, depuisMs) {
-  const seuil = (depuisMs || 0) - 30000;
-  const trouvees = (rows || []).filter(r => {
-    if (!ROLES_ERREUR.includes(r.role) || !r.timestamp) return false;
-    let t = String(r.timestamp);
-    if (!/[zZ]$|[+-]\d\d:?\d\d$/.test(t)) t = t.replace(' ', 'T') + 'Z';
-    const ms = Date.parse(t);
-    return !isNaN(ms) && ms >= seuil;
-  });
-  return trouvees.length ? (trouvees[trouvees.length - 1].content || "Une erreur est survenue côté serveur.") : null;
+  void depuisMs;
+  const trouvees = (rows || []).filter(r => ROLES_ERREUR.includes(r.role));
+  if (!trouvees.length) return null;
+  return trouvees[trouvees.length - 1].content || 'Une erreur est survenue côté serveur.';
 }
 
 function appliquerConversationServeur(dossier, messagesServeur) {
   const messages = normaliserConversation(messagesServeur);
-  // Conserve la question optimiste si le workflow n'a enregistré que sa réponse.
   const questionEnAttente = dossier._questionEnAttente;
   if (questionEnAttente && !messages.some(m => m.role === 'user' && m.content === questionEnAttente)) {
     const indexReponse = messages.findIndex((m, i) => i > 0 && m.role === 'ai');
@@ -1818,31 +2055,27 @@ function appliquerConversationServeur(dossier, messagesServeur) {
   dossier._loaded = true;
   if (dossier === currentDossier) renderMessages();
 }
- 
+
 async function attendreReponseServeur(dossier, messagesAvant, tentatives = 12) {
-  // Le workflow peut enregistrer la réponse quelques instants après son retour.
   for (let i = 0; i < tentatives; i++) {
     const { data, error } = await sb.from('conversations')
       .select('role, content, timestamp')
       .eq('dossier_id', dossier.id)
       .order('timestamp', { ascending: true });
- 
     if (!error) {
       const messages = normaliserConversation(data || []);
-      const reponses = messages.filter(m => m.role === 'ai');
-      const nouvellesReponses = reponses.slice(messagesAvant);
+      const nouvellesReponses = messages.filter(m => m.role === 'ai').slice(messagesAvant);
       if (nouvellesReponses.length) {
         appliquerConversationServeur(dossier, messages);
         dossier._questionEnAttente = null;
         return nouvellesReponses[nouvellesReponses.length - 1].content;
       }
     }
- 
     if (i < tentatives - 1) await new Promise(resolve => setTimeout(resolve, 1500));
   }
   return null;
 }
- 
+
 function ajouterMessageSiAbsent(role, content, dossier) {
   if (!dossier) return;
   if (!dossier.messages) dossier.messages = [];
@@ -1850,7 +2083,7 @@ function ajouterMessageSiAbsent(role, content, dossier) {
   if (dernier?.role === role && dernier?.content === content) return;
   addMessage(role, content, dossier);
 }
- 
+
 async function synchroniserConversation(dossier, roleAttendu = 'ai') {
   if (!dossier) return null;
   try {
@@ -1862,7 +2095,6 @@ async function synchroniserConversation(dossier, roleAttendu = 'ai') {
     const msgs = (data || []).map(m => ({ role: m.role, content: m.content }));
     if (!msgs.length) return null;
     const local = dossier.messages || [];
-    // Le serveur fait foi dès qu'il a enregistré au moins autant de messages.
     dossier.messages = msgs.length >= local.length ? msgs : local.concat(msgs.slice(local.length));
     dossier._loaded = true;
     if (dossier === currentDossier) renderMessages();
@@ -1873,12 +2105,13 @@ async function synchroniserConversation(dossier, roleAttendu = 'ai') {
     return null;
   }
 }
- 
+
 // ==========================================
 // ENVOI QUESTION
 // ==========================================
 async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut = Date.now()) {
-  for (let tentative = 0; tentative < 180 && sequence === questionSequence; tentative++) {
+  const limite = debut + DUREE_SUIVI_QUESTION;
+  while (sequence === questionSequence && Date.now() < limite) {
     try {
       const { data, error } = await sb.from('conversations')
         .select('role, content, timestamp')
@@ -1892,14 +2125,16 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
           dossier._questionEnAttente = null;
           if (sequence === questionSequence) {
             questionResolvedSequence = sequence;
-            oublierQuestion(dossier.id); notifier('Réponse prête', dossier.name);
+            oublierQuestion(dossier.id);
+            notifier('Réponse prête', dossier.name);
             endPending(dossier);
+            dossier.questionActive = false;
             setLiveStatus(dossier, 'question_done');
-            questionEnCours = false;
-            setChatEnabled(true);
+            if (dossier === currentDossier) setChatEnabled(true);
           }
           return;
         }
+        // Toute ligne system/error présente est un vrai échec rapide.
         const msgErreur = erreurServeurDepuis(data, debut);
         if (msgErreur && sequence === questionSequence) {
           endPending(dossier);
@@ -1907,47 +2142,49 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
           dossier._questionEnAttente = null;
           questionResolvedSequence = sequence;
           oublierQuestion(dossier.id);
+          dossier.questionActive = false;
           setLiveStatus(dossier, 'question_error');
-          questionEnCours = false;
-          setChatEnabled(true);
+          if (dossier === currentDossier) setChatEnabled(true);
           return;
         }
       }
     } catch (err) {
       console.warn('Suivi automatique de la réponse impossible :', err);
     }
-    await new Promise(resolve => setTimeout(resolve, 2500));
+    await new Promise(resolve => setTimeout(resolve, INTERVALLE_POLLING));
   }
   if (sequence === questionSequence && questionResolvedSequence !== sequence) {
     dossier._questionEnAttente = null;
     endPending(dossier);
-    addMessage('system', 'Je n’ai pas pu confirmer l’enregistrement de la réponse. Vérifiez la conversation et actualisez le dossier avant de renvoyer la question, pour éviter un doublon.', dossier);
+    addMessage('system', "Je n'ai pas pu confirmer l'enregistrement de la réponse. Vérifiez la conversation et actualisez le dossier avant de renvoyer la question, pour éviter un doublon.", dossier);
+    dossier.questionActive = false;
     setLiveStatus(dossier, 'question_error');
-    questionEnCours = false;
     if (dossier === currentDossier) setChatEnabled(true);
   }
 }
- 
+
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
-  if (!msg || !currentDossier || creationEnCours || questionEnCours) return;
+  if (!msg || !currentDossier || creationEnCours || currentDossier._pending || currentDossier.questionActive) return;
   proposerNotifications();
- 
+
   const dossier = currentDossier;
   const messagesAvant = compterReponsesIA(dossier.messages || []);
   const sequence = ++questionSequence;
+  const debut = Date.now();
   let attenteConfirmationServeur = false;
   dossier._questionEnAttente = msg;
-  questionEnCours = true;
-  memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, start: Date.now() });
-  input.value = ''; input.style.height = 'auto';
+  dossier.questionActive = true;
+  memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, start: debut });
+  input.value = '';
+  input.style.height = 'auto';
   addMessage('user', msg, dossier);
   setLiveStatus(dossier, 'question');
-  startPending(dossier, 'Recherche en cours...');
+  startPending(dossier, 'Recherche en cours…');
   setChatEnabled(false, 'Question en cours, veuillez patienter…');
-  surveillerReponseQuestion(dossier, messagesAvant, sequence, Date.now());
- 
+  surveillerReponseQuestion(dossier, messagesAvant, sequence, debut);
+
   try {
     const data = await fetchJson(WEBHOOK_QUESTION, {
       method: 'POST',
@@ -1956,67 +2193,79 @@ async function sendMessage() {
     });
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
     endPending(dossier);
-    // La réponse est d'abord récupérée directement côté serveur ;
-    // le contenu renvoyé par n8n ne sert que de secours.
     const reponseServeur = await attendreReponseServeur(dossier, messagesAvant);
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
     if (!reponseServeur) {
       const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
       ajouterMessageSiAbsent('ai', reponse.replace(/\\n/g, '\n'), dossier);
-      // Garde la saisie bloquée jusqu’à ce que la réponse soit confirmée dans Supabase.
       attenteConfirmationServeur = true;
-      startPending(dossier, 'Synchronisation de la réponse...');
-      addMessage('system', 'Réponse reçue ; vérification de son enregistrement en cours. N’envoyez pas une nouvelle question pour le moment.', dossier);
+      startPending(dossier, 'Synchronisation de la réponse…');
+      addMessage('system', "Réponse reçue ; vérification de son enregistrement en cours. N'envoyez pas une nouvelle question pour le moment.", dossier);
       return;
     }
     dossier._questionEnAttente = null;
     questionResolvedSequence = sequence;
+    dossier.questionActive = false;
     setLiveStatus(dossier, 'question_done');
-  } catch(err) {
+  } catch (err) {
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
-    if (err.status) {
-      questionSequence++;
-      const m = 'La question a échoué (erreur serveur ' + err.status + '). Réessayez ; si le problème continue, contactez le support.';
-      memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, erreur: m });
-      endPending(dossier); addMessage('system', m, dossier); setLiveStatus(dossier, 'question_error');
-      questionEnCours = false; setChatEnabled(true); return;
-    }
-    const reponseEnregistree = await attendreReponseServeur(dossier, messagesAvant, 4);
-    if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
-    if (reponseEnregistree) {
-      dossier._questionEnAttente = null;
-      questionResolvedSequence = sequence;
-      endPending(dossier);
-      setLiveStatus(dossier, 'question_done');
-    } else {
-      attenteConfirmationServeur = true;
-      startPending(dossier, 'Vérification de la demande...');
-      addMessage('system', 'La demande n’a pas reçu de confirmation immédiate. Je vérifie si elle a été enregistrée ; ne la renvoyez pas avant la fin de cette vérification.', dossier);
+
+    // Coupure d'un relais (502/504/524), délai dépassé ou panne réseau :
+    // ce n'est pas un échec, l'analyse continue côté serveur.
+    if (estErreurNonDefinitive(err, debut)) {
+      startPendingServeurQuestion(dossier, msg, messagesAvant, debut);
       setLiveStatus(dossier, 'question');
+      addMessage('system', "Connexion interrompue avec le service : la demande peut encore aboutir. Je continue à surveiller la réponse ; ne la renvoyez pas avant la fin de cette vérification.", dossier);
+      return;
     }
+
+    // Erreur réelle et rapide : affichée tout de suite.
+    const m = "La question a échoué (erreur serveur " + err.status + "). Réessayez ; si le problème continue, contactez le support.";
+    memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, erreur: m });
+    endPending(dossier);
+    addMessage('system', m, dossier);
+    dossier.questionActive = false;
+    setLiveStatus(dossier, 'question_error');
+    setChatEnabled(true);
   } finally {
     if (sequence === questionSequence && (!attenteConfirmationServeur || questionResolvedSequence === sequence)) {
-      questionEnCours = false;
-      setChatEnabled(true);
+      dossier.questionActive = false;
+      if (dossier === currentDossier) setChatEnabled(true);
+      majOrbAccueil();
     }
   }
 }
- 
-function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
- 
+
+// Le suivi reprend via la boucle générale jusqu'à ce que n8n ait fini.
+function startPendingServeurQuestion(dossier, question, messagesAvant, debut) {
+  dossier._pending = { label: 'Recherche en cours…', start: debut, server: true, baseline: messagesAvant, question };
+  if (dossier === currentDossier) addTyping(dossier._pending.label, debut);
+  startPolling();
+  majOrbAccueil();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
 // ==========================================
 // MODAL
 // ==========================================
 function lockModal(lock) {
-  const inputs = ['dossierNameInput', 'fileInput'];
-  inputs.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = lock; });
+  ['dossierNameInput', 'fileInput'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = lock;
+  });
   const dz = document.getElementById('dropZone');
   if (dz) dz.classList.toggle('disabled', lock);
   document.getElementById('cancelBtn').disabled = lock;
   document.querySelectorAll('.file-remove').forEach(el => el.classList.toggle('disabled', lock));
 }
- 
+
 function triggerFileInput() {
   if (creationEnCours) return;
   if (selectedFiles.length >= MAX_PDF_CREATION) {
@@ -2025,7 +2274,7 @@ function triggerFileInput() {
   }
   document.getElementById('fileInput').click();
 }
- 
+
 function openModal() {
   if (creationEnCours) return;
   document.getElementById('modalOverlay').style.display = 'flex';
@@ -2035,7 +2284,7 @@ function openModal() {
   hideModalError();
   lockModal(false);
 }
- 
+
 function closeModal() {
   if (creationEnCours) return;
   document.getElementById('modalOverlay').style.display = 'none';
@@ -2044,9 +2293,9 @@ function closeModal() {
   renderFilesList();
   hideModalError();
 }
- 
+
 const MAX_PDF_CREATION = 1;
- 
+
 function showModalError(msg) {
   const el = document.getElementById('modalError');
   if (!el) return;
@@ -2057,17 +2306,14 @@ function hideModalError() {
   const el = document.getElementById('modalError');
   if (el) el.style.display = 'none';
 }
- 
+
 function handleFiles(files) {
   if (creationEnCours) return;
   const tousLesFichiers = Array.from(files);
   const pdfs = tousLesFichiers.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
   document.getElementById('fileInput').value = '';
   hideModalError();
-  if (tousLesFichiers.length && !pdfs.length) {
-    showModalError('Seuls les fichiers PDF sont acceptés.');
-    return;
-  }
+  if (tousLesFichiers.length && !pdfs.length) { showModalError('Seuls les fichiers PDF sont acceptés.'); return; }
   let refuse = false;
   for (const f of pdfs) {
     if (selectedFiles.find(x => x.name === f.name)) continue;
@@ -2075,9 +2321,9 @@ function handleFiles(files) {
     selectedFiles.push(f);
   }
   renderFilesList();
-  if (refuse) showModalError("Un seul document PDF par dossier.");
+  if (refuse) showModalError('Un seul document PDF par dossier.');
 }
- 
+
 function renderFilesList() {
   const dropZone = document.getElementById('dropZone');
   const fichierAjoute = selectedFiles.length >= MAX_PDF_CREATION;
@@ -2086,24 +2332,24 @@ function renderFilesList() {
     dropZone.setAttribute('aria-disabled', String(fichierAjoute || creationEnCours));
     dropZone.title = fichierAjoute ? 'Un PDF est déjà ajouté. Retirez-le pour le remplacer.' : 'Ajouter un PDF';
     const texteZone = dropZone.querySelector('.drop-text');
-    if (texteZone) texteZone.textContent = fichierAjoute
-      ? 'PDF ajouté — retirez-le pour le remplacer'
-      : 'Déposez votre PDF ici ou cliquez pour le sélectionner';
+    if (texteZone) texteZone.textContent = fichierAjoute ? 'PDF ajouté — retirez-le pour le remplacer' : 'Déposez votre PDF ici ou cliquez pour le sélectionner';
   }
-  document.getElementById('filesList').innerHTML = selectedFiles.map((f, i) => `
-    <div class="file-item">
-      <span>${ICON_DOC_SM}</span>
-      <span>${escapeHtml(f.name)}</span>
-      <span class="file-remove ${creationEnCours ? 'disabled' : ''}" onclick="removeFile(${i})">×</span>
-    </div>
-  `).join('');
+  document.getElementById('filesList').innerHTML = selectedFiles.map((f, i) =>
+    '<div class="file-item">' +
+    '<span>' + ICON_DOC_SM + '</span>' +
+    '<span>' + escapeHtml(f.name) + '</span>' +
+    '<span class="file-remove ' + (creationEnCours ? 'disabled' : '') + '" onclick="removeFile(' + i + ')">×</span>' +
+    '</div>'
+  ).join('');
 }
- 
+
 function removeFile(i) {
   if (creationEnCours) return;
-  selectedFiles.splice(i, 1); renderFilesList(); hideModalError();
+  selectedFiles.splice(i, 1);
+  renderFilesList();
+  hideModalError();
 }
- 
+
 // ==========================================
 // CRÉATION DOSSIER
 // ==========================================
@@ -2116,90 +2362,82 @@ function setCreateButtonLoading(chargement) {
   loader.style.display = chargement ? 'inline-flex' : 'none';
   if (!chargement) lbl.textContent = 'Créer et analyser';
 }
- 
+
 async function surveillerSyntheseAnalyse(dossier, reponsesAvant) {
   if (dossier._analysisWatcher) return;
   dossier._analysisWatcher = true;
   const debut = Date.now();
+  const limite = debut + DUREE_SUIVI_ANALYSE;
   try {
-  for (let tentative = 0; tentative < 240; tentative++) {
-    try {
-      const { data, error } = await sb.from('conversations')
-        .select('role, content, timestamp')
-        .eq('dossier_id', dossier.id)
-        .order('timestamp', { ascending: true });
-      if (!error) {
-        const messages = normaliserConversation(data || []);
-        const nouvelles = messages.filter(m => m.role === 'ai').slice(reponsesAvant);
-        if (nouvelles.length) {
-          appliquerConversationServeur(dossier, messages);
-          dossier.status = 'ready';
-          dossier._liveStatus = 'analyse_done';
-          endPending(dossier);
-          renderDossiers(); renderHome(); renderAllDossiers();
-          return;
+    while (Date.now() < limite) {
+      try {
+        const { data, error } = await sb.from('conversations')
+          .select('role, content, timestamp')
+          .eq('dossier_id', dossier.id)
+          .order('timestamp', { ascending: true });
+        if (!error) {
+          const messages = normaliserConversation(data || []);
+          const nouvelles = messages.filter(m => m.role === 'ai').slice(reponsesAvant);
+          if (nouvelles.length) {
+            appliquerConversationServeur(dossier, messages);
+            dossier.status = 'ready';
+            dossier._liveStatus = 'analyse_done';
+            endPending(dossier);
+            renderDossiers(); renderHome(); renderAllDossiers();
+            return;
+          }
+          const msgErreur = erreurServeurDepuis(data, debut);
+          if (msgErreur) {
+            endPending(dossier);
+            appliquerConversationServeur(dossier, messages);
+            dossier.status = 'error';
+            dossier._liveStatus = null;
+            memoriserDossier(dossier, { status: 'error', message: msgErreur });
+            if (dossier === currentDossier) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
+            renderDossiers(); renderHome(); renderAllDossiers();
+            return;
+          }
         }
-        const msgErreur = erreurServeurDepuis(data, debut);
-        if (msgErreur) {
-          endPending(dossier);
-          appliquerConversationServeur(dossier, messages);
-          dossier.status = 'error';
-          dossier._liveStatus = null;
-          memoriserDossier(dossier, { status: 'error', message: msgErreur });
-          if (dossier === currentDossier) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
-          renderDossiers(); renderHome(); renderAllDossiers();
-          return;
-        }
+      } catch (err) {
+        console.warn('Suivi automatique de la synthèse impossible :', err);
       }
-    } catch (err) {
-      console.warn('Suivi automatique de la synthèse impossible :', err);
+      await new Promise(resolve => setTimeout(resolve, INTERVALLE_POLLING));
     }
-    await new Promise(resolve => setTimeout(resolve, 2500));
-  }
   } finally {
     dossier._analysisWatcher = false;
   }
 }
- 
+
 async function createDossier() {
   const name = document.getElementById('dossierNameInput').value.trim();
   const notes = '';
   hideModalError();
- 
-  // Un dossier n'est créé que si les deux champs obligatoires sont fournis.
+
   if (!name) { showModalError('Veuillez saisir un nom de dossier.'); return; }
-  if (selectedFiles.length === 0) { showModalError('Veuillez ajouter un document pour commencer l\'analyse.'); return; }
- 
+  if (selectedFiles.length === 0) { showModalError("Veuillez ajouter un document pour commencer l'analyse."); return; }
+
   proposerNotifications();
   creationEnCours = true;
   creationDebut = Date.now();
   lockModal(true);
   await requestWakeLock();
- 
-  const btn = document.getElementById('createBtn');
+
   const lbl = document.getElementById('btnLbl');
   setCreateButtonLoading(true);
   lbl.textContent = 'Analyse en cours… ' + formatDuration(0);
   let sec = 0;
   const timer = setInterval(() => { sec++; if (lbl) lbl.textContent = 'Analyse en cours… ' + formatDuration(sec); }, 1000);
- 
+
   const id = 'dossier_' + Date.now();
   const dossier = {
-    id, name,
-    date: new Date().toLocaleDateString('fr-FR'),
-    docs: selectedFiles.map(f => f.name),
-    docsCount: selectedFiles.length,
-    status: 'processing',
-    _analysisAnswerBaseline: 0,
-    messages: [],
-    _loaded: true,
-    _liveStatus: 'analyse',
-    _pending: null
+    id, name, date: new Date().toLocaleDateString('fr-FR'),
+    docs: selectedFiles.map(f => f.name), docsCount: selectedFiles.length,
+    status: 'processing', _analysisAnswerBaseline: 0, messages: [], _loaded: true,
+    _liveStatus: 'analyse', _pending: null, _pendingCreation: true, questionActive: false
   };
- 
-  if (notes) dossier.messages.push({ role: 'user', content: `Notes / Contexte :\n${notes}` });
+  if (notes) dossier.messages.push({ role: 'user', content: 'Notes / Contexte :\n' + notes });
   const messagesAvantAnalyse = compterReponsesIA(dossier.messages);
- 
+
   dossiers.unshift(dossier);
   memoriserDossier(dossier);
   currentDossier = dossier;
@@ -2208,13 +2446,11 @@ async function createDossier() {
   document.getElementById('currentDossierName').textContent = dossier.name;
   updateDocsStrip();
   renderMessages();
-  renderDossiers();
-  renderHome();
-  renderAllDossiers();
+  renderDossiers(); renderHome(); renderAllDossiers();
   setChatEnabled(false);
-  startPending(dossier, 'Analyse en cours...');
+  startPending(dossier, 'Analyse en cours…', messagesAvantAnalyse);
   surveillerSyntheseAnalyse(dossier, messagesAvantAnalyse);
- 
+
   try {
     let dernierData = null;
     for (const file of selectedFiles) {
@@ -2225,16 +2461,22 @@ async function createDossier() {
       if (notes) formData.append('notes', notes);
       formData.append('data', file);
       const res = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const e = new Error('HTTP ' + res.status);
+        e.status = res.status;
+        throw e;
+      }
       dernierData = await res.json();
       console.log('RÉPONSE N8N :', dernierData);
     }
- 
+
+    dossier._pendingCreation = false;
     dossier.status = 'ready';
-    oublierDossier(id); notifier('Analyse prête', name);
+    oublierDossier(id);
+    notifier('Analyse prête', name);
     endPending(dossier);
     setLiveStatus(dossier, 'analyse_done');
- 
+
     // Dès que n8n a répondu, le dossier va chercher la synthèse
     // enregistrée côté serveur ; le contenu du webhook sert de secours.
     const syntheseServeur = await attendreReponseServeur(dossier, messagesAvantAnalyse);
@@ -2242,30 +2484,33 @@ async function createDossier() {
       const synthese = extraireTexteReponse(dernierData);
       const msg = synthese
         ? synthese.replace(/\\n/g, '\n')
-        : `Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.`;
+        : "Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.";
       ajouterMessageSiAbsent('ai', msg, dossier);
     }
- 
   } catch (err) {
     console.error(err);
-    const perteConnexion = !navigator.onLine || /Failed to fetch|NetworkError|Load failed|network/i.test(err.message || '');
-    if (perteConnexion) {
-      // L'analyse continue côté serveur ; la conversation sera mise à jour automatiquement dès que la réponse sera enregistrée.
+    dossier._pendingCreation = false;
+
+    // Coupure non définitive (502/504/524, délai, réseau) : l'analyse continue côté serveur.
+    if (!navigator.onLine || estErreurNonDefinitive(err, creationDebut)) {
       addMessage('system', "Connexion interrompue : l'analyse continue sur le serveur. Le résultat s'affichera automatiquement dès qu'elle aboutit.", dossier);
+      dossier.status = 'processing';
+      dossier._liveStatus = 'analyse';
       startPendingServeur(dossier);
-    } else {
-      dossier.status = 'error';
-      endPending(dossier);
-      setLiveStatus(dossier, null);
-      let msgErr = "L'analyse a échoué.";
-      if (err.message.includes('503')) msgErr = "Le service d'extraction est temporairement surchargé. Réessayez dans quelques minutes.";
-      else if (err.message.includes('401') || err.message.includes('403')) msgErr = "Erreur d'authentification. Veuillez vous reconnecter.";
-      else if (err.message.includes('404')) msgErr = "Le service d'analyse est introuvable. Contactez le support.";
-      else if (err.message.includes('500')) msgErr = "Erreur serveur lors de l'analyse. Réessayez ou contactez le support.";
-      msgErr += ' (' + err.message + ')';
-      memoriserDossier(dossier, { status: 'error', message: msgErr });
-      addMessage('system', msgErr, dossier);
+      return;
     }
+
+    dossier.status = 'error';
+    endPending(dossier);
+    setLiveStatus(dossier, null);
+    let msgErr = "L'analyse a échoué.";
+    if (err.message.includes('503')) msgErr = "Le service d'extraction est temporairement surchargé. Réessayez dans quelques minutes.";
+    else if (err.message.includes('401') || err.message.includes('403')) msgErr = "Erreur d'authentification. Veuillez vous reconnecter.";
+    else if (err.message.includes('404')) msgErr = "Le service d'analyse est introuvable. Contactez le support.";
+    else if (err.message.includes('500')) msgErr = "Erreur serveur lors de l'analyse. Réessayez ou contactez le support.";
+    msgErr += ' (' + err.message + ')';
+    memoriserDossier(dossier, { status: 'error', message: msgErr });
+    addMessage('system', msgErr, dossier);
   } finally {
     clearInterval(timer);
     creationEnCours = false;
@@ -2274,13 +2519,11 @@ async function createDossier() {
     selectedFiles = [];
     renderFilesList();
     setChatEnabled(true);
-    renderDossiers();
-    renderHome();
-    renderAllDossiers();
+    renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
     loadDossiers().then(() => { suivreAnalysesServeur(); });
   }
 }
- 
+
 // ==========================================
 // FULLSCREEN
 // ==========================================
@@ -2289,19 +2532,15 @@ function openFullscreen() {
   const msgs = (currentDossier.messages || []).filter(m => m.content);
   document.getElementById('fullscreenTitle').textContent = currentDossier.name;
   const contenu = document.getElementById('fullscreenContent');
-  if (!currentDossier._loaded) {
-    contenu.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Chargement de la conversation…</div>';
-  } else if (msgs.length === 0) {
-    contenu.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Aucun message dans cette conversation pour le moment.</div>';
-  } else {
-    contenu.innerHTML = msgs.map(m => renderMessage(m)).join('');
-  }
+  if (!currentDossier._loaded) contenu.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Chargement de la conversation…</div>';
+  else if (msgs.length === 0) contenu.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Aucun message dans cette conversation pour le moment.</div>';
+  else contenu.innerHTML = msgs.map(m => renderMessage(m)).join('');
   const overlay = document.getElementById('fullscreenOverlay');
   overlay.style.display = 'flex';
   overlay.scrollTop = 0;
 }
 function closeFullscreen() { document.getElementById('fullscreenOverlay').style.display = 'none'; }
- 
+
 // ==========================================
 // DRAG & DROP — uniquement sur la modal (dropZone)
 // ==========================================
@@ -2313,12 +2552,12 @@ dropZone?.addEventListener('drop', e => {
   dropZone.classList.remove('drag-over');
   if (!creationEnCours) handleFiles(e.dataTransfer.files);
 });
- 
+
 // WAKE LOCK — empêche la veille pendant une analyse
 let wakeLock = null;
 async function requestWakeLock() {
   if ('wakeLock' in navigator) {
-    try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) { console.warn('Wake Lock refusé :', e); }
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { console.warn('Wake Lock refusé :', e); }
   }
 }
 function releaseWakeLock() {
@@ -2327,7 +2566,7 @@ function releaseWakeLock() {
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && creationEnCours && !wakeLock) await requestWakeLock();
 });
- 
+
 initTheme();
 initSidebar();
 initAuth();
