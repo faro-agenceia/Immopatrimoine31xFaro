@@ -467,11 +467,11 @@ html[data-theme="light"] {
     <div class="auth-logo-sub">Choisissez votre nouveau mot de passe</div>
     <div class="auth-error" id="recoveryError"></div>
     <div class="pwd-wrap">
-      <input class="modal-input" type="password" id="recoveryPassword" placeholder="Nouveau mot de passe" />
+      <input class="modal-input" type="password" id="recoveryPassword" placeholder="Nouveau mot de passe (12 caractères minimum)" autocomplete="new-password" minlength="12" />
       <button type="button" class="pwd-toggle" onclick="togglePassword('recoveryPassword', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
     </div>
     <div class="pwd-wrap last">
-      <input class="modal-input" type="password" id="recoveryPasswordConfirm" placeholder="Confirmez le mot de passe" />
+      <input class="modal-input" type="password" id="recoveryPasswordConfirm" placeholder="Confirmez le mot de passe" autocomplete="new-password" minlength="12" />
       <button type="button" class="pwd-toggle" onclick="togglePassword('recoveryPasswordConfirm', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
     </div>
     <button class="auth-btn" id="recoverySubmitBtn" onclick="handleRecoverySubmit()">Valider le nouveau mot de passe</button>
@@ -909,9 +909,9 @@ function proposerNotifications() {
 function reprendreQuestion(dossier, q) {
   dossier.questionActive = true;
   const sequence = ++questionSequence;
-  dossier._pending = { label: 'Recherche en cours…', start: q.start };
+  dossier._pending = { label: 'Recherche en cours…', start: q.start, errorBaseline: q.errorBaseline || instantaneErreursServeur(dossier.messages || []) };
   dossier._liveStatus = 'question';
-  surveillerReponseQuestion(dossier, q.baseline, sequence, q.start || Date.now());
+  surveillerReponseQuestion(dossier, q.baseline, sequence, q.start || Date.now(), q.errorBaseline || instantaneErreursServeur(dossier.messages || []));
   if (dossier === currentDossier) setChatEnabled(false, 'Question en cours, veuillez patienter…');
 }
 
@@ -1317,7 +1317,7 @@ async function handleRecoverySubmit() {
   const errBox = document.getElementById('recoveryError');
   const btn = document.getElementById('recoverySubmitBtn');
   errBox.style.display = 'none';
-  if (!pwd || pwd.length < 6) { errBox.textContent = 'Minimum 6 caractères.'; errBox.style.display = 'block'; return; }
+  if (!pwd || pwd.length < 12) { errBox.textContent = 'Choisissez un mot de passe d’au moins 12 caractères.'; errBox.style.display = 'block'; return; }
   if (pwd !== pwdC) { errBox.textContent = 'Les mots de passe ne correspondent pas.'; errBox.style.display = 'block'; return; }
   btn.disabled = true;
   btn.textContent = '…';
@@ -1606,7 +1606,7 @@ function startPolling() {
 
       // Le suivi se termine uniquement quand une nouvelle réponse IA est enregistrée.
       if (!nouvelleSynthese) {
-        const msgErreur = erreurServeurDepuis(data, d._pending?.start);
+        const msgErreur = erreurServeurDepuis(data, d._pending?.errorBaseline || []);
         if (msgErreur) {
           endPending(d);
           appliquerConversationServeur(d, messages);
@@ -2147,7 +2147,7 @@ function removeTyping() {
 }
 
 function startPending(dossier, label, baseline = null) {
-  dossier._pending = Object.assign({ label, start: Date.now() }, baseline === null ? {} : { baseline });
+  dossier._pending = Object.assign({ label, start: Date.now(), errorBaseline: instantaneErreursServeur(dossier.messages || []) }, baseline === null ? {} : { baseline });
   if (dossier === currentDossier) addTyping(label, dossier._pending.start);
   majOrbAccueil();
 }
@@ -2189,11 +2189,21 @@ function normaliserConversation(data = []) { return data.map(m => ({ role: m.rol
 // toute ligne system/error enregistrée après le début de l'opération.
 // Les erreurs sont comptées par rapport à l'état de départ, sans se fier aux horloges.
 const ROLES_ERREUR = ['system', 'error', 'erreur'];
-function erreurServeurDepuis(rows, depuisMs) {
-  void depuisMs;
-  const trouvees = (rows || []).filter(r => ROLES_ERREUR.includes(r.role));
-  if (!trouvees.length) return null;
-  return trouvees[trouvees.length - 1].content || 'Une erreur est survenue côté serveur.';
+function instantaneErreursServeur(messages = []) {
+  return messages.filter(m => ROLES_ERREUR.includes(m.role)).map(m => String(m.content || ''));
+}
+function erreurServeurDepuis(rows, erreursAvant = []) {
+  const historiques = new Map();
+  (Array.isArray(erreursAvant) ? erreursAvant : []).forEach(contenu => historiques.set(contenu, (historiques.get(contenu) || 0) + 1));
+  const nouvelles = [];
+  for (const ligne of (rows || []).filter(r => ROLES_ERREUR.includes(r.role))) {
+    const contenu = String(ligne.content || '');
+    const restant = historiques.get(contenu) || 0;
+    if (restant > 0) historiques.set(contenu, restant - 1);
+    else nouvelles.push(ligne);
+  }
+  if (!nouvelles.length) return null;
+  return nouvelles[nouvelles.length - 1].content || 'Une erreur est survenue côté serveur.';
 }
 
 function appliquerConversationServeur(dossier, messagesServeur) {
@@ -2261,7 +2271,7 @@ async function synchroniserConversation(dossier, roleAttendu = 'ai') {
 // ==========================================
 // ENVOI QUESTION
 // ==========================================
-async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut = Date.now()) {
+async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut = Date.now(), erreursAvant = 0) {
   const limite = debut + DUREE_SUIVI_QUESTION;
   while (sequence === questionSequence && !dossier._supprime && Date.now() < limite) {
     try {
@@ -2287,7 +2297,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
           return;
         }
         // Toute ligne system/error présente est un vrai échec rapide.
-        const msgErreur = erreurServeurDepuis(data, debut);
+        const msgErreur = erreurServeurDepuis(data, erreursAvant);
         if (msgErreur && sequence === questionSequence) {
           endPending(dossier);
           appliquerConversationServeur(dossier, messages);
@@ -2323,19 +2333,20 @@ async function sendMessage() {
 
   const dossier = currentDossier;
   const messagesAvant = compterReponsesIA(dossier.messages || []);
+  const erreursAvant = instantaneErreursServeur(dossier.messages || []);
   const sequence = ++questionSequence;
   const debut = Date.now();
   let attenteConfirmationServeur = false;
   dossier._questionEnAttente = msg;
   dossier.questionActive = true;
-  memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, start: debut });
+  memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, start: debut });
   input.value = '';
   input.style.height = 'auto';
   addMessage('user', msg, dossier);
   setLiveStatus(dossier, 'question');
   startPending(dossier, 'Recherche en cours…');
   setChatEnabled(false, 'Question en cours, veuillez patienter…');
-  surveillerReponseQuestion(dossier, messagesAvant, sequence, debut);
+  surveillerReponseQuestion(dossier, messagesAvant, sequence, debut, erreursAvant);
 
   try {
     const data = await fetchJson(WEBHOOK_QUESTION, {
@@ -2365,7 +2376,7 @@ async function sendMessage() {
     // Coupure d'un relais (502/504/524), délai dépassé ou panne réseau :
     // ce n'est pas un échec, l'analyse continue côté serveur.
     if (estErreurNonDefinitive(err, debut)) {
-      startPendingServeurQuestion(dossier, msg, messagesAvant, debut);
+      startPendingServeurQuestion(dossier, msg, messagesAvant, debut, erreursAvant);
       setLiveStatus(dossier, 'question');
       addMessage('system', "Connexion interrompue avec le service : la demande peut encore aboutir. Je continue à surveiller la réponse ; ne la renvoyez pas avant la fin de cette vérification.", dossier);
       return;
@@ -2373,7 +2384,7 @@ async function sendMessage() {
 
     // Erreur réelle et rapide : affichée tout de suite.
     const m = "La question a échoué (erreur serveur " + err.status + "). Réessayez ; si le problème continue, contactez le support.";
-    memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, erreur: m });
+    memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, erreur: m });
     endPending(dossier);
     addMessage('system', m, dossier);
     dossier.questionActive = false;
@@ -2390,7 +2401,7 @@ async function sendMessage() {
 
 // Le suivi reprend via la boucle générale jusqu'à ce que n8n ait fini.
 function startPendingServeurQuestion(dossier, question, messagesAvant, debut) {
-  dossier._pending = { label: 'Recherche en cours…', start: debut, server: true, baseline: messagesAvant, question };
+  dossier._pending = { label: 'Recherche en cours…', start: debut, server: true, baseline: messagesAvant, errorBaseline: erreursAvant, question };
   if (dossier === currentDossier) addTyping(dossier._pending.label, debut);
   startPolling();
   majOrbAccueil();
@@ -2538,7 +2549,7 @@ async function surveillerSyntheseAnalyse(dossier, reponsesAvant) {
             renderDossiers(); renderHome(); renderAllDossiers();
             return;
           }
-          const msgErreur = erreurServeurDepuis(data, debut);
+          const msgErreur = erreurServeurDepuis(data, instantaneErreursServeur(dossier.messages || []));
           if (msgErreur) {
             endPending(dossier);
             appliquerConversationServeur(dossier, messages);
@@ -2617,7 +2628,7 @@ async function createDossier() {
       formData.append('nom_dossier', name);
       if (notes) formData.append('notes', notes);
       formData.append('data', file);
-      const res = await fetch(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData, signal: controller.signal });
+      const res = await fetchAvecDelai(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData, signal: controller.signal }, 10 * 60 * 1000);
       if (!res.ok) {
         const e = new Error('HTTP ' + res.status);
         e.status = res.status;
