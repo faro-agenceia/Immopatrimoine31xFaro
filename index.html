@@ -948,7 +948,13 @@ async function proposerNotificationAnalyse() {
 function notifierFinAnalyse(dossier, enErreur = false) {
   if (!dossier?._notifyOnComplete) return;
   dossier._notifyOnComplete = false;
-  notifier(enErreur ? 'Analyse échouée' : 'Analyse terminée', dossier.name, dossier.id);
+  // Mémorise l'envoi pour éviter de répéter la notification au prochain chargement.
+  majLocal(o => { if (o.dossiers?.[dossier.id]) o.dossiers[dossier.id].notification = false; });
+  notifier(
+    enErreur ? 'Votre analyse a échoué' : 'Votre analyse est prête',
+    enErreur ? "Cliquez sur cette notification pour voir l’erreur." : 'Cliquez sur cette notification pour la consulter.',
+    dossier.id
+  );
 }
 function reprendreQuestion(dossier, q) {
   dossier.questionActive = true;
@@ -1474,6 +1480,7 @@ function dossierVide(row, countMap) {
     date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
     docsCount: countMap[row.dossier_id] || 0,
     status: 'ready',
+    analysisComplete: !!String(row.resume || '').trim(),
     docs: [],
     messages: null,
     _loaded: false,
@@ -1502,6 +1509,7 @@ async function loadDossiers() {
     if (!ancien) return nouveau;
     ancien.name = nouveau.name;
     ancien.date = nouveau.date;
+    ancien.analysisComplete = ancien.analysisComplete || nouveau.analysisComplete;
     if (!ancien._loaded) ancien.docsCount = nouveau.docsCount;
     return ancien;
   });
@@ -1543,7 +1551,11 @@ async function loadDossiers() {
     const existant = dossiers.find(d => d.id === l.id);
     if (existant) {
       existant._notifyOnComplete = !!l.notification;
-      if (l.status === 'error') { existant.status = 'error'; existant._liveStatus = null; }
+      if (l.status === 'error') {
+        existant.status = 'error';
+        existant._liveStatus = null;
+        notifierFinAnalyse(existant, true);
+      }
       else {
         existant.status = 'processing'; existant._liveStatus = existant._liveStatus || 'analyse';
         if (l.executionIds?.length && !existant._pending) {
@@ -1556,12 +1568,14 @@ async function loadDossiers() {
       return;
     }
     if (l.status === 'error') {
-      dossiers.unshift({
+      const erreurLocale = {
         id: l.id, name: l.name, date: l.date, docs: l.docs || [], docsCount: (l.docs || []).length,
         status: 'error', messages: l.message ? [{ role: 'system', content: l.message }] : [], _loaded: true,
         _liveStatus: null, _pending: null, _local: true, _notifyOnComplete: !!l.notification,
         questionActive: false
-      });
+      };
+      dossiers.unshift(erreurLocale);
+      notifierFinAnalyse(erreurLocale, true);
       return;
     }
     dossiers.unshift({
@@ -1645,11 +1659,17 @@ async function loadDossierDetails(dossier) {
   dossier.docs = (docsRes.data || []).map(d => d.nom);
   dossier.docsCount = dossier.docs.length;
   dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
+  if (!dossier.analysisComplete) {
+    dossier.analysisComplete = dossier.messages.some(m =>
+      ['ai', 'assistant'].includes(m.role) && /votre analyse est terminée|résumé du dossier/i.test(String(m.content || ''))
+    );
+  }
   const etatLocalDossier = (lireLocal().dossiers || {})[dossier.id];
   if (etatLocalDossier?.status === 'error' && !dossier.messages.some(m => ROLES_ERREUR.includes(m.role))) {
     dossier.messages.push({ role: 'system', content: etatLocalDossier.message || "L'analyse a échoué. Supprimez ce dossier et relancez-le." });
   }
   dossier._loaded = true;
+  if (dossier === currentDossier) actualiserChatPourDossier(dossier);
   const q = (lireLocal().questions || {})[dossier.id];
   if (q) {
     if (compterReponsesIA(dossier.messages) > q.baseline) oublierQuestion(dossier.id);
@@ -1731,7 +1751,8 @@ function startPolling() {
         else { d._liveStatus = null; memoriserDossier(d, { status: 'error', message }); }
         if (!attente?.question) notifierFinAnalyse(d, true);
         addMessage('system', message, d);
-        if (currentDossier?.id === d.id) { setChatEnabled(true); renderMessages(); }
+        if (!attente?.question) d.analysisComplete = false;
+        if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
         renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
         continue;
       }
@@ -1762,7 +1783,8 @@ function startPolling() {
             addMessage('system', message, d);
             notifierFinAnalyse(d, true);
           }
-          if (currentDossier?.id === d.id) { setChatEnabled(true); renderMessages(); }
+          if (!attente.question) d.analysisComplete = false;
+          if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
           renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
           continue;
         }
@@ -1784,7 +1806,8 @@ function startPolling() {
             addMessage('system', message, d);
             notifierFinAnalyse(d, true);
           }
-          if (currentDossier?.id === d.id) { setChatEnabled(true); renderMessages(); }
+          if (!attente.question) d.analysisComplete = false;
+          if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
           renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
           continue;
         }
@@ -1814,11 +1837,12 @@ function startPolling() {
           endPending(d);
           d._pendingCreation = false;
           d.status = 'ready';
+          d.analysisComplete = true;
           d._liveStatus = 'analyse_done';
           oublierDossier(d.id);
           notifierFinAnalyse(d);
         }
-        if (currentDossier?.id === d.id) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
+        if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
         renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
         continue;
       }
@@ -1846,11 +1870,13 @@ function startPolling() {
             setLiveStatus(d, 'question_error');
           } else {
             d.status = 'error';
+            d.analysisComplete = false;
             d._liveStatus = null;
             memoriserDossier(d, { status: 'error', message: msgErreur });
             notifierFinAnalyse(d, true);
           }
-          if (currentDossier?.id === d.id) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
+          if (!etaitQuestion) d.analysisComplete = false;
+          if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
           renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
         }
         continue;
@@ -1866,11 +1892,12 @@ function startPolling() {
         setLiveStatus(d, 'question_done');
       } else {
         d.status = 'ready';
+        d.analysisComplete = true;
         d._liveStatus = 'analyse_done';
         oublierDossier(d.id);
         notifierFinAnalyse(d);
       }
-      if (currentDossier?.id === d.id) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
+      if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
       renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
     } } finally { pollEnCours = false; }
   }, INTERVALLE_POLLING);
@@ -2045,9 +2072,7 @@ async function openDossier(id) {
   if (!currentDossier) return;
   const cleDossier = cleEtatUtilisateur('dossier-ouvert');
   if (cleDossier) { try { localStorage.setItem(cleDossier, id); } catch (e) {} }
-  if (currentDossier._pending) setChatEnabled(false, currentDossier._liveStatus === 'question' ? 'Question en cours, veuillez patienter…' : 'Analyse en cours, veuillez patienter…');
-  else if (currentDossier.questionActive) setChatEnabled(false, 'Question en cours, veuillez patienter…');
-  else setChatEnabled(true);
+  actualiserChatPourDossier(currentDossier);
   setView('chat');
   document.getElementById('currentDossierName').textContent = currentDossier.name;
   updateDocsStrip();
@@ -2063,6 +2088,7 @@ async function openDossier(id) {
       renderDossiers();
       renderHome();
       renderAllDossiers();
+      actualiserChatPourDossier(currentDossier);
     }
   }
 }
@@ -2172,7 +2198,7 @@ function annulerSuiviDossier(dossier) {
   dossier.status = 'ready';
   dossier._liveStatus = 'question_error';
   oublierQuestion(dossier.id);
-  if (dossier === currentDossier) { removeTyping(); setChatEnabled(true); renderMessages(); }
+  if (dossier === currentDossier) { removeTyping(); actualiserChatPourDossier(dossier); renderMessages(); }
   if (etaitEnEnvoi) {
     creationEnCours = false;
     releaseWakeLock();
@@ -2376,6 +2402,19 @@ function setChatEnabled(enabled, message = 'Analyse en cours, veuillez patienter
     input.disabled = true;
     if (mic) mic.disabled = true;
     input.placeholder = message;
+  }
+}
+
+function actualiserChatPourDossier(dossier) {
+  if (!dossier || dossier !== currentDossier) return;
+  if (dossier._pending) {
+    setChatEnabled(false, dossier._pending.question ? 'Question en cours, veuillez patienter…' : 'Analyse en cours, veuillez patienter…');
+  } else if (dossier.questionActive) {
+    setChatEnabled(false, 'Question en cours, veuillez patienter…');
+  } else if (dossier.status === 'error' || !dossier.analysisComplete) {
+    setChatEnabled(false, 'L’analyse doit être terminée avant de poser une question.');
+  } else {
+    setChatEnabled(true);
   }
 }
 
@@ -2595,7 +2634,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
             endPending(dossier);
             dossier.questionActive = false;
             setLiveStatus(dossier, 'question_done');
-            if (dossier === currentDossier) setChatEnabled(true);
+            if (dossier === currentDossier) actualiserChatPourDossier(dossier);
           }
           return;
         }
@@ -2609,7 +2648,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
           oublierQuestion(dossier.id);
           dossier.questionActive = false;
           setLiveStatus(dossier, 'question_error');
-          if (dossier === currentDossier) setChatEnabled(true);
+          if (dossier === currentDossier) actualiserChatPourDossier(dossier);
           return;
         }
       }
@@ -2624,14 +2663,14 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
     addMessage('system', "Je n'ai pas pu confirmer l'enregistrement de la réponse. Vérifiez la conversation et actualisez le dossier avant de renvoyer la question, pour éviter un doublon.", dossier);
     dossier.questionActive = false;
     setLiveStatus(dossier, 'question_error');
-    if (dossier === currentDossier) setChatEnabled(true);
+    if (dossier === currentDossier) actualiserChatPourDossier(dossier);
   }
 }
 
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
-  if (!msg || !currentDossier || currentDossier._pending || currentDossier.questionActive) return;
+  if (!msg || !currentDossier || currentDossier._pending || currentDossier.questionActive || !currentDossier.analysisComplete || currentDossier.status === 'error') return;
   const dossier = currentDossier;
   const messagesAvant = compterReponsesIA(dossier.messages || []);
   const erreursAvant = instantaneErreursServeur(dossier.messages || []);
@@ -2689,11 +2728,11 @@ async function sendMessage() {
     addMessage('system', m, dossier);
     dossier.questionActive = false;
     setLiveStatus(dossier, 'question_error');
-    setChatEnabled(true);
+    actualiserChatPourDossier(dossier);
   } finally {
     if (sequence === questionSequence && (!attenteConfirmationServeur || questionResolvedSequence === sequence)) {
       dossier.questionActive = false;
-      if (dossier === currentDossier) setChatEnabled(true);
+      if (dossier === currentDossier) actualiserChatPourDossier(dossier);
       majOrbAccueil();
     }
   }
@@ -2865,6 +2904,7 @@ async function createDossier() {
     id, name, date: new Date().toLocaleDateString('fr-FR'),
     docs: selectedFiles.map(f => f.name), docsCount: selectedFiles.length,
     status: 'processing', _analysisAnswerBaseline: 0, messages: [], _loaded: true,
+    analysisComplete: false,
     _liveStatus: 'analyse', _pending: null, _pendingCreation: true, questionActive: false,
     _abort: null, _supprime: false, _notifyOnComplete: notifierAlaFin
   };
@@ -2926,6 +2966,7 @@ async function createDossier() {
     console.error(err);
 
     dossier.status = 'error';
+    dossier.analysisComplete = false;
     endPending(dossier);
     setLiveStatus(dossier, null);
     let msgErr = estErreurNonDefinitive(err, creationDebut)
@@ -2948,7 +2989,7 @@ async function createDossier() {
     setCreateButtonLoading(false);
     selectedFiles = [];
     renderFilesList();
-    setChatEnabled(!dossier._pending, dossier._pending ? 'Analyse en cours, veuillez patienter…' : '');
+    actualiserChatPourDossier(dossier);
     renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
     loadDossiers().then(() => { suivreAnalysesServeur(); });
   }
