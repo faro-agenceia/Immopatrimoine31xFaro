@@ -170,6 +170,12 @@ body.sidebar-collapsed .new-dossier-btn { width: calc(100% - 24px); margin: 12px
 /* Conteneurs : grande taille sur l'accueil, compacte dans la conversation. */
 .ai-orb { position: relative; width: 92px; height: 92px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .avatar.ai { width: 42px; height: 42px; flex-basis: 42px; background: transparent; border-radius: 50%; position: relative; overflow: visible; display: flex; align-items: center; justify-content: center; }
+.message.ai.completed { align-items: flex-start; gap: 10px; }
+.ai-message-mark { width: 28px; height: 28px; flex: 0 0 28px; display: flex; justify-content: center; padding-top: 7px; }
+.ai-message-mark::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff4cf, #d2a340 58%, #9d6d1d); box-shadow: 0 0 10px rgba(210,163,64,.28); }
+.message.ai.completed .bubble { padding: 0; background: transparent; border: none; }
+.ai-message-label { margin: 1px 0 5px; color: var(--text-muted); font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
+.ai-message-content { color: var(--text); }
 
 @media (prefers-reduced-motion: reduce) {
   .faro { animation: none !important; }
@@ -888,7 +894,7 @@ function oublierQuestion(id) { majLocal(o => { delete o.questions[id]; }); }
 function persisterStatut(d, status) {
   majLocal(o => {
     o.statuts = o.statuts || {};
-    if (status === 'question_done' || status === 'question_error') o.statuts[d.id] = status; else delete o.statuts[d.id];
+    if (status === 'question_done' || status === 'question_error' || status === 'error' || status === 'analyse') o.statuts[d.id] = status; else delete o.statuts[d.id];
   });
 }
 // Suppression demandée avant que n8n ait créé la ligne du dossier : on la retient
@@ -1486,6 +1492,39 @@ async function loadDossiers() {
   });
   dossiersSupprimes = convertir(supprimes);
 
+  // Conserve l'état réel des dossiers dans la corbeille, même après rechargement.
+  const idsSupprimes = dossiersSupprimes.map(d => d.id);
+  if (idsSupprimes.length) {
+    const { data: conversationsSupprimees, error: erreurConversationsSupprimees } = await sb.from('conversations')
+      .select('dossier_id, role, timestamp')
+      .in('dossier_id', idsSupprimes)
+      .order('timestamp', { ascending: true });
+    if (erreurConversationsSupprimees) console.warn('Statuts des dossiers supprimés indisponibles :', erreurConversationsSupprimees);
+    const rolesParDossier = {};
+    (conversationsSupprimees || []).forEach(m => {
+      rolesParDossier[m.dossier_id] = rolesParDossier[m.dossier_id] || [];
+      rolesParDossier[m.dossier_id].push(m.role);
+    });
+    dossiersSupprimes.forEach(d => {
+      const statutLocal = statutsLocaux[d.id];
+      const dossierLocal = local[d.id];
+      if (statutLocal) {
+        if (statutLocal === 'error') d.status = 'error';
+        else d._liveStatus = statutLocal;
+        return;
+      }
+      if (dossierLocal?.status === 'error') { d.status = 'error'; return; }
+      if (dossierLocal?.status === 'processing') { d._liveStatus = 'analyse'; return; }
+      const roles = rolesParDossier[d.id] || [];
+      const dernierRole = roles[roles.length - 1];
+      if (['system', 'error', 'erreur'].includes(dernierRole)) d._liveStatus = 'question_error';
+      else if (dernierRole === 'user') d._liveStatus = 'question';
+      else if (dernierRole === 'ai' || dernierRole === 'assistant') {
+        d._liveStatus = roles.includes('user') ? 'question_done' : 'analyse_done';
+      }
+    });
+  }
+
   // Une question était en cours avant l'actualisation : on reprend son suivi
   // tout de suite (sans attendre l'ouverture du dossier) et on règle son statut.
   if (!creationEnCours) {
@@ -1846,6 +1885,7 @@ async function mettreEnCorbeille(id, silencieux = false) {
   }
   dossiers = dossiers.filter(d => d.id !== id);
   oublierDossier(id);
+  if (dossier) persisterStatut(dossier, dossier._liveStatus || dossier.status);
   if (dossier) dossiersSupprimes.unshift(dossier);
   if (currentDossier?.id === id) { currentDossier = null; removeTyping(); openAccueil(); }
   renderDossiers(); renderHome(); renderAllDossiers();
@@ -1989,7 +2029,7 @@ function renderMessages() {
   if (msgs.length === 0) {
     area.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:40px"><div style="margin-bottom:12px;opacity:0.4"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>Posez une question sur ce dossier</div>';
   } else {
-    area.innerHTML = msgs.map(m => renderMessage(m)).join('');
+    area.innerHTML = msgs.map((m, i) => renderMessage(m, i, msgs)).join('');
     initialiserEmblemes(area);
     area.scrollTop = area.scrollHeight;
   }
@@ -2069,14 +2109,16 @@ function parseMarkdown(text) {
   return sortie.join('<br>');
 }
 
-function renderMessage(m) {
+function renderMessage(m, index = 0, messages = []) {
   if (m.role === 'user') {
     return '<div class="message user"><div class="avatar user">' + ICON_USER + '</div><div class="bubble">' + parseMarkdown(m.content) + '</div></div>';
   }
   if (m.role === 'system') {
     return '<div class="message system"><div class="bubble">' + escapeHtml(m.content) + '</div></div>';
   }
-  return '<div class="message ai"><div class="avatar ai" aria-hidden="true"></div><div class="bubble">' + parseMarkdown(m.content) + '</div></div>';
+  const estReponse = messages.slice(0, index).some(message => message.role === 'user');
+  const libelle = estReponse ? 'Réponse' : 'Synthèse du dossier';
+  return '<div class="message ai completed"><span class="ai-message-mark" aria-hidden="true"></span><div class="bubble"><div class="ai-message-label">' + libelle + '</div><div class="ai-message-content">' + parseMarkdown(m.content) + '</div></div></div>';
 }
 
 function addMessage(role, content, dossier = currentDossier) {
@@ -2706,7 +2748,7 @@ function openFullscreen() {
   const contenu = document.getElementById('fullscreenContent');
   if (!currentDossier._loaded) contenu.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Chargement de la conversation…</div>';
   else if (msgs.length === 0) contenu.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Aucun message dans cette conversation pour le moment.</div>';
-  else { contenu.innerHTML = msgs.map(m => renderMessage(m)).join(''); initialiserEmblemes(contenu); }
+  else { contenu.innerHTML = msgs.map((m, i) => renderMessage(m, i, msgs)).join(''); initialiserEmblemes(contenu); }
   const overlay = document.getElementById('fullscreenOverlay');
   overlay.style.display = 'flex';
   overlay.scrollTop = 0;
