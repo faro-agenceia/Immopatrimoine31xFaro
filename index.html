@@ -926,36 +926,6 @@ function retenirSuppression(id) { majLocal(o => { o.suppressions[id] = Date.now(
 function oublierSuppressionRetenue(id) { majLocal(o => { delete o.suppressions[id]; }); }
 function suppressionsRetenues() { return lireLocal().suppressions || {}; }
 
-function notifier(titre, corps, dossierId = null) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  try {
-    const notification = new Notification(titre, { body: corps });
-    notification.onclick = () => {
-      notification.close();
-      window.focus();
-      if (dossierId && dossiers.some(d => d.id === dossierId)) openDossier(dossierId);
-    };
-  } catch (e) {}
-}
-async function proposerNotificationAnalyse() {
-  if (!('Notification' in window) || Notification.permission === 'denied') return false;
-  if (!confirm('Voulez-vous être notifié quand cette analyse est terminée ?')) return false;
-  if (Notification.permission === 'default') {
-    try { await Notification.requestPermission(); } catch (e) { return false; }
-  }
-  return Notification.permission === 'granted';
-}
-function notifierFinAnalyse(dossier, enErreur = false) {
-  if (!dossier?._notifyOnComplete) return;
-  dossier._notifyOnComplete = false;
-  // Mémorise l'envoi pour éviter de répéter la notification au prochain chargement.
-  majLocal(o => { if (o.dossiers?.[dossier.id]) o.dossiers[dossier.id].notification = false; });
-  notifier(
-    enErreur ? 'Votre analyse a échoué' : 'Votre analyse est prête',
-    enErreur ? "Cliquez sur cette notification pour voir l’erreur." : 'Cliquez sur cette notification pour la consulter.',
-    dossier.id
-  );
-}
 function reprendreQuestion(dossier, q) {
   dossier.questionActive = true;
   const sequence = ++questionSequence;
@@ -1490,10 +1460,41 @@ function dossierVide(row, countMap) {
   };
 }
 
+function afficherErreurChargementListes(message) {
+  ['dossiersList', 'homeList', 'dossiersFullList'].forEach(id => {
+    const zone = document.getElementById(id);
+    if (!zone) return;
+    zone.querySelector('[data-load-error]')?.remove();
+    const notice = document.createElement('div');
+    notice.dataset.loadError = 'true';
+    notice.setAttribute('role', 'status');
+    notice.style.cssText = 'padding:10px 12px;color:var(--text-muted);font-size:12px;line-height:1.5';
+    const texte = document.createElement('span');
+    texte.textContent = message + ' ';
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'mini-btn';
+    bouton.textContent = 'Réessayer';
+    bouton.addEventListener('click', loadDossiers);
+    notice.append(texte, bouton);
+    zone.prepend(notice);
+  });
+}
+
+function effacerErreurChargementListes() {
+  document.querySelectorAll('[data-load-error]').forEach(el => el.remove());
+}
+
 async function loadDossiers() {
   if (!session) return;
   const { data, error } = await sb.from('dossiers').select('*').eq('user_id', session.user.id).order('date_creation', { ascending: false });
-  if (error) console.error('Chargement des dossiers impossible :', error);
+  if (error) {
+    console.error('Chargement des dossiers impossible :', error);
+    renderDossiers(); renderHome(); renderAllDossiers();
+    afficherErreurChargementListes('Impossible de charger les dossiers. Vérifiez la connexion puis réessayez.');
+    return;
+  }
+  effacerErreurChargementListes();
 
   const ids = (data || []).map(r => r.dossier_id);
   let countMap = {};
@@ -1550,11 +1551,13 @@ async function loadDossiers() {
     }
     const existant = dossiers.find(d => d.id === l.id);
     if (existant) {
-      existant._notifyOnComplete = !!l.notification;
-      if (l.status === 'error') {
+      if (l.status === 'ready' && l.analysisComplete) {
+        existant.status = 'ready';
+        existant.analysisComplete = true;
+        existant._liveStatus = existant._liveStatus || 'analyse_done';
+      } else if (l.status === 'error') {
         existant.status = 'error';
         existant._liveStatus = null;
-        notifierFinAnalyse(existant, true);
       }
       else {
         existant.status = 'processing'; existant._liveStatus = existant._liveStatus || 'analyse';
@@ -1571,18 +1574,16 @@ async function loadDossiers() {
       const erreurLocale = {
         id: l.id, name: l.name, date: l.date, docs: l.docs || [], docsCount: (l.docs || []).length,
         status: 'error', messages: l.message ? [{ role: 'system', content: l.message }] : [], _loaded: true,
-        _liveStatus: null, _pending: null, _local: true, _notifyOnComplete: !!l.notification,
+        _liveStatus: null, _pending: null, _local: true,
         questionActive: false
       };
       dossiers.unshift(erreurLocale);
-      notifierFinAnalyse(erreurLocale, true);
       return;
     }
     dossiers.unshift({
       id: l.id, name: l.name, date: l.date, docs: l.docs || [], docsCount: (l.docs || []).length,
-      status: l.status, messages: [], _loaded: true,
-      _liveStatus: l.status === 'processing' ? 'analyse' : null,
-      _notifyOnComplete: !!l.notification,
+      status: l.status, analysisComplete: !!l.analysisComplete, messages: [], _loaded: true,
+      _liveStatus: l.status === 'processing' ? 'analyse' : l.analysisComplete ? 'analyse_done' : null,
       _pending: l.executionIds?.length ? {
         label: 'Analyse en cours…', start: l.start || Date.now(), baseline: l.baseline || 0,
         server: true, executionIds: l.executionIds, launchComplete: true
@@ -1632,7 +1633,8 @@ async function loadDossiers() {
       if (!q || q.erreur) continue;
       const d = dossiers.find(x => x.id === qid);
       if (!d || d._pending || d._loaded) continue;
-      await loadDossierDetails(d);
+      const charge = await loadDossierDetails(d);
+      if (!charge) continue;
       if (!d._pending && !(lireLocal().questions || {})[qid]) {
         const st = compterReponsesIA(d.messages || []) > q.baseline ? 'question_done' : 'question_error';
         d._liveStatus = st;
@@ -1649,13 +1651,23 @@ async function loadDossiers() {
 }
 
 async function loadDossierDetails(dossier) {
-  if (dossier._loaded) return;
-  const [docsRes, convRes] = await Promise.all([
-    sb.from('documents').select('nom').eq('dossier_id', dossier.id),
-    sb.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true })
-  ]);
-  if (docsRes.error) console.error('Docs :', docsRes.error);
-  if (convRes.error) console.error('Conv :', convRes.error);
+  if (dossier._loaded) return true;
+  let docsRes, convRes;
+  try {
+    [docsRes, convRes] = await Promise.all([
+      sb.from('documents').select('nom').eq('dossier_id', dossier.id),
+      sb.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true })
+    ]);
+  } catch (err) {
+    console.error('Chargement du dossier impossible :', err);
+    if (dossier === currentDossier) afficherErreurConversation();
+    return false;
+  }
+  if (docsRes.error || convRes.error) {
+    console.error('Chargement des détails du dossier impossible :', docsRes.error || convRes.error);
+    if (dossier === currentDossier) afficherErreurConversation();
+    return false;
+  }
   dossier.docs = (docsRes.data || []).map(d => d.nom);
   dossier.docsCount = dossier.docs.length;
   dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
@@ -1684,14 +1696,32 @@ async function loadDossierDetails(dossier) {
       }
     }
   }
+  return true;
+}
+
+function afficherErreurConversation() {
+  const area = document.getElementById('chatArea');
+  if (!area) return;
+  area.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px auto;max-width:360px;line-height:1.6">Impossible de charger ce dossier pour le moment.<br><button type="button" class="mini-btn" style="margin-top:12px" onclick="reessayerChargementDossier()">Réessayer</button></div>';
+}
+
+async function reessayerChargementDossier() {
+  const dossier = currentDossier;
+  if (!dossier) return;
+  dossier._loaded = false;
+  const charge = await loadDossierDetails(dossier);
+  if (!charge || currentDossier !== dossier) return;
+  updateDocsStrip();
+  renderMessages();
+  actualiserChatPourDossier(currentDossier);
 }
 
 async function resyncCurrentDossier() {
   if (!currentDossier || currentDossier._local) return;
   const id = currentDossier.id;
   currentDossier._loaded = false;
-  await loadDossierDetails(currentDossier);
-  if (currentDossier?.id === id) { updateDocsStrip(); renderMessages(); }
+  const charge = await loadDossierDetails(currentDossier);
+  if (charge && currentDossier?.id === id) { updateDocsStrip(); renderMessages(); }
   loadDossiers();
 }
 
@@ -1712,7 +1742,6 @@ function suivreAnalysesServeur() {
       d.status = 'error';
       d._liveStatus = null;
       memoriserDossier(d, { status: 'error', message });
-      notifierFinAnalyse(d, true);
     }
   });
   if (besoin) {
@@ -1749,7 +1778,6 @@ function startPolling() {
           memoriserQuestion(d.id, { question: attente.question, baseline: attente.baseline || 0, start: attente.start, erreur: message });
         }
         else { d._liveStatus = null; memoriserDossier(d, { status: 'error', message }); }
-        if (!attente?.question) notifierFinAnalyse(d, true);
         addMessage('system', message, d);
         if (!attente?.question) d.analysisComplete = false;
         if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
@@ -1781,7 +1809,6 @@ function startPolling() {
             d._liveStatus = null;
             memoriserDossier(d, { status: 'error', message });
             addMessage('system', message, d);
-            notifierFinAnalyse(d, true);
           }
           if (!attente.question) d.analysisComplete = false;
           if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
@@ -1804,7 +1831,6 @@ function startPolling() {
             d._liveStatus = null;
             memoriserDossier(d, { status: 'error', message });
             addMessage('system', message, d);
-            notifierFinAnalyse(d, true);
           }
           if (!attente.question) d.analysisComplete = false;
           if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
@@ -1818,10 +1844,22 @@ function startPolling() {
             .select('role, content, timestamp')
             .eq('dossier_id', d.id)
             .order('timestamp', { ascending: true });
-          if (error) continue;
-          const messages = normaliserConversation(data || []);
+          const messages = error ? [] : normaliserConversation(data || []);
           const nouvellesReponses = messages.filter(m => m.role === 'ai').slice(attente.baseline || 0);
-          if (!nouvellesReponses.length) continue;
+          if (!nouvellesReponses.length) {
+            attente.resultMissingSince = attente.resultMissingSince || Date.now();
+            if (Date.now() - attente.resultMissingSince < 30000) continue;
+            const message = "n8n indique que la question a réussi, mais la réponse n'apparaît pas dans Supabase. Vérifiez l'enregistrement de la conversation dans le workflow.";
+            endPending(d);
+            d._questionEnAttente = null;
+            d.questionActive = false;
+            memoriserQuestion(d.id, { question: attente.question, baseline: attente.baseline || 0, start: attente.start, erreur: message });
+            setLiveStatus(d, 'question_error');
+            addMessage('system', message, d);
+            if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
+            renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+            continue;
+          }
           appliquerConversationServeur(d, messages);
           endPending(d);
           d._questionEnAttente = null;
@@ -1831,16 +1869,45 @@ function startPolling() {
           setLiveStatus(d, 'question_done');
         } else {
           const { data, error } = await sb.from('dossiers').select('resume').eq('dossier_id', d.id).maybeSingle();
-          if (error || !String(data?.resume || '').trim()) continue;
-          const texte = "Vos documents ont été enregistrés. Votre analyse est terminée, vous la trouverez ci-dessous :\n\n" + String(data.resume).trim();
+          let resume = !error ? String(data?.resume || '').trim() : '';
+          let resumeDepuisConversation = false;
+          if (!resume) {
+            const { data: conversations, error: erreurConversation } = await sb.from('conversations')
+              .select('role, content, timestamp')
+              .eq('dossier_id', d.id)
+              .order('timestamp', { ascending: true });
+            if (!erreurConversation) {
+              const nouvellesReponses = normaliserConversation(conversations || []).filter(m => m.role === 'ai').slice(attente.baseline || 0);
+              if (nouvellesReponses.length) {
+                resume = String(nouvellesReponses[nouvellesReponses.length - 1].content || '').trim();
+                resumeDepuisConversation = !!resume;
+              }
+            }
+          }
+          if (!resume) {
+            attente.resultMissingSince = attente.resultMissingSince || Date.now();
+            if (Date.now() - attente.resultMissingSince < 30000) continue;
+            const message = "n8n indique que l'analyse a réussi, mais aucun résumé n'apparaît dans Supabase. Vérifiez que le workflow enregistre bien le résumé du dossier.";
+            endPending(d);
+            d._pendingCreation = false;
+            d.status = 'error';
+            d.analysisComplete = false;
+            d._liveStatus = null;
+            memoriserDossier(d, { status: 'error', message });
+            addMessage('system', message, d);
+            if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
+            renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+            continue;
+          }
+          const texte = "Vos documents ont été enregistrés. Votre analyse est terminée, vous la trouverez ci-dessous :\n\n" + resume;
           ajouterMessageSiAbsent('ai', texte, d);
           endPending(d);
           d._pendingCreation = false;
           d.status = 'ready';
           d.analysisComplete = true;
           d._liveStatus = 'analyse_done';
-          oublierDossier(d.id);
-          notifierFinAnalyse(d);
+          if (resumeDepuisConversation) memoriserDossier(d, { status: 'ready', analysisComplete: true, executionIds: [] });
+          else oublierDossier(d.id);
         }
         if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
         renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
@@ -1873,7 +1940,6 @@ function startPolling() {
             d.analysisComplete = false;
             d._liveStatus = null;
             memoriserDossier(d, { status: 'error', message: msgErreur });
-            notifierFinAnalyse(d, true);
           }
           if (!etaitQuestion) d.analysisComplete = false;
           if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
@@ -1895,7 +1961,6 @@ function startPolling() {
         d.analysisComplete = true;
         d._liveStatus = 'analyse_done';
         oublierDossier(d.id);
-        notifierFinAnalyse(d);
       }
       if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
       renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
@@ -2081,7 +2146,8 @@ async function openDossier(id) {
   renderHome();
   renderAllDossiers();
   if (!currentDossier._loaded) {
-    await loadDossierDetails(currentDossier);
+    const charge = await loadDossierDetails(currentDossier);
+    if (!charge) return;
     if (currentDossier === dossiers.find(d => d.id === id)) {
       updateDocsStrip();
       renderMessages();
@@ -2411,6 +2477,8 @@ function actualiserChatPourDossier(dossier) {
     setChatEnabled(false, dossier._pending.question ? 'Question en cours, veuillez patienter…' : 'Analyse en cours, veuillez patienter…');
   } else if (dossier.questionActive) {
     setChatEnabled(false, 'Question en cours, veuillez patienter…');
+  } else if (!dossier._loaded) {
+    setChatEnabled(false, 'Chargement du dossier…');
   } else if (dossier.status === 'error' || !dossier.analysisComplete) {
     setChatEnabled(false, 'L’analyse doit être terminée avant de poser une question.');
   } else {
@@ -2670,7 +2738,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
-  if (!msg || !currentDossier || currentDossier._pending || currentDossier.questionActive || !currentDossier.analysisComplete || currentDossier.status === 'error') return;
+  if (!msg || !currentDossier || !currentDossier._loaded || currentDossier._pending || currentDossier.questionActive || !currentDossier.analysisComplete || currentDossier.status === 'error') return;
   const dossier = currentDossier;
   const messagesAvant = compterReponsesIA(dossier.messages || []);
   const erreursAvant = instantaneErreursServeur(dossier.messages || []);
@@ -2888,7 +2956,6 @@ async function createDossier() {
 
   creationEnCours = true;
   setCreateButtonLoading(true);
-  const notifierAlaFin = await proposerNotificationAnalyse();
   creationDebut = Date.now();
   lockModal(true);
   await requestWakeLock();
@@ -2906,13 +2973,13 @@ async function createDossier() {
     status: 'processing', _analysisAnswerBaseline: 0, messages: [], _loaded: true,
     analysisComplete: false,
     _liveStatus: 'analyse', _pending: null, _pendingCreation: true, questionActive: false,
-    _abort: null, _supprime: false, _notifyOnComplete: notifierAlaFin
+    _abort: null, _supprime: false
   };
   if (notes) dossier.messages.push({ role: 'user', content: 'Notes / Contexte :\n' + notes });
   const messagesAvantAnalyse = compterReponsesIA(dossier.messages);
 
   dossiers.unshift(dossier);
-  memoriserDossier(dossier, { notification: notifierAlaFin });
+  memoriserDossier(dossier);
   currentDossier = dossier;
   document.getElementById('modalOverlay').style.display = 'none';
   setView('chat');
@@ -2979,7 +3046,6 @@ async function createDossier() {
     msgErr += ' (' + err.message + ')';
     memoriserDossier(dossier, { status: 'error', message: msgErr });
     addMessage('system', msgErr, dossier);
-    notifierFinAnalyse(dossier, true);
   } finally {
     clearInterval(timer);
     creationEnCours = false;
