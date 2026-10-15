@@ -164,61 +164,75 @@ body.sidebar-collapsed .new-dossier-btn { width: calc(100% - 24px); margin: 12px
 .theme-switch:not(.is-light) .switch-moon { color: var(--on-accent); }
 .theme-switch.is-light .switch-sun { color: var(--on-accent); }
 
-/* EMBLÈME FARO (indicateur IA)
-   Couleurs strictement identiques en clair et en sombre : or champagne (#D6AD60),
-   ivoire (#F4E8C8) et reflets dorés. Aucun sélecteur de thème, aucune dépendance
-   à currentColor : seuls l'arrière-plan de l'interface change. */
-.faro { display: block; width: 100%; height: 100%; overflow: visible; }
-.faro * { transform-box: view-box; }
-.faro__main-ring { fill: none; stroke: #D6AD60; stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 3 9; transform-origin: 60px 60px; animation: faroMainRing 26s linear infinite; }
-.faro__ring { fill: none; stroke: #D6AD60; stroke-width: 1.2; stroke-linecap: round; }
-.faro__ring--soft { stroke: rgba(214, 173, 96, 0.35); }
-.faro__dot { fill: #F4E8C8; animation: faroTwinkle 3.4s ease-in-out infinite; }
-.faro__dot--soft { animation-duration: 4.6s; animation-delay: 1.2s; }
-.faro__core { fill: #F4E8C8; animation: faroCore 6s ease-in-out infinite; }
-.faro__halo { fill: #D6AD60; opacity: 0.18; animation: faroHalo 7s ease-in-out infinite; }
+/* EMBLÈME FARO — orbe de verre et anneaux dorés.
+   Couleurs identiques en clair et en sombre : aucun sélecteur de thème, aucun currentColor. */
+.faro { display: block; width: 100%; height: 100%; overflow: visible; --faro-w: 1.1px; }
+.faro * { transform-box: view-box; transform-origin: 60px 60px; }
+.ai-orb .faro { --faro-w: 1.3px; }
+.avatar.ai .faro { --faro-w: 1.1px; }
 
-/* Repos ↔ réflexion : fondu progressif, jamais de rupture brutale. */
-.faro__rest, .faro__active { transform-origin: 60px 60px; transition: opacity 1.6s ease; }
-.faro__rest { opacity: 1; }
-.faro__active { opacity: 0; }
-.faro--thinking .faro__rest { opacity: 0; }
-.faro--thinking .faro__active { opacity: 1; }
+.faro__line { fill: none; stroke-linecap: round; vector-effect: non-scaling-stroke; stroke-width: var(--faro-w); }
+.faro__line--glow { stroke-width: calc(var(--faro-w) * 3.4); }
+.faro__glow { opacity: 0.16; transition: opacity 2.4s ease; }
+.faro--thinking .faro__glow { opacity: 0.34; }
 
-/* État au repos : respiration lente, déformation et écartement très légers. */
-.faro__rest--a { transform-origin: 60px 60px; animation: faroRestA 12s ease-in-out infinite; }
-.faro__rest--b { transform-origin: 60px 60px; animation: faroRestB 16s ease-in-out infinite; }
-.faro__rest--c { transform-origin: 60px 60px; animation: faroRestC 20s ease-in-out infinite; }
+/* Mouvements en continu : rotation lente des anneaux et respiration. */
+.faro__spin, .faro__orbit { animation: faroSpin linear infinite; }
+.faro__spin--0 { animation-duration: 120s; }
+.faro__spin--1 { animation-duration: 46s; animation-delay: -8s; }
+.faro__spin--2 { animation-duration: 62s; animation-direction: reverse; animation-delay: -21s; }
+.faro__spin--3 { animation-duration: 78s; animation-delay: -35s; }
+.faro__breathe { animation: faroBreathe ease-in-out infinite; }
+.faro__breathe--1 { animation-duration: 13s; }
+.faro__breathe--2 { animation-duration: 17s; animation-delay: -6s; }
+.faro__breathe--3 { animation-duration: 21s; animation-delay: -11s; }
+.faro__orbit--1 { animation-duration: 9s; }
+.faro__orbit--2 { animation-duration: 13s; animation-direction: reverse; }
+.faro__orbit--3 { animation-duration: 7s; }
 
-/* État de réflexion : orbites inclinées et particules dorées. */
-.faro__tilt--1 { transform: rotate3d(1, 0, 0, 64deg) rotate(10deg); }
-.faro__tilt--2 { transform: rotate3d(1, 0, 0, 74deg) rotate(-42deg); }
-.faro__tilt--3 { transform: rotate3d(0.35, 1, 0, 56deg) rotate(28deg); }
-.faro__tilt--1, .faro__tilt--2, .faro__tilt--3 { transform-origin: 60px 60px; }
-.faro__orbit { transform-origin: 60px 60px; animation: faroOrbit linear infinite; }
-.faro__orbit--1 { animation-duration: 7.5s; }
-.faro__orbit--2 { animation-duration: 11s; animation-direction: reverse; }
-.faro__orbit--3 { animation-duration: 5.5s; }
+/* Forme des anneaux : repos (cercles presque ronds) puis réflexion (orbites inclinées, plus écartées). */
+.faro__shape { transition: transform 2.6s cubic-bezier(0.45, 0, 0.2, 1); }
+.faro__shape--0 { transform: scale(1, 0.9); }
+.faro__shape--1 { transform: scale(1, 0.78); }
+.faro__shape--2 { transform: scale(1, 0.62); }
+.faro__shape--3 { transform: scale(1, 0.9); }
+.faro--thinking .faro__shape--0 { transform: scale(1.02, 0.86); }
+.faro--thinking .faro__shape--1 { transform: scale(1.14, 0.42); }
+.faro--thinking .faro__shape--2 { transform: scale(1.2, 0.3); }
+.faro--thinking .faro__shape--3 { transform: scale(1.08, 0.6); }
 
-/* Conteneurs : grande taille sur l'accueil, format compact dans la conversation. */
+/* Particules dorées : visibles uniquement pendant la réflexion. */
+.faro__dots { opacity: 0; transition: opacity 2s ease; }
+.faro--thinking .faro__dots { opacity: 1; }
+.faro__dot { fill: #FFF8DC; animation: faroTwinkle 4s ease-in-out infinite; }
+.faro__dot--b { animation-duration: 5.3s; animation-delay: -1.7s; }
+.faro__dot--c { animation-duration: 3.3s; animation-delay: -0.9s; }
+
+/* Halo et noyau. */
+.faro__halo { opacity: 0.45; transition: opacity 2.4s ease; animation: faroPulse 7s ease-in-out infinite; }
+.faro__core { opacity: 0.3; transition: opacity 2.4s ease; animation: faroPulse 5s ease-in-out infinite; }
+.faro--thinking .faro__halo { opacity: 0.95; }
+.faro--thinking .faro__core { opacity: 1; }
+
+/* Reflet de verre : léger scintillement. */
+.faro__glint { animation: faroGlint 6s ease-in-out infinite; }
+
+/* Conteneurs : grande taille sur l'accueil, compacte dans la conversation. */
 .ai-orb { position: relative; width: 92px; height: 92px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .avatar.ai { width: 42px; height: 42px; flex-basis: 42px; background: transparent; border-radius: 50%; position: relative; overflow: visible; display: flex; align-items: center; justify-content: center; }
-.ai-orb .faro { filter: drop-shadow(0 0 10px rgba(214, 173, 96, 0.35)); }
-.avatar.ai .faro { filter: drop-shadow(0 0 5px rgba(214, 173, 96, 0.35)); }
 
-@keyframes faroMainRing { to { transform: rotate(360deg); } }
-@keyframes faroRestA { 0%,100% { transform: rotate(0deg) scale(0.94, 0.97); opacity: 0.55; } 50% { transform: rotate(160deg) scale(1.05, 1.02); opacity: 0.9; } }
-@keyframes faroRestB { 0%,100% { transform: rotate(0deg) scale(1.03, 0.95); opacity: 0.35; } 50% { transform: rotate(-120deg) scale(0.96, 1.04); opacity: 0.7; } }
-@keyframes faroRestC { 0%,100% { transform: rotate(0deg) scale(0.99, 1.03); opacity: 0.5; } 50% { transform: rotate(150deg) scale(1.06, 0.98); opacity: 0.85; } }
-@keyframes faroOrbit { to { transform: rotate(360deg); } }
-@keyframes faroTwinkle { 0%,100% { opacity: 0.25; } 45% { opacity: 1; } }
-@keyframes faroCore { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
-@keyframes faroHalo { 0%,100% { opacity: 0.12; } 50% { opacity: 0.26; } }
+/* Les anciens messages gardent l'emblème au repos, sans animation, pour ne pas alourdir la page. */
+.message.ai:not(#typingIndicator) .avatar.ai .faro * { animation: none !important; }
+
+@keyframes faroSpin { to { transform: rotate(360deg); } }
+@keyframes faroBreathe { 0%, 100% { transform: scale(0.95, 0.98); } 50% { transform: scale(1.05, 1.03); } }
+@keyframes faroTwinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+@keyframes faroPulse { 0%, 100% { transform: scale(0.96); } 50% { transform: scale(1.05); } }
+@keyframes faroGlint { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .faro, .faro * { animation: none !important; }
-  .faro__rest, .faro__active { transition: opacity 0.3s ease; }
-  .faro__rest--b, .faro__rest--c { opacity: 0.45; }
+  .faro * { animation: none !important; }
+  .faro__shape, .faro__dots, .faro__halo, .faro__core, .faro__glow { transition-duration: 0.4s; }
 }
 
 /* 3D LOADER */
@@ -747,56 +761,59 @@ const ICON_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const ICON_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
 const LOADER_3D = '<span class="loader"><i></i><i></i><i></i></span>';
 // ==========================================
-// EMBLÈME FARO — emblème unique, injecté une seule fois par emplacement
+// EMBLÈME FARO — orbe de verre et anneaux dorés
+// Un seul jeu d'anneaux : leur forme, leurs particules et leur vitesse évoluent
+// en douceur entre repos et réflexion, sans jamais repartir de zéro.
 // ==========================================
-// Volute : ligne légèrement ondulée, translucide, qui tourne autour du centre.
-function faroVolute(rotation, rayon, amplitude, tours) {
-  const total = 22;
-  const points = [];
-  for (let i = 0; i <= total; i++) {
-    const t = i / total;
-    const angle = (rotation + t * 360 * tours) * Math.PI / 180;
-    const r = rayon * (0.72 + 0.28 * Math.sin(Math.PI * t)) + amplitude * Math.sin(t * Math.PI * 3);
-    points.push((60 + Math.cos(angle) * r).toFixed(2) + ' ' + (60 + Math.sin(angle) * r).toFixed(2));
-  }
-  return 'M' + points.join(' L');
+const FARO_OR = '#E8B84A';       // or vif
+const FARO_CLAIR = '#FFF8DC';    // reflet (plus lumineux)
+const FARO_IVOIRE = '#FBF0D2';   // ivoire
+let faroIdCompteur = 0;
+
+function faroAnneau(n, rayon, angle, grad, points) {
+  const cercle = (classe) => '<circle class="faro__line ' + classe + '" cx="60" cy="60" r="' + rayon + '" stroke="url(#' + grad + ')"></circle>';
+  const dots = points.map(p => '<circle class="faro__dot faro__dot--' + p[2] + '" cx="' + (60 + p[0] * rayon) + '" cy="60" r="' + p[1] + '"></circle>').join('');
+  return '<g transform="rotate(' + angle + ' 60 60)">' +
+    '<g class="faro__spin faro__spin--' + n + ' faro__anim" data-boost="6">' +
+    '<g class="faro__breathe faro__breathe--' + n + ' faro__anim" data-boost="2.5">' +
+    '<g class="faro__shape faro__shape--' + n + '">' +
+    '<g class="faro__glow">' + cercle('faro__line--glow') + '</g>' + cercle('') +
+    '<g class="faro__dots"><g class="faro__orbit faro__orbit--' + n + ' faro__anim" data-boost="1.7">' + dots + '</g></g>' +
+    '</g></g></g></g>';
 }
 
-// Deux états coexistent et se fondent l'un dans l'autre : repos et réflexion.
 function faroMarkup() {
-  const repos =
-    '<g class="faro__rest">' +
-    '<circle class="faro__ring" cx="60" cy="60" r="52"></circle>' +
-    '<circle class="faro__main-ring" cx="60" cy="60" r="55"></circle>' +
-    '<path class="faro__ring faro__ring--soft faro__rest--a" d="' + faroVolute(0, 44, 2.4, 1.15) + '"></path>' +
-    '<path class="faro__ring faro__ring--soft faro__rest--b" d="' + faroVolute(140, 36, 2, 1.35) + '"></path>' +
-    '<path class="faro__ring faro__ring--soft faro__rest--c" d="' + faroVolute(250, 48, 1.6, 0.95) + '"></path>' +
-    '<circle class="faro__core" cx="60" cy="60" r="2.6"></circle>' +
-    '</g>';
+  const id = 'faro' + (++faroIdCompteur);
+  const stops = '<stop offset="0" stop-color="' + FARO_OR + '" stop-opacity="0.15"/>' +
+    '<stop offset="0.3" stop-color="' + FARO_OR + '" stop-opacity="1"/>' +
+    '<stop offset="0.52" stop-color="' + FARO_CLAIR + '" stop-opacity="1"/>' +
+    '<stop offset="0.78" stop-color="' + FARO_OR + '" stop-opacity="0.95"/>' +
+    '<stop offset="1" stop-color="' + FARO_OR + '" stop-opacity="0.1"/>';
+  const defs = '<defs>' +
+    '<linearGradient id="' + id + 'a" x1="0" y1="0" x2="1" y2="1">' + stops + '</linearGradient>' +
+    '<linearGradient id="' + id + 'b" x1="1" y1="0" x2="0" y2="1">' + stops + '</linearGradient>' +
+    '<linearGradient id="' + id + 'c" x1="0" y1="1" x2="1" y2="0">' + stops + '</linearGradient>' +
+    '<radialGradient id="' + id + 's" cx="0.38" cy="0.32" r="0.85"><stop offset="0" stop-color="' + FARO_IVOIRE + '" stop-opacity="0.85"/><stop offset="0.4" stop-color="' + FARO_OR + '" stop-opacity="0.2"/><stop offset="1" stop-color="' + FARO_OR + '" stop-opacity="0.07"/></radialGradient>' +
+    '<radialGradient id="' + id + 'h"><stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/><stop offset="0.45" stop-color="' + FARO_CLAIR + '" stop-opacity="0.8"/><stop offset="1" stop-color="' + FARO_CLAIR + '" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="' + id + 'g"><stop offset="0" stop-color="' + FARO_OR + '" stop-opacity="0.38"/><stop offset="0.6" stop-color="' + FARO_OR + '" stop-opacity="0.1"/><stop offset="1" stop-color="' + FARO_OR + '" stop-opacity="0"/></radialGradient>' +
+    '</defs>';
 
-  const reflexion =
-    '<g class="faro__active">' +
-    '<circle class="faro__halo" cx="60" cy="60" r="20"></circle>' +
-    '<circle class="faro__ring" cx="60" cy="60" r="52" stroke-width="1.4"></circle>' +
-    '<circle class="faro__main-ring" cx="60" cy="60" r="57"></circle>' +
-    '<g class="faro__tilt--1"><g class="faro__orbit faro__orbit--1">' +
-    '<circle class="faro__ring faro__ring--soft" cx="60" cy="60" r="46" stroke-dasharray="2 7"></circle>' +
-    '<circle class="faro__dot" cx="106" cy="60" r="2"></circle>' +
-    '<circle class="faro__dot faro__dot--soft" cx="60" cy="106" r="1.5"></circle>' +
-    '</g></g>' +
-    '<g class="faro__tilt--2"><g class="faro__orbit faro__orbit--2">' +
-    '<circle class="faro__ring faro__ring--soft" cx="60" cy="60" r="40" stroke-dasharray="3 9"></circle>' +
-    '<circle class="faro__dot" cx="20" cy="60" r="2"></circle>' +
-    '<circle class="faro__dot faro__dot--soft" cx="100" cy="60" r="1.4"></circle>' +
-    '</g></g>' +
-    '<g class="faro__tilt--3"><g class="faro__orbit faro__orbit--3">' +
-    '<circle class="faro__ring faro__ring--soft" cx="60" cy="60" r="50" stroke-dasharray="1.5 6"></circle>' +
-    '<circle class="faro__dot" cx="110" cy="60" r="1.8"></circle>' +
-    '</g></g>' +
-    '<circle class="faro__dot" cx="60" cy="60" r="2.8"></circle>' +
-    '</g>';
+  const principal = '<g transform="rotate(-18 60 60)"><g class="faro__spin faro__spin--0 faro__anim" data-boost="3"><g class="faro__shape faro__shape--0">' +
+    '<circle class="faro__line faro__line--glow" style="opacity:0.2" cx="60" cy="60" r="51" stroke="url(#' + id + 'a)"></circle>' +
+    '<circle class="faro__line" cx="60" cy="60" r="51" stroke="url(#' + id + 'a)"></circle>' +
+    '</g></g></g>';
 
-  return '<svg class="faro" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + repos + reflexion + '</svg>';
+  return '<svg class="faro" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + defs +
+    '<circle class="faro__halo" cx="60" cy="60" r="58" fill="url(#' + id + 'g)"></circle>' +
+    '<circle cx="60" cy="60" r="29" fill="url(#' + id + 's)" stroke="' + FARO_OR + '" stroke-opacity="0.45" stroke-width="0.7"></circle>' +
+    '<ellipse class="faro__glint" cx="50" cy="47" rx="12" ry="6.5" transform="rotate(-32 50 47)" fill="url(#' + id + 'h)" opacity="0.95"></ellipse>' +
+    '<ellipse class="faro__glint" cx="69" cy="72" rx="4.5" ry="2" transform="rotate(-32 69 72)" fill="url(#' + id + 'h)" opacity="0.6"></ellipse>' +
+    faroAnneau(1, 44, 20, id + 'a', [[1, 1.7, 'a'], [-1, 1.2, 'b']]) +
+    faroAnneau(2, 40, -35, id + 'b', [[1, 1.5, 'c'], [-1, 1.1, 'a']]) +
+    faroAnneau(3, 47, 70, id + 'c', [[1, 1.4, 'b']]) +
+    principal +
+    '<circle class="faro__core" cx="60" cy="60" r="5" fill="url(#' + id + 'h)"></circle>' +
+    '</svg>';
 }
 
 // Injecte l'emblème là où il manque, sans jamais créer deux animations pour le même emplacement.
@@ -806,10 +823,36 @@ function initialiserEmblemes(racine = document) {
   });
 }
 
-// Le passage repos ↔ réflexion est un fondu : aucune réinitialisation brutale.
+// Bascule repos ↔ réflexion : la forme change par transition CSS,
+// la vitesse monte ou descend progressivement (rampe de 2,4 s).
 function setFaroState(el, thinking) {
   const faro = el && el.querySelector ? el.querySelector('.faro') : null;
-  if (faro) faro.classList.toggle('faro--thinking', !!thinking);
+  if (!faro) return;
+  const actif = !!thinking;
+  if (faro.classList.contains('faro--thinking') === actif) return;
+  void faro.getBoundingClientRect(); // fige l'état de départ pour que la transition se joue
+  faro.classList.toggle('faro--thinking', actif);
+  faroRampe(faro, actif ? 1 : 0);
+}
+
+function faroRampe(faro, cible) {
+  if (faro._faroFrame) cancelAnimationFrame(faro._faroFrame);
+  let anims = [];
+  try {
+    anims = faro.getAnimations({ subtree: true }).filter(a => a.effect && a.effect.target && a.effect.target.classList && a.effect.target.classList.contains('faro__anim'));
+  } catch (e) {}
+  if (!anims.length) { faro._faroP = cible; return; }
+  const depart = faro._faroP || 0, debut = performance.now(), duree = 2400;
+  const pas = (now) => {
+    if (!faro.isConnected) { faro._faroFrame = 0; return; } // élément supprimé : on s'arrête
+    const t = Math.min(1, (now - debut) / duree);
+    const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const p = depart + (cible - depart) * e;
+    faro._faroP = p;
+    anims.forEach(a => { const b = parseFloat(a.effect.target.getAttribute('data-boost')) || 1; a.playbackRate = 1 + (b - 1) * p; });
+    faro._faroFrame = t < 1 ? requestAnimationFrame(pas) : 0;
+  };
+  faro._faroFrame = requestAnimationFrame(pas);
 }
 
 // ===== MÉMOIRE LOCALE (survit à l'actualisation) =====
