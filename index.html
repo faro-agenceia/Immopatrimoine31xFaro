@@ -175,7 +175,7 @@ body.sidebar-collapsed .new-dossier-btn { width: calc(100% - 24px); margin: 12px
 .avatar.ai { width: 50px; height: 50px; flex-basis: 50px; background: transparent; border-radius: 50%; position: relative; overflow: visible; display: flex; align-items: center; justify-content: center; }
 .message.ai.completed { align-items: flex-start; gap: 10px; }
 .ai-message-mark { width: 28px; height: 28px; flex: 0 0 28px; display: flex; justify-content: center; padding-top: 7px; }
-.ai-message-mark::before { content: ''; width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff4cf, #d2a340 58%, #9d6d1d); box-shadow: 0 0 10px rgba(210,163,64,.32); }
+.ai-message-mark::before { content: ''; width: 13px; height: 13px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff4cf, #d2a340 58%, #9d6d1d); box-shadow: 0 0 10px rgba(210,163,64,.32); }
 .message.ai.completed .bubble { padding: 0; background: transparent; border: none; }
 .ai-message-label { margin: 1px 0 5px; color: var(--text-muted); font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
 .ai-message-content { color: var(--text); }
@@ -660,6 +660,7 @@ html[data-theme="light"] {
 <script>
 const WEBHOOK_UPLOAD = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
 const WEBHOOK_QUESTION = 'https://n8n.srv1960518.hstgr.cloud/webhook/reponses-questions';
+const WEBHOOK_STATUS = 'https://n8n.srv1960518.hstgr.cloud/webhook/statut-execution/';
 const LEGAL_ACCEPTANCE_VERSION = 'demo-2026-10-05-v1';
 const SUPABASE_URL = 'https://zpvxifqbunhaoldkubqn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwdnhpZnFidW5oYW9sZGt1YnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4OTI1NjAsImV4cCI6MjEwNDQ2ODU2MH0.bs-ssIxQm2WRhMXIU_m3z0YvqI-hXj4wAcVj9Bl0NQ4';
@@ -668,11 +669,9 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Coupures possibles d'un relais entre le site et n8n : l'analyse continue côté serveur.
 const STATUTS_COUPURE = [502, 504, 524];
-// Une erreur survenue après ce délai, ou une coupure, n'est plus considérée comme un échec.
-const DELAI_ERREUR_NON_DEFINITIVE = 60000;
-// Durées de suivi allongées pour les gros modèles.
-const DUREE_SUIVI_ANALYSE = 60 * 60 * 1000;
-const DUREE_SUIVI_QUESTION = 30 * 60 * 1000;
+// Une opération sans résultat ni erreur ne doit jamais rester en cours indéfiniment.
+const DUREE_SUIVI_ANALYSE = 15 * 60 * 1000;
+const DUREE_SUIVI_QUESTION = 5 * 60 * 1000;
 const INTERVALLE_POLLING = 1000;
 
 let session = null;
@@ -939,9 +938,16 @@ function proposerNotifications() {
 function reprendreQuestion(dossier, q) {
   dossier.questionActive = true;
   const sequence = ++questionSequence;
-  dossier._pending = { label: 'Recherche en cours…', start: q.start, errorBaseline: q.errorBaseline || instantaneErreursServeur(dossier.messages || []) };
+  const executionIds = q.executionIds || (q.executionId ? [q.executionId] : []);
+  dossier._pending = {
+    label: 'Recherche en cours…', start: q.start,
+    errorBaseline: q.errorBaseline || instantaneErreursServeur(dossier.messages || []),
+    baseline: q.baseline || 0, question: q.question,
+    server: executionIds.length > 0, executionIds, launchComplete: true
+  };
   dossier._liveStatus = 'question';
-  surveillerReponseQuestion(dossier, q.baseline, sequence, q.start || Date.now(), q.errorBaseline || instantaneErreursServeur(dossier.messages || []));
+  if (executionIds.length) startPolling();
+  else surveillerReponseQuestion(dossier, q.baseline, sequence, q.start || Date.now(), q.errorBaseline || instantaneErreursServeur(dossier.messages || []));
   if (dossier === currentDossier) setChatEnabled(false, 'Question en cours, veuillez patienter…');
 }
 
@@ -959,6 +965,18 @@ function escapeHtml(str) {
 }
 
 function getToken() { return session?.access_token || ''; }
+
+async function lireStatutExecutionN8n(executionId) {
+  if (!executionId) throw new Error("Identifiant d'exécution n8n manquant.");
+  const data = await fetchJson(WEBHOOK_STATUS + encodeURIComponent(executionId), {
+    method: 'GET',
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+    cache: 'no-store'
+  }, 15000);
+  const status = String(data?.status || data?.state || '').toLowerCase();
+  if (!status) throw new Error("Le webhook de statut n'a pas renvoyé de statut n8n.");
+  return { status, detail: data?.error?.message || data?.error || data?.message || '' };
+}
 
 function togglePassword(inputId, btn) {
   const input = document.getElementById(inputId);
@@ -1012,8 +1030,11 @@ async function fetchJson(url, options = {}, delaiMs = 120000) {
 function estErreurNonDefinitive(err, debutMs) {
   const status = err && err.status;
   if (STATUTS_COUPURE.includes(status)) return true;
-  if (!status) return true; // coupure réseau, délai dépassé : le serveur continue
-  return Date.now() - (debutMs || Date.now()) > DELAI_ERREUR_NON_DEFINITIVE;
+  if (status) return false; // n8n a répondu avec une erreur HTTP : état final, quel que soit le délai
+  // Seules les erreurs de transport et les délais dépassés peuvent masquer une
+  // exécution encore active. Une réponse invalide/illisible est une erreur réelle.
+  return err?.name === 'TimeoutError' || err?.name === 'AbortError' ||
+    (err instanceof TypeError && /fetch|network|réseau|connexion/i.test(err.message || ''));
 }
 
 // ==========================================
@@ -1505,14 +1526,27 @@ async function loadDossiers() {
     const existant = dossiers.find(d => d.id === l.id);
     if (existant) {
       if (l.status === 'error') { existant.status = 'error'; existant._liveStatus = null; }
-      else { existant.status = 'processing'; existant._liveStatus = existant._liveStatus || 'analyse'; }
+      else {
+        existant.status = 'processing'; existant._liveStatus = existant._liveStatus || 'analyse';
+        if (l.executionIds?.length && !existant._pending) {
+          existant._pending = {
+            label: 'Analyse en cours…', start: l.start || Date.now(), baseline: l.baseline || 0,
+            server: true, executionIds: l.executionIds, launchComplete: true
+          };
+        }
+      }
       return;
     }
     if (l.status === 'error') return;
     dossiers.unshift({
       id: l.id, name: l.name, date: l.date, docs: l.docs || [], docsCount: (l.docs || []).length,
       status: l.status, messages: [], _loaded: true,
-      _liveStatus: l.status === 'processing' ? 'analyse' : null, _pending: null, _local: true, questionActive: false
+      _liveStatus: l.status === 'processing' ? 'analyse' : null,
+      _pending: l.executionIds?.length ? {
+        label: 'Analyse en cours…', start: l.start || Date.now(), baseline: l.baseline || 0,
+        server: true, executionIds: l.executionIds, launchComplete: true
+      } : null,
+      _local: true, questionActive: false
     });
   });
   dossiersSupprimes = convertir(supprimes);
@@ -1616,30 +1650,17 @@ async function resyncCurrentDossier() {
 // automatiquement dès que le serveur a terminé.
 // ==========================================
 let pollTimer = null;
-
-function startPendingServeur(dossier) {
-  dossier.status = 'processing';
-  dossier._liveStatus = 'analyse';
-  if (!dossier._pending) dossier._pending = { label: 'Analyse en cours…', start: Date.now(), server: true };
-  else dossier._pending.server = true;
-  if (dossier === currentDossier) renderMessages();
-  renderDossiers();
-  renderHome();
-  renderAllDossiers();
-  majOrbAccueil();
-  startPolling();
-}
+let pollEnCours = false;
 
 function suivreAnalysesServeur() {
   let besoin = false;
-  const local = lireLocal().dossiers || {};
   dossiers.forEach(d => {
     if (d._pending) { besoin = true; return; }
     if (d.status === 'processing') {
-      d._liveStatus = 'analyse';
-      const debut = local[d.id]?.start || Date.now();
-      d._pending = { label: 'Analyse en cours…', start: debut, server: true, baseline: d._analysisAnswerBaseline || 0 };
-      besoin = true;
+      const message = "Le suivi direct de cette exécution n8n a été perdu après le rechargement. Vérifiez son état dans n8n avant de relancer l'analyse.";
+      d.status = 'error';
+      d._liveStatus = null;
+      memoriserDossier(d, { status: 'error', message });
     }
   });
   if (besoin) {
@@ -1655,10 +1676,119 @@ function suivreAnalysesServeur() {
 function startPolling() {
   if (pollTimer) return;
   pollTimer = setInterval(async () => {
+    if (pollEnCours) return;
     if (!session) { stopPolling(); return; }
     const suivis = dossiers.filter(d => d._pending && d._pending.server);
     if (!suivis.length) { stopPolling(); return; }
-    for (const d of suivis) {
+    pollEnCours = true;
+    try { for (const d of suivis) {
+      const attente = d._pending;
+      const delaiMax = attente?.question ? DUREE_SUIVI_QUESTION : DUREE_SUIVI_ANALYSE;
+      if (Date.now() - (attente?.start || Date.now()) >= delaiMax) {
+        const message = attente?.question
+          ? "n8n n'a pas renvoyé de réponse dans le délai prévu. Vérifiez l'exécution du workflow puis réessayez."
+          : "n8n n'a pas renvoyé le résultat dans le délai prévu. Vérifiez l'exécution du workflow puis relancez l'analyse.";
+        endPending(d);
+        d.status = attente?.question ? 'ready' : 'error';
+        d._questionEnAttente = null;
+        if (attente?.question) {
+          d.questionActive = false;
+          setLiveStatus(d, 'question_error');
+          memoriserQuestion(d.id, { question: attente.question, baseline: attente.baseline || 0, start: attente.start, erreur: message });
+        }
+        else { d._liveStatus = null; memoriserDossier(d, { status: 'error', message }); }
+        addMessage('system', message, d);
+        if (currentDossier?.id === d.id) { setChatEnabled(true); renderMessages(); }
+        renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+        continue;
+      }
+
+      // Les opérations lancées avec un identifiant sont vérifiées directement
+      // auprès de n8n. Supabase ne sert qu'à récupérer le texte après succès.
+      if (attente.executionIds?.length) {
+        if (attente.launchComplete === false) continue;
+        let etats;
+        try {
+          etats = await Promise.all(attente.executionIds.map(lireStatutExecutionN8n));
+        } catch (err) {
+          if (estErreurNonDefinitive(err, attente.start)) continue;
+          const message = err.status === 401 || err.status === 403
+            ? "La vérification n8n n'est pas autorisée. Vérifiez la connexion puis réessayez."
+            : "Impossible de vérifier le statut de l'exécution dans n8n. Vérifiez le webhook de statut puis réessayez.";
+          endPending(d);
+          d._questionEnAttente = null;
+          if (attente.question) {
+            d.questionActive = false;
+            memoriserQuestion(d.id, { question: attente.question, baseline: attente.baseline || 0, start: attente.start, erreur: message });
+            setLiveStatus(d, 'question_error');
+            addMessage('system', message, d);
+          } else {
+            d.status = 'error';
+            d._liveStatus = null;
+            memoriserDossier(d, { status: 'error', message });
+            addMessage('system', message, d);
+          }
+          if (currentDossier?.id === d.id) { setChatEnabled(true); renderMessages(); }
+          renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+          continue;
+        }
+
+        const erreursN8n = etats.filter(e => ['error', 'failed', 'failure', 'crashed', 'canceled', 'cancelled'].includes(e.status));
+        if (erreursN8n.length) {
+          const message = "n8n indique que le workflow a échoué. Ouvrez l'exécution dans n8n pour voir le nœud en erreur.";
+          endPending(d);
+          d._questionEnAttente = null;
+          if (attente.question) {
+            d.questionActive = false;
+            memoriserQuestion(d.id, { question: attente.question, baseline: attente.baseline || 0, start: attente.start, erreur: message });
+            setLiveStatus(d, 'question_error');
+            addMessage('system', message, d);
+          } else {
+            d.status = 'error';
+            d._liveStatus = null;
+            memoriserDossier(d, { status: 'error', message });
+            addMessage('system', message, d);
+          }
+          if (currentDossier?.id === d.id) { setChatEnabled(true); renderMessages(); }
+          renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+          continue;
+        }
+        if (!etats.every(e => ['success', 'completed', 'finished'].includes(e.status))) continue;
+
+        if (attente.question) {
+          const { data, error } = await sb.from('conversations')
+            .select('role, content, timestamp')
+            .eq('dossier_id', d.id)
+            .order('timestamp', { ascending: true });
+          if (error) continue;
+          const messages = normaliserConversation(data || []);
+          const nouvellesReponses = messages.filter(m => m.role === 'ai').slice(attente.baseline || 0);
+          if (!nouvellesReponses.length) continue;
+          appliquerConversationServeur(d, messages);
+          endPending(d);
+          d._questionEnAttente = null;
+          d.questionActive = false;
+          questionResolvedSequence = questionSequence;
+          oublierQuestion(d.id);
+          setLiveStatus(d, 'question_done');
+          notifier('Réponse prête', d.name);
+        } else {
+          const { data, error } = await sb.from('dossiers').select('resume').eq('dossier_id', d.id).maybeSingle();
+          if (error || !String(data?.resume || '').trim()) continue;
+          const texte = "Vos documents ont été enregistrés. Votre analyse est terminée, vous la trouverez ci-dessous :\n\n" + String(data.resume).trim();
+          ajouterMessageSiAbsent('ai', texte, d);
+          endPending(d);
+          d._pendingCreation = false;
+          d.status = 'ready';
+          d._liveStatus = 'analyse_done';
+          oublierDossier(d.id);
+          notifier('Analyse prête', d.name);
+        }
+        if (currentDossier?.id === d.id) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
+        renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+        continue;
+      }
+
       const { data, error } = await sb.from('conversations')
         .select('role, content, timestamp')
         .eq('dossier_id', d.id)
@@ -1700,7 +1830,7 @@ function startPolling() {
       }
       if (currentDossier?.id === d.id) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
       renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
-    }
+    } } finally { pollEnCours = false; }
   }, INTERVALLE_POLLING);
 }
 
@@ -2262,6 +2392,29 @@ function verifierErreurWebhook(data) {
   }
 }
 
+function extraireResultatWebhook(data) {
+  if (typeof data === 'string') return data.trim();
+  if (Array.isArray(data)) {
+    for (const item of data) { const resultat = extraireResultatWebhook(item); if (resultat) return resultat; }
+    return '';
+  }
+  if (!data || typeof data !== 'object') return '';
+  const cles = ['synthese', 'réponse', 'reponse', 'answer', 'output', 'text', 'content', 'response'];
+  for (const cle of cles) {
+    if (data[cle] !== undefined) {
+      const resultat = extraireTexteReponse(data[cle]);
+      if (resultat) return resultat;
+    }
+  }
+  for (const cle of ['result', 'data']) {
+    if (data[cle] !== undefined) {
+      const resultat = extraireResultatWebhook(data[cle]);
+      if (resultat) return resultat;
+    }
+  }
+  return '';
+}
+
 function compterReponsesIA(messages = []) { return messages.filter(m => m.role === 'ai' || m.role === 'assistant').length; }
 
 function normaliserConversation(data = []) { return data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content })); }
@@ -2426,31 +2579,30 @@ async function sendMessage() {
   addMessage('user', msg, dossier);
   setLiveStatus(dossier, 'question');
   startPending(dossier, 'Recherche en cours…');
+  Object.assign(dossier._pending, {
+    server: true, executionIds: [], launchComplete: false,
+    question: msg, baseline: messagesAvant, errorBaseline: erreursAvant
+  });
   setChatEnabled(false, 'Question en cours, veuillez patienter…');
-  surveillerReponseQuestion(dossier, messagesAvant, sequence, debut, erreursAvant);
 
   try {
-    const data = await fetchJson(WEBHOOK_QUESTION, {
+    const lancement = await fetchJson(WEBHOOK_QUESTION, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
       body: JSON.stringify({ dossier_id: dossier.id, message: msg }),
     });
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
-    endPending(dossier);
-    const reponseServeur = await attendreReponseServeur(dossier, messagesAvant);
-    if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
-    if (!reponseServeur) {
-      const reponse = data.reponse || data.synthese || data.message || "Je n'ai pas pu analyser votre question.";
-      ajouterMessageSiAbsent('ai', reponse.replace(/\\n/g, '\n'), dossier);
-      attenteConfirmationServeur = true;
-      startPending(dossier, 'Synchronisation de la réponse…');
-      addMessage('system', "Réponse reçue ; vérification de son enregistrement en cours. N'envoyez pas une nouvelle question pour le moment.", dossier);
-      return;
+    const executionId = lancement?.executionId;
+    if (!executionId) {
+      const erreur = new Error("n8n n'a pas renvoyé l'identifiant d'exécution attendu.");
+      erreur.status = 422;
+      throw erreur;
     }
-    dossier._questionEnAttente = null;
-    questionResolvedSequence = sequence;
-    dossier.questionActive = false;
-    setLiveStatus(dossier, 'question_done');
+    dossier._pending.executionIds = [String(executionId)];
+    dossier._pending.launchComplete = true;
+    memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, start: debut, executionId: String(executionId) });
+    attenteConfirmationServeur = true;
+    startPolling();
   } catch (err) {
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
 
@@ -2615,67 +2767,6 @@ function setCreateButtonLoading(chargement) {
   if (!chargement) lbl.textContent = 'Créer et analyser';
 }
 
-async function verifierResultatAnalyse(dossier, reponsesAvant, erreursAvant) {
-  if (dossier._supprime) return true;
-  const { data, error } = await sb.from('conversations')
-    .select('role, content, timestamp')
-    .eq('dossier_id', dossier.id)
-    .order('timestamp', { ascending: true });
-  if (error) return false;
-  const messages = normaliserConversation(data || []);
-  const nouvelles = messages.filter(m => m.role === 'ai').slice(reponsesAvant);
-  if (nouvelles.length) {
-    appliquerConversationServeur(dossier, messages);
-    dossier.status = 'ready';
-    endPending(dossier);
-    setLiveStatus(dossier, 'analyse_done');
-    return true;
-  }
-  const msgErreur = erreurServeurDepuis(data, erreursAvant);
-  if (!msgErreur) return false;
-  dossier._analysisFailed = true;
-  if (dossier._abort) dossier._abort.abort();
-  endPending(dossier);
-  appliquerConversationServeur(dossier, messages);
-  dossier.status = 'error';
-  dossier._liveStatus = null;
-  memoriserDossier(dossier, { status: 'error', message: msgErreur });
-  if (dossier === currentDossier) { setChatEnabled(true); updateDocsStrip(); renderMessages(); }
-  renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
-  return true;
-}
-
-async function surveillerSyntheseAnalyse(dossier, reponsesAvant) {
-  if (dossier._analysisWatcher) return;
-  dossier._analysisWatcher = true;
-  const debut = Date.now();
-  const limite = debut + DUREE_SUIVI_ANALYSE;
-  const erreursAvant = instantaneErreursServeur(dossier.messages || []);
-  let verificationEnCours = false;
-  const verifier = async () => {
-    if (verificationEnCours) return false;
-    verificationEnCours = true;
-    try { return await verifierResultatAnalyse(dossier, reponsesAvant, erreursAvant); }
-    catch (err) { console.warn('Suivi automatique de la synthèse impossible :', err); return false; }
-    finally { verificationEnCours = false; }
-  };
-  let canal = null;
-  try {
-    if (typeof sb.channel === 'function') {
-      canal = sb.channel('analyse-' + dossier.id)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations', filter: 'dossier_id=eq.' + dossier.id }, () => { void verifier(); })
-        .subscribe((status) => { if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('Suivi temps réel indisponible pour cette analyse.'); });
-    }
-    while (!dossier._supprime && Date.now() < limite) {
-      if (await verifier()) return;
-      await new Promise(resolve => setTimeout(resolve, INTERVALLE_POLLING));
-    }
-  } finally {
-    dossier._analysisWatcher = false;
-    if (canal) { try { await sb.removeChannel(canal); } catch (e) {} }
-  }
-}
-
 async function createDossier() {
   const name = document.getElementById('dossierNameInput').value.trim();
   const notes = '';
@@ -2723,14 +2814,13 @@ async function createDossier() {
   renderDossiers(); renderHome(); renderAllDossiers();
   setChatEnabled(false);
   startPending(dossier, 'Analyse en cours…', messagesAvantAnalyse);
-  surveillerSyntheseAnalyse(dossier, messagesAvantAnalyse);
 
   // La requête est annulable : supprimer le dossier coupe l'envoi en cours.
   const controller = new AbortController();
   dossier._abort = controller;
   uploadDossierId = id;
   try {
-    let dernierData = null;
+    const executionIds = [];
     for (const file of selectedFiles) {
       const formData = new FormData();
       formData.append('dossier_id', id);
@@ -2740,57 +2830,39 @@ async function createDossier() {
       formData.append('data', file);
       const res = await fetchAvecDelai(WEBHOOK_UPLOAD, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData, signal: controller.signal }, 10 * 60 * 1000);
       if (!res.ok) {
-        const e = new Error('HTTP ' + res.status);
+        const details = (await res.text().catch(() => '')).trim().slice(0, 500);
+        const e = new Error('HTTP ' + res.status + (details ? ': ' + details : ''));
         e.status = res.status;
         throw e;
       }
-      dernierData = await res.json();
-      verifierErreurWebhook(dernierData);
-      console.log('RÉPONSE N8N :', dernierData);
+      const lancement = await res.json();
+      verifierErreurWebhook(lancement);
+      if (!lancement?.executionId) {
+        const e = new Error("n8n n'a pas renvoyé l'identifiant d'exécution attendu.");
+        e.status = 422;
+        throw e;
+      }
+      executionIds.push(String(lancement.executionId));
     }
-
-    // Un échec remonté en temps réel par le workflow ne doit pas être écrasé
-    // par l'accusé de réception HTTP de l'upload.
-    if (dossier._analysisFailed) return;
 
     dossier._pendingCreation = false;
-    dossier.status = 'ready';
-    oublierDossier(id);
-    notifier('Analyse prête', name);
-    endPending(dossier);
-    setLiveStatus(dossier, 'analyse_done');
-
-    // Dès que n8n a répondu, le dossier va chercher la synthèse
-    // enregistrée côté serveur ; le contenu du webhook sert de secours.
-    const syntheseServeur = await attendreReponseServeur(dossier, messagesAvantAnalyse);
-    if (!syntheseServeur) {
-      const synthese = extraireTexteReponse(dernierData);
-      const msg = synthese
-        ? synthese.replace(/\\n/g, '\n')
-        : "Document reçu et indexé avec succès.\n\nVous pouvez maintenant poser vos questions sur ce dossier.";
-      ajouterMessageSiAbsent('ai', msg, dossier);
-    }
+    dossier._pending.server = true;
+    dossier._pending.executionIds = executionIds;
+    dossier._pending.launchComplete = true;
+    memoriserDossier(dossier, { status: 'processing', executionIds, start: dossier._pending.start, baseline: messagesAvantAnalyse });
+    startPolling();
   } catch (err) {
     dossier._pendingCreation = false;
     // Dossier supprimé pendant l'envoi : plus rien à analyser ni à suivre.
     if (dossier._supprime) return;
-    // L'abonnement temps réel a déjà signalé l'échec et annulé l'upload.
-    if (dossier._analysisFailed) return;
     console.error(err);
-
-    // Coupure non définitive (502/504/524, délai, réseau) : l'analyse continue côté serveur.
-    if (!navigator.onLine || estErreurNonDefinitive(err, creationDebut)) {
-      addMessage('system', "Connexion interrompue : l'analyse continue sur le serveur. Le résultat s'affichera automatiquement dès qu'elle aboutit.", dossier);
-      dossier.status = 'processing';
-      dossier._liveStatus = 'analyse';
-      startPendingServeur(dossier);
-      return;
-    }
 
     dossier.status = 'error';
     endPending(dossier);
     setLiveStatus(dossier, null);
-    let msgErr = "L'analyse a échoué.";
+    let msgErr = estErreurNonDefinitive(err, creationDebut)
+      ? "La connexion avec n8n a été interrompue ou a expiré. L'état réel de l'exécution n'a pas pu être confirmé ; vérifiez-la dans n8n avant de relancer."
+      : "L'analyse a échoué dans n8n.";
     if (err.message.includes('503')) msgErr = "Le service d'extraction est temporairement surchargé. Réessayez dans quelques minutes.";
     else if (err.message.includes('401') || err.message.includes('403')) msgErr = "Erreur d'authentification. Veuillez vous reconnecter.";
     else if (err.message.includes('404')) msgErr = "Le service d'analyse est introuvable. Contactez le support.";
@@ -2807,7 +2879,7 @@ async function createDossier() {
     setCreateButtonLoading(false);
     selectedFiles = [];
     renderFilesList();
-    setChatEnabled(true);
+    setChatEnabled(!dossier._pending, dossier._pending ? 'Analyse en cours, veuillez patienter…' : '');
     renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
     loadDossiers().then(() => { suivreAnalysesServeur(); });
   }
