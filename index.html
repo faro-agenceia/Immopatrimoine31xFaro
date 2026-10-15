@@ -1702,19 +1702,6 @@ async function loadDossierDetails(dossier) {
 function afficherErreurConversation() {
   const area = document.getElementById('chatArea');
   if (!area) return;
-  area.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px auto;max-width:360px;line-height:1.6">Impossible de charger ce dossier pour le moment.<br><button type="button" class="mini-btn" style="margin-top:12px" onclick="reessayerChargementDossier()">Réessayer</button></div>';
-}
-
-async function reessayerChargementDossier() {
-  const dossier = currentDossier;
-  if (!dossier) return;
-  dossier._loaded = false;
-  const charge = await loadDossierDetails(dossier);
-  if (!charge || currentDossier !== dossier) return;
-  updateDocsStrip();
-  renderMessages();
-  actualiserChatPourDossier(currentDossier);
-}
 
 async function resyncCurrentDossier() {
   if (!currentDossier || currentDossier._local) return;
