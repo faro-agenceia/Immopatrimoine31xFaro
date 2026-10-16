@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="fr" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -218,6 +218,10 @@ body.sidebar-collapsed .profile-caret { display: none; }
 body.unauthenticated .sidebar,
 body.unauthenticated .main { display: none; }
 .auth-note { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 14px; line-height: 1.6; }
+.startup-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--bg); }
+.startup-card { width: 360px; max-width: 94vw; padding: 28px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
+.startup-title { margin-bottom: 8px; font-size: 15px; font-weight: 650; color: var(--text); }
+.startup-message { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
 
 /* DOSSIER VIEW */
 .dossier-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -448,7 +452,13 @@ html[data-theme="light"] {
 }
 </style>
 </head>
-<body>
+<body class="unauthenticated">
+<div class="startup-overlay" id="startupOverlay" role="status" aria-live="polite">
+  <div class="startup-card">
+    <div class="startup-title">ASSISTANT IA</div>
+    <div class="startup-message">Connexion à votre espace…</div>
+  </div>
+</div>
 <div class="auth-overlay" id="authOverlay" style="display:none;">
   <div class="auth-box">
     <div class="auth-logo"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"></rect><rect x="9" y="6" width="2" height="2"></rect><rect x="13" y="6" width="2" height="2"></rect><rect x="9" y="11" width="2" height="2"></rect><rect x="13" y="11" width="2" height="2"></rect><path d="M9 22v-4h6v4"></path></svg>ASSISTANT IA</div>
@@ -656,7 +666,6 @@ html[data-theme="light"] {
   <div class="fullscreen-content" id="fullscreenContent"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 const WEBHOOK_UPLOAD = 'https://n8n.srv1960518.hstgr.cloud/webhook/analyser-document';
 const WEBHOOK_QUESTION = 'https://n8n.srv1960518.hstgr.cloud/webhook/reponses-questions';
@@ -665,7 +674,9 @@ const LEGAL_ACCEPTANCE_VERSION = 'demo-2026-10-05-v1';
 const SUPABASE_URL = 'https://zpvxifqbunhaoldkubqn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwdnhpZnFidW5oYW9sZGt1YnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4OTI1NjAsImV4cCI6MjEwNDQ2ODU2MH0.bs-ssIxQm2WRhMXIU_m3z0YvqI-hXj4wAcVj9Bl0NQ4';
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let sb = null;
+let authStateRevision = 0;
+let authListenerRegistered = false;
 
 // Coupures possibles d'un relais entre le site et n8n : l'analyse continue côté serveur.
 const STATUTS_COUPURE = [502, 504, 524];
@@ -1119,7 +1130,7 @@ function initSidebar() {
 // ==========================================
 // NAVIGATION ENTRE VUES
 // ==========================================
-function setView(view) {
+function setView(view, persister = true) {
   currentView = view;
   document.getElementById('emptyState').style.display = view === 'empty' ? 'flex' : 'none';
   document.getElementById('homeView').style.display = view === 'accueil' ? 'flex' : 'none';
@@ -1127,7 +1138,7 @@ function setView(view) {
   document.getElementById('dossierView').style.display = view === 'chat' ? 'flex' : 'none';
   document.getElementById('navAccueil').classList.toggle('active', view === 'accueil');
   document.getElementById('navDossiers').classList.toggle('active', view === 'dossiers' || view === 'chat');
-  sauvegarderVue(view);
+  if (persister) sauvegarderVue(view);
 }
 
 function cleEtatUtilisateur(type) { return session?.user?.id ? 'assistant-ia-' + type + '-' + session.user.id : null; }
@@ -1220,19 +1231,86 @@ function majOrbAccueil() {
 // ==========================================
 // AUTH
 // ==========================================
-async function initAuth() {
-  const { data: { session: s } } = await sb.auth.getSession();
-  session = s;
-  if (s) showApp(); else showAuthScreen();
-  sb.auth.onAuthStateChange((event, s) => {
-    session = s;
-    if (event === 'PASSWORD_RECOVERY') { showRecoveryScreen(); return; }
-    if (s) showApp(); else showAuthScreen();
+function chargerSdkSupabase() {
+  if (window.supabase?.createClient) return Promise.resolve(true);
+  return new Promise(resolve => {
+    const sources = [
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+      'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+    ];
+    let index = 0;
+    const chargerSuivant = () => {
+      if (window.supabase?.createClient) { resolve(true); return; }
+      if (index >= sources.length) { resolve(false); return; }
+      const script = document.createElement('script');
+      script.src = sources[index++];
+      script.async = true;
+      let termine = false;
+      const timer = setTimeout(() => {
+        if (termine) return;
+        termine = true;
+        script.remove();
+        chargerSuivant();
+      }, 8000);
+      script.onload = () => {
+        if (termine) return;
+        termine = true;
+        clearTimeout(timer);
+        if (window.supabase?.createClient) resolve(true); else chargerSuivant();
+      };
+      script.onerror = () => {
+        if (termine) return;
+        termine = true;
+        clearTimeout(timer);
+        script.remove();
+        chargerSuivant();
+      };
+      document.head.appendChild(script);
+    };
+    chargerSuivant();
   });
 }
 
-function showAuthScreen() {
+async function initAuth() {
+  const startup = document.getElementById('startupOverlay');
+  const status = startup?.querySelector('.startup-message');
+  try {
+    const sdkDisponible = await chargerSdkSupabase();
+    if (!sdkDisponible) {
+      showAuthScreen('Le service de connexion ne s’est pas chargé. Vérifiez votre connexion puis rechargez la page.');
+      return;
+    }
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+    if (!authListenerRegistered) {
+      authListenerRegistered = true;
+      sb.auth.onAuthStateChange((event, nouvelleSession) => {
+        authStateRevision++;
+        session = nouvelleSession;
+        if (event === 'PASSWORD_RECOVERY') { showRecoveryScreen(); return; }
+        if (nouvelleSession) void showApp(); else showAuthScreen();
+      });
+    }
+    if (status) status.textContent = 'Vérification de la connexion…';
+    const revisionAvantLecture = authStateRevision;
+    let timer;
+    const resultat = await Promise.race([
+      sb.auth.getSession(),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 10000); })
+    ]).finally(() => clearTimeout(timer));
+    if (revisionAvantLecture !== authStateRevision) return;
+    session = resultat?.data?.session || null;
+    if (session) await showApp(); else showAuthScreen();
+  } catch (err) {
+    console.error('Initialisation de la connexion impossible :', err);
+    showAuthScreen('Impossible de vérifier la connexion. Vérifiez votre réseau puis rechargez la page.');
+  }
+}
+
+function showAuthScreen(message = '') {
   appUserInitialise = null;
+  document.getElementById('startupOverlay').style.display = 'none';
   document.getElementById('recoveryOverlay').style.display = 'none';
   document.getElementById('authOverlay').style.display = 'flex';
   document.getElementById('accountPopover').style.display = 'none';
@@ -1240,9 +1318,14 @@ function showAuthScreen() {
   document.body.classList.add('unauthenticated');
   const champNom = document.getElementById('authUsername');
   if (champNom) champNom.value = '';
-  setView('empty');
+  setView('empty', false);
+  const errBox = document.getElementById('authError');
+  if (message && errBox) { errBox.textContent = message; errBox.style.display = 'block'; }
+  const bouton = document.getElementById('authSubmitBtn');
+  if (bouton) bouton.disabled = !sb;
 }
 function showRecoveryScreen() {
+  document.getElementById('startupOverlay').style.display = 'none';
   document.getElementById('authOverlay').style.display = 'none';
   document.getElementById('recoveryOverlay').style.display = 'flex';
 }
@@ -1261,12 +1344,23 @@ async function showApp() {
     return;
   }
   appUserInitialise = userId;
+  document.getElementById('startupOverlay').style.display = 'none';
   document.getElementById('authOverlay').style.display = 'none';
   document.getElementById('recoveryOverlay').style.display = 'none';
   document.body.classList.remove('unauthenticated');
   renderAccount();
-  await loadDossiers();
-  await restaurerDerniereVue();
+  setView('accueil', false);
+  renderDossiers();
+  renderHome();
+  renderAllDossiers();
+  majOrbAccueil();
+  try {
+    await loadDossiers();
+    await restaurerDerniereVue();
+  } catch (err) {
+    console.error('Chargement des dossiers impossible :', err);
+    afficherErreurChargementListes('Impossible de charger les dossiers. Vérifiez la connexion puis réessayez.');
+  }
 }
 
 function messageErreurAuth(err, contexte = 'connexion') {
@@ -1702,6 +1796,19 @@ async function loadDossierDetails(dossier) {
 function afficherErreurConversation() {
   const area = document.getElementById('chatArea');
   if (!area) return;
+  area.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px auto;max-width:360px;line-height:1.6">Impossible de charger ce dossier pour le moment.<br><button type="button" class="mini-btn" style="margin-top:12px" onclick="reessayerChargementDossier()">Réessayer</button></div>';
+}
+
+async function reessayerChargementDossier() {
+  const dossier = currentDossier;
+  if (!dossier) return;
+  dossier._loaded = false;
+  const charge = await loadDossierDetails(dossier);
+  if (!charge || currentDossier !== dossier) return;
+  updateDocsStrip();
+  renderMessages();
+  actualiserChatPourDossier(currentDossier);
+}
 
 async function resyncCurrentDossier() {
   if (!currentDossier || currentDossier._local) return;
