@@ -1000,6 +1000,16 @@ async function lireStatutExecutionN8n(executionId) {
   return { status, detail: data?.error?.message || data?.error || data?.message || '' };
 }
 
+async function attendreAvecDelai(operation, delaiMs = 5000, libelle = 'La requête a dépassé le délai prévu.') {
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve(operation),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(libelle)), delaiMs); })
+    ]);
+  } finally { clearTimeout(timer); }
+}
+
 function togglePassword(inputId, btn) {
   const input = document.getElementById(inputId);
   if (!input) return;
@@ -2023,10 +2033,10 @@ function startPolling() {
         if (!etats.every(e => ['success', 'completed', 'finished'].includes(e.status))) continue;
 
         if (attente.question) {
-          const { data, error } = await sb.from('conversations')
+          const { data, error } = await attendreAvecDelai(sb.from('conversations')
             .select('role, content, timestamp')
             .eq('dossier_id', d.id)
-            .order('timestamp', { ascending: true });
+            .order('timestamp', { ascending: true }), 5000, 'Délai dépassé en récupérant la réponse de la question.');
           const messages = error ? [] : normaliserConversation(data || []);
           const nouvellesReponses = reponsesQuestionDansHistorique(messages, attente);
           if (!nouvellesReponses.length) {
@@ -2097,10 +2107,10 @@ function startPolling() {
         continue;
       }
 
-      const { data, error } = await sb.from('conversations')
+      const { data, error } = await attendreAvecDelai(sb.from('conversations')
         .select('role, content, timestamp')
         .eq('dossier_id', d.id)
-        .order('timestamp', { ascending: true });
+        .order('timestamp', { ascending: true }), 5000, 'Délai dépassé en suivant la conversation.');
       if (error) continue;
       const messages = normaliserConversation(data || []);
       const attenteConversation = d._pending;
@@ -2149,7 +2159,9 @@ function startPolling() {
       }
       if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
       renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
-    } } finally { pollEnCours = false; }
+    } } catch (erreurSuivi) {
+      console.warn('Une vérification du statut a échoué ; le suivi réessaiera au prochain cycle :', erreurSuivi);
+    } finally { pollEnCours = false; }
   }, INTERVALLE_POLLING);
 }
 
@@ -2915,10 +2927,10 @@ function finaliserQuestionDepuisMessages(dossier, messages, attente = {}) {
 async function retrouverReponseQuestionPersistante(dossier, attente) {
   if (!dossier || !attente?.question) return false;
   try {
-    const { data, error } = await sb.from('conversations')
+    const { data, error } = await attendreAvecDelai(sb.from('conversations')
       .select('role, content, timestamp')
       .eq('dossier_id', dossier.id)
-      .order('timestamp', { ascending: true });
+      .order('timestamp', { ascending: true }), 4000, 'Délai dépassé en recherchant la réponse.');
     if (error) return false;
     return finaliserQuestionDepuisMessages(dossier, data || [], attente);
   } catch (e) { return false; }
@@ -2999,10 +3011,10 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
   const limite = debut + DUREE_SUIVI_QUESTION;
   while (sequence === questionSequence && !dossier._supprime && Date.now() < limite) {
     try {
-      const { data, error } = await sb.from('conversations')
+      const { data, error } = await attendreAvecDelai(sb.from('conversations')
         .select('role, content, timestamp')
         .eq('dossier_id', dossier.id)
-        .order('timestamp', { ascending: true });
+        .order('timestamp', { ascending: true }), 5000, 'Délai dépassé en attendant la réponse.');
       if (!error) {
         const messages = normaliserConversation(data || []);
         const nouvellesReponses = reponsesQuestionDansHistorique(messages, { question: dossier._questionEnAttente, baseline: messagesAvant });
@@ -3076,10 +3088,10 @@ async function sendMessage() {
     // Caler le point de départ sur les lignes serveur, pas sur un éventuel
     // résumé affiché localement mais absent de la table conversations.
     try {
-      const { data: historiqueAvant, error: erreurHistoriqueAvant } = await sb.from('conversations')
+      const { data: historiqueAvant, error: erreurHistoriqueAvant } = await attendreAvecDelai(sb.from('conversations')
         .select('role, content, timestamp')
         .eq('dossier_id', dossier.id)
-        .order('timestamp', { ascending: true });
+        .order('timestamp', { ascending: true }), 5000, 'Délai dépassé en lisant l’historique du dossier.');
       if (!erreurHistoriqueAvant) {
         const historiqueNormalise = normaliserConversation(historiqueAvant || []);
         messagesAvant = compterReponsesIA(historiqueNormalise);
