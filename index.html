@@ -2028,7 +2028,7 @@ function startPolling() {
             .eq('dossier_id', d.id)
             .order('timestamp', { ascending: true });
           const messages = error ? [] : normaliserConversation(data || []);
-          const nouvellesReponses = messages.filter(m => m.role === 'ai').slice(attente.baseline || 0);
+          const nouvellesReponses = reponsesQuestionDansHistorique(messages, attente);
           if (!nouvellesReponses.length) {
             attente.resultMissingSince = attente.resultMissingSince || Date.now();
             if (Date.now() - attente.resultMissingSince < 30000) continue;
@@ -2103,8 +2103,10 @@ function startPolling() {
         .order('timestamp', { ascending: true });
       if (error) continue;
       const messages = normaliserConversation(data || []);
-      const baseline = d._pending.baseline || 0;
-      const nouvelleSynthese = compterReponsesIA(messages) > baseline;
+      const attenteConversation = d._pending;
+      const nouvelleSynthese = attenteConversation?.question
+        ? reponsesQuestionDansHistorique(messages, attenteConversation).length > 0
+        : compterReponsesIA(messages) > (attenteConversation.baseline || 0);
 
       // Le suivi se termine uniquement quand une nouvelle réponse IA est enregistrée.
       if (!nouvelleSynthese) {
@@ -2800,6 +2802,23 @@ function normaliserConversation(data = []) {
   });
 }
 
+function reponsesQuestionDansHistorique(messages = [], attente = {}) {
+  const normalises = normaliserConversation(messages || []);
+  const question = String(attente.question || '').trim();
+  let indexQuestion = -1;
+  if (question) {
+    for (let i = 0; i < normalises.length; i++) {
+      const reponsesAvant = compterReponsesIA(normalises.slice(0, i));
+      if (normalises[i].role === 'user' && String(normalises[i].content || '').trim() === question && reponsesAvant >= (Number(attente.baseline) || 0)) indexQuestion = i;
+    }
+  }
+  if (indexQuestion >= 0) {
+    const apresQuestion = normalises.slice(indexQuestion + 1).filter(m => m.role === 'ai');
+    if (apresQuestion.length) return apresQuestion;
+  }
+  return normalises.filter(m => m.role === 'ai').slice(Number(attente.baseline) || 0);
+}
+
 // Une erreur côté serveur (n8n) est lue directement dans Supabase :
 // toute ligne system/error enregistrée après le début de l'opération.
 // Les erreurs sont comptées par rapport à l'état de départ, sans se fier aux horloges.
@@ -2877,8 +2896,7 @@ function finaliserAnalyseDepuisResume(dossier, resume = '', messagesServeur = nu
 
 function finaliserQuestionDepuisMessages(dossier, messages, attente = {}) {
   const normalises = normaliserConversation(messages || []);
-  const baseline = Number(attente.baseline) || 0;
-  const reponses = normalises.filter(m => m.role === 'ai').slice(baseline);
+  const reponses = reponsesQuestionDansHistorique(normalises, attente);
   if (!reponses.length) return false;
   appliquerConversationServeur(dossier, normalises);
   dossier.status = 'ready';
@@ -2987,7 +3005,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
         .order('timestamp', { ascending: true });
       if (!error) {
         const messages = normaliserConversation(data || []);
-        const nouvellesReponses = messages.filter(m => m.role === 'ai').slice(messagesAvant);
+        const nouvellesReponses = reponsesQuestionDansHistorique(messages, { question: dossier._questionEnAttente, baseline: messagesAvant });
         if (nouvellesReponses.length) {
           appliquerConversationServeur(dossier, messages);
           dossier._questionEnAttente = null;
@@ -3035,8 +3053,8 @@ async function sendMessage() {
   const msg = input.value.trim();
   if (!msg || !currentDossier || !currentDossier._loaded || currentDossier._pending || currentDossier.questionActive || !currentDossier.analysisComplete) return;
   const dossier = currentDossier;
-  const messagesAvant = compterReponsesIA(dossier.messages || []);
-  const erreursAvant = instantaneErreursServeur(dossier.messages || []);
+  let messagesAvant = compterReponsesIA(dossier.messages || []);
+  let erreursAvant = instantaneErreursServeur(dossier.messages || []);
   const sequence = ++questionSequence;
   const debut = Date.now();
   let attenteConfirmationServeur = false;
@@ -3055,6 +3073,25 @@ async function sendMessage() {
   setChatEnabled(false, 'Question en cours, veuillez patienter…');
 
   try {
+    // Caler le point de départ sur les lignes serveur, pas sur un éventuel
+    // résumé affiché localement mais absent de la table conversations.
+    try {
+      const { data: historiqueAvant, error: erreurHistoriqueAvant } = await sb.from('conversations')
+        .select('role, content, timestamp')
+        .eq('dossier_id', dossier.id)
+        .order('timestamp', { ascending: true });
+      if (!erreurHistoriqueAvant) {
+        const historiqueNormalise = normaliserConversation(historiqueAvant || []);
+        messagesAvant = compterReponsesIA(historiqueNormalise);
+        erreursAvant = instantaneErreursServeur(historiqueNormalise);
+        dossier._pending.baseline = messagesAvant;
+        dossier._pending.errorBaseline = erreursAvant;
+        memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, start: debut, sequence });
+      }
+    } catch (erreurLectureHistorique) {
+      console.warn('Lecture de l’historique avant question impossible :', erreurLectureHistorique);
+    }
+
     const lancement = await fetchJson(WEBHOOK_QUESTION, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
