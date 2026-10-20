@@ -179,7 +179,7 @@ body.sidebar-collapsed .new-dossier-btn { width: calc(100% - 24px); margin: 12px
 .message.ai.completed .bubble { padding: 0; background: transparent; border: none; }
 .ai-message-label { margin: 1px 0 5px; color: var(--text-muted); font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
 .ai-message-content { color: var(--text); }
-.question-divider { width: min(100%, 760px); height: 1px; flex: 0 0 1px; align-self: center; margin: -7px 0; background: var(--border); opacity: .85; }
+.question-divider { width: min(100%, 960px); height: 1px; flex: 0 0 1px; align-self: center; margin: -7px 0; background: var(--border); opacity: .85; }
 
 @media (prefers-reduced-motion: reduce) {
   .faro { animation: none !important; }
@@ -2626,8 +2626,9 @@ function parseMarkdown(text) {
 
 function renderMessage(m, index = 0, messages = []) {
   if (m.role === 'user') {
-    const separateur = messages.slice(0, index).some(message => message.role === 'ai' || message.role === 'assistant')
-      ? '<div class="question-divider" aria-hidden="true"></div>' : '';
+    const messagePrecedent = messages[index - 1];
+const separateur = messagePrecedent && (messagePrecedent.role === 'ai' || messagePrecedent.role === 'assistant')
+  ? '<div class="question-divider" aria-hidden="true"></div>' : '';
     return separateur + '<div class="message user"><div class="avatar user">' + ICON_USER + '</div><div class="bubble">' + parseMarkdown(m.content) + '</div></div>';
   }
   if (m.role === 'system') {
