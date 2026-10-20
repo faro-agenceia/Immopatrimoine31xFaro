@@ -1805,7 +1805,7 @@ async function loadDossierDetails(dossier) {
   }
   dossier.docs = (docsRes.data || []).map(d => d.nom);
   dossier.docsCount = dossier.docs.length;
-  dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
+  dossier.messages = normaliserConversation(convRes.data || []);
   if (!dossier.analysisComplete) {
     const syntheseInitiale = trouverSyntheseInitiale(dossier.messages);
     if (syntheseInitiale) finaliserAnalyseDepuisResume(dossier, syntheseInitiale.content);
@@ -2778,7 +2778,27 @@ function extraireResultatWebhook(data) {
 
 function compterReponsesIA(messages = []) { return messages.filter(m => m.role === 'ai' || m.role === 'assistant').length; }
 
-function normaliserConversation(data = []) { return data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content })); }
+function normaliserConversationBrute(data = []) {
+  return data.map(m => ({ role: m.role === 'assistant' ? 'ai' : m.role, content: m.content }));
+}
+
+function normaliserConversation(data = []) {
+  const messages = normaliserConversationBrute(data);
+  const ai = messages.filter(m => m.role === 'ai');
+  const synthese = ai.find(m => /RÉSUMÉ DU BIEN|RÉSUMÉ DU DOSSIER|VOTRE ANALYSE EST TERMINÉE/i.test(String(m.content || ''))) ||
+    (ai[0] && String(ai[0].content || '').trim().length >= 300 && !messages.slice(0, messages.indexOf(ai[0])).some(m => m.role === 'user') ? ai[0] : null);
+  if (!synthese) return messages;
+  const initiale = String(synthese.content || '').trim();
+  const corps = initiale.replace(/^Vos documents ont été enregistrés\.\s*Votre analyse est terminée, vous la trouverez ci-dessous\s*:\s*/i, '').trim();
+  const canon = texte => String(texte || '').replace(/\s+/g, ' ').trim();
+  const formesSynthese = new Set([canon(initiale), canon(corps)]);
+  let syntheseConservee = false;
+  return messages.filter(m => {
+    if (m.role !== 'ai' || formesSynthese.size === 0 || !formesSynthese.has(canon(m.content))) return true;
+    if (!syntheseConservee) { syntheseConservee = true; return true; }
+    return false;
+  });
+}
 
 // Une erreur côté serveur (n8n) est lue directement dans Supabase :
 // toute ligne system/error enregistrée après le début de l'opération.
@@ -2830,18 +2850,23 @@ function finaliserAnalyseDepuisResume(dossier, resume = '', messagesServeur = nu
   if (!Array.isArray(dossier.messages)) dossier.messages = [];
   const texte = String(resume).trim();
   if (!dossier.messages.some(m => m.role === 'ai' && String(m.content || '').includes(texte))) {
-    dossier.messages.push({ role: 'ai', content: texte });
+    // La synthèse appartient au début du fil, jamais après une réponse à une question.
+    const premiereQuestion = dossier.messages.findIndex(m => m.role === 'user');
+    dossier.messages.splice(premiereQuestion >= 0 ? premiereQuestion : dossier.messages.length, 0, { role: 'ai', content: texte });
   }
-  const enQuestion = !!(dossier._pending?.question || dossier.questionActive);
+  const statutQuestionExistant = ['question', 'question_done', 'question_error'].includes(dossier._liveStatus) ? dossier._liveStatus : null;
+  const enQuestion = !!(dossier._pending?.question || dossier.questionActive || statutQuestionExistant);
   dossier.status = 'ready';
   dossier.analysisComplete = true;
   if (!enQuestion) {
     endPending(dossier);
     dossier._liveStatus = 'analyse_done';
+    persisterStatut(dossier, 'analyse_done');
+  } else if (statutQuestionExistant) {
+    persisterStatut(dossier, statutQuestionExistant);
   }
   dossier.messages = dossier.messages.filter(m => !(ROLES_ERREUR.includes(m.role) && /analyse a échoué|n8n indique que le workflow a échoué|analyse.*workflow.*échoué|workflow.*analyse.*échoué/i.test(String(m.content || ''))));
   oublierDossier(dossier.id);
-  persisterStatut(dossier, 'analyse_done');
   if (dossier === currentDossier) {
     updateDocsStrip();
     renderMessages();
@@ -2935,7 +2960,7 @@ async function synchroniserConversation(dossier, roleAttendu = 'ai') {
       .eq('dossier_id', dossier.id)
       .order('timestamp', { ascending: true });
     if (error) throw error;
-    const msgs = (data || []).map(m => ({ role: m.role, content: m.content }));
+    const msgs = normaliserConversation(data || []);
     if (!msgs.length) return null;
     const local = dossier.messages || [];
     dossier.messages = msgs.length >= local.length ? msgs : local.concat(msgs.slice(local.length));
