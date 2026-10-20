@@ -245,7 +245,7 @@ body.unauthenticated .main { display: none; }
 .avatar.user { background: var(--surface2); }
 .bubble { padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.7; max-width: 600px; }
 .message.ai .bubble { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 4px; }
-.message.user .bubble { background: #fff; color: #111; border: 1px solid #e5e5e5; border-top-right-radius: 4px; }
+.message.user .bubble { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-top-right-radius: 4px; }
 .message.system { align-self: center; max-width: 100%; }
 .message.system .bubble { background: var(--surface2); border: 1px solid var(--border); font-size: 12px; color: var(--text-muted); text-align: center; }
 
@@ -270,6 +270,7 @@ body.unauthenticated .main { display: none; }
 .input-wrap { display: flex; gap: 10px; align-items: flex-end; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; transition: border-color 0.15s; }
 .input-wrap:focus-within { border-color: var(--accent); }
 .input-wrap.disabled { opacity: 0.5; pointer-events: none; }
+.input-wrap.send-locked { opacity: 1; }
 .chat-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; resize: none; outline: none; line-height: 1.5; max-height: 120px; font-family: inherit; }
 .chat-input::placeholder { color: var(--text-muted); }
 .mic-btn, .send-btn { width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
@@ -376,11 +377,6 @@ input[type="file"] { display: none; }
 .md-table thead th { background: var(--surface2); font-weight: 600; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
 .md-table tbody tr:last-child td { border-bottom: none; }
 .md-table tbody tr:nth-child(even) td { background: var(--hover); }
-.message.user .bubble .md-table-wrap { border-color: #d8d8d8; }
-.message.user .bubble .md-table th, .message.user .bubble .md-table td { border-bottom-color: #e5e5e5; }
-.message.user .bubble .md-table thead th { background: #f1f1f1; color: #333; }
-.message.user .bubble .md-table tbody tr:nth-child(even) td { background: #f8f8f8; }
-
 /* (ancien indicateur remplacé par l'emblème Faro ci-dessus) */
 
 /* THÈME MONOCHROME */
@@ -424,11 +420,7 @@ html[data-theme="light"] {
 }
 .new-dossier-btn:hover { box-shadow: var(--shadow-soft); }
 .message.ai .bubble { background: transparent; border: none; padding-left: 0; padding-right: 0; }
-.message.user .bubble { background: #fff; color: #111; border: 1px solid #e5e5e5; }
-.message.user .bubble .md-table-wrap { border-color: #d8d8d8; }
-.message.user .bubble .md-table th, .message.user .bubble .md-table td { border-bottom-color: #e5e5e5; color: #111; }
-.message.user .bubble .md-table thead th { background: #f1f1f1; color: #333; }
-.message.user .bubble .md-table tbody tr:nth-child(even) td { background: #f8f8f8; }
+.message.user .bubble { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 
 /* RESPONSIVE */
 @media (max-width: 1024px) {
@@ -724,6 +716,10 @@ let creationDebut = 0;
 // jamais par un état resté bloqué après une suppression.
 function uploadEnCours() { return uploadDossierId !== null; }
 
+function questionEnCours() {
+  return dossiers.some(d => !d._supprime && (d.questionActive || !!d._pending?.question || d._liveStatus === 'question'));
+}
+
 function analyseEnCours() {
   return creationEnCours || dossiers.some(d => !d._supprime && (d._liveStatus === 'analyse' || (d.status === 'processing' && d._liveStatus !== 'question')));
 }
@@ -968,7 +964,7 @@ function reprendreQuestion(dossier, q) {
   dossier._liveStatus = 'question';
   if (executionIds.length) startPolling();
   else surveillerReponseQuestion(dossier, q.baseline, sequence, q.start || Date.now(), q.errorBaseline || instantaneErreursServeur(dossier.messages || []));
-  if (dossier === currentDossier) setChatEnabled(false, 'Question en cours, veuillez patienter…');
+  if (dossier === currentDossier) setChatEnabled(false, 'Une question est en cours. Vous pourrez envoyer la suivante après sa réponse.', true);
 }
 
 // ==========================================
@@ -1230,6 +1226,7 @@ function setLiveStatus(dossier, status) {
   renderHome();
   renderAllDossiers();
   majOrbAccueil();
+  if (currentDossier) actualiserChatPourDossier(currentDossier);
 }
 
 const ICON_ERR_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
@@ -2627,8 +2624,8 @@ function parseMarkdown(text) {
 function renderMessage(m, index = 0, messages = []) {
   if (m.role === 'user') {
     const messagePrecedent = messages[index - 1];
-const separateur = messagePrecedent && (messagePrecedent.role === 'ai' || messagePrecedent.role === 'assistant')
-  ? '<div class="question-divider" aria-hidden="true"></div>' : '';
+    const separateur = messagePrecedent && (messagePrecedent.role === 'ai' || messagePrecedent.role === 'assistant')
+      ? '<div class="question-divider" aria-hidden="true"></div>' : '';
     return separateur + '<div class="message user"><div class="avatar user">' + ICON_USER + '</div><div class="bubble">' + parseMarkdown(m.content) + '</div></div>';
   }
   if (m.role === 'system') {
@@ -2649,37 +2646,30 @@ function addMessage(role, content, dossier = currentDossier) {
 // ==========================================
 // CHAT DÉSACTIVÉ PENDANT OPÉRATION (par dossier)
 // ==========================================
-function setChatEnabled(enabled, message = 'Analyse en cours, veuillez patienter…') {
+function setChatEnabled(canSend, message = 'Analyse en cours, veuillez patienter…', canType = canSend) {
   const wrap = document.getElementById('inputWrap');
   const btn = document.getElementById('sendBtn');
   const input = document.getElementById('chatInput');
   const mic = document.getElementById('micBtn');
   if (!wrap) return;
-  if (enabled) {
-    wrap.classList.remove('disabled');
-    btn.disabled = false;
-    input.disabled = false;
-    if (mic) mic.disabled = false;
-    input.placeholder = 'Posez une question sur le dossier…';
-  } else {
-    wrap.classList.add('disabled');
-    btn.disabled = true;
-    input.disabled = true;
-    if (mic) mic.disabled = true;
-    input.placeholder = message;
-  }
+  wrap.classList.toggle('disabled', !canType);
+  wrap.classList.toggle('send-locked', !canSend && canType);
+  btn.disabled = !canSend;
+  input.disabled = !canType;
+  if (mic) mic.disabled = !canSend;
+  input.placeholder = canSend ? 'Posez une question sur le dossier…' : message;
 }
 
 function actualiserChatPourDossier(dossier) {
   if (!dossier || dossier !== currentDossier) return;
-  if (dossier._pending) {
-    setChatEnabled(false, dossier._pending.question ? 'Question en cours, veuillez patienter…' : 'Analyse en cours, veuillez patienter…');
-  } else if (dossier.questionActive) {
-    setChatEnabled(false, 'Question en cours, veuillez patienter…');
-  } else if (!dossier._loaded) {
+  if (!dossier._loaded) {
     setChatEnabled(false, 'Chargement du dossier…');
   } else if (!dossier.analysisComplete) {
     setChatEnabled(false, 'L’analyse doit être terminée avant de poser une question.');
+  } else if (dossier._pending && !dossier._pending.question) {
+    setChatEnabled(false, 'Analyse en cours, veuillez patienter…');
+  } else if (questionEnCours()) {
+    setChatEnabled(false, 'Une question est en cours. Vous pourrez envoyer la suivante après sa réponse.', true);
   } else {
     setChatEnabled(true);
   }
@@ -3064,7 +3054,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
-  if (!msg || !currentDossier || !currentDossier._loaded || currentDossier._pending || currentDossier.questionActive || !currentDossier.analysisComplete) return;
+  if (!msg || !currentDossier || !currentDossier._loaded || !currentDossier.analysisComplete || questionEnCours() || (currentDossier._pending && !currentDossier._pending.question)) return;
   const dossier = currentDossier;
   let messagesAvant = compterReponsesIA(dossier.messages || []);
   let erreursAvant = instantaneErreursServeur(dossier.messages || []);
@@ -3083,7 +3073,7 @@ async function sendMessage() {
     server: true, executionIds: [], launchComplete: false,
     question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, sequence
   });
-  setChatEnabled(false, 'Question en cours, veuillez patienter…');
+  setChatEnabled(false, 'Une question est en cours. Vous pourrez envoyer la suivante après sa réponse.', true);
 
   try {
     // Caler le point de départ sur les lignes serveur, pas sur un éventuel
@@ -3163,7 +3153,7 @@ function startPendingServeurQuestion(dossier, question, messagesAvant, debut, er
 }
 
 function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Enter' && !e.shiftKey && !document.getElementById('sendBtn')?.disabled) { e.preventDefault(); sendMessage(); }
 }
 function autoResize(el) {
   el.style.height = 'auto';
