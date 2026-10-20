@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="fr" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -245,7 +245,7 @@ body.unauthenticated .main { display: none; }
 .avatar.user { background: var(--surface2); }
 .bubble { padding: 14px 18px; border-radius: 12px; font-size: 14px; line-height: 1.7; max-width: 600px; }
 .message.ai .bubble { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 4px; }
-.message.user .bubble { background: var(--accent); color: var(--on-accent); border-top-right-radius: 4px; }
+.message.user .bubble { background: #fff; color: #111; border: 1px solid #e5e5e5; border-top-right-radius: 4px; }
 .message.system { align-self: center; max-width: 100%; }
 .message.system .bubble { background: var(--surface2); border: 1px solid var(--border); font-size: 12px; color: var(--text-muted); text-align: center; }
 
@@ -376,10 +376,10 @@ input[type="file"] { display: none; }
 .md-table thead th { background: var(--surface2); font-weight: 600; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
 .md-table tbody tr:last-child td { border-bottom: none; }
 .md-table tbody tr:nth-child(even) td { background: var(--hover); }
-.message.user .bubble .md-table-wrap { border-color: rgba(255,255,255,0.35); }
-.message.user .bubble .md-table th, .message.user .bubble .md-table td { border-bottom-color: rgba(255,255,255,0.3); }
-.message.user .bubble .md-table thead th { background: rgba(255,255,255,0.16); color: var(--on-accent); }
-.message.user .bubble .md-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.08); }
+.message.user .bubble .md-table-wrap { border-color: #d8d8d8; }
+.message.user .bubble .md-table th, .message.user .bubble .md-table td { border-bottom-color: #e5e5e5; }
+.message.user .bubble .md-table thead th { background: #f1f1f1; color: #333; }
+.message.user .bubble .md-table tbody tr:nth-child(even) td { background: #f8f8f8; }
 
 /* (ancien indicateur remplacé par l'emblème Faro ci-dessus) */
 
@@ -424,11 +424,11 @@ html[data-theme="light"] {
 }
 .new-dossier-btn:hover { box-shadow: var(--shadow-soft); }
 .message.ai .bubble { background: transparent; border: none; padding-left: 0; padding-right: 0; }
-.message.user .bubble { background: var(--accent); color: var(--on-accent); }
-.message.user .bubble .md-table-wrap { border-color: var(--border); }
-.message.user .bubble .md-table th, .message.user .bubble .md-table td { border-bottom-color: var(--border); }
-.message.user .bubble .md-table thead th { background: var(--surface2); color: var(--text-muted); }
-.message.user .bubble .md-table tbody tr:nth-child(even) td { background: var(--surface2); }
+.message.user .bubble { background: #fff; color: #111; border: 1px solid #e5e5e5; }
+.message.user .bubble .md-table-wrap { border-color: #d8d8d8; }
+.message.user .bubble .md-table th, .message.user .bubble .md-table td { border-bottom-color: #e5e5e5; color: #111; }
+.message.user .bubble .md-table thead th { background: #f1f1f1; color: #333; }
+.message.user .bubble .md-table tbody tr:nth-child(even) td { background: #f8f8f8; }
 
 /* RESPONSIVE */
 @media (max-width: 1024px) {
@@ -688,6 +688,24 @@ const INTERVALLE_POLLING = 1000;
 let session = null;
 let dossiers = [];
 let dossiersSupprimes = [];
+function cleSnapshotDossiers() { return session?.user?.id ? 'assistant-ia-liste-dossiers-' + session.user.id : null; }
+function restaurerSnapshotDossiers() {
+  const cle = cleSnapshotDossiers();
+  let snapshot = {};
+  try { snapshot = JSON.parse(localStorage.getItem(cle) || '{}'); } catch (e) {}
+  const restaurer = lignes => (Array.isArray(lignes) ? lignes : []).filter(d => d && d.id).map(d => ({
+    ...d, docs: [], messages: null, _loaded: false, _pending: null,
+    questionActive: false, _local: false, _supprime: false
+  }));
+  dossiers = restaurer(snapshot.actifs);
+  dossiersSupprimes = restaurer(snapshot.supprimes);
+}
+function sauvegarderSnapshotDossiers() {
+  const cle = cleSnapshotDossiers();
+  if (!cle) return;
+  const reduire = d => ({ id: d.id, name: d.name, date: d.date, docsCount: Number(d.docsCount) || 0, status: d.status || 'ready', analysisComplete: !!d.analysisComplete, _liveStatus: d._liveStatus || null });
+  try { localStorage.setItem(cle, JSON.stringify({ actifs: dossiers.map(reduire), supprimes: dossiersSupprimes.map(reduire) })); } catch (e) {}
+}
 let currentDossier = null;
 let selectedFiles = [];
 let creationEnCours = false;
@@ -925,77 +943,6 @@ function memoriserDossier(d, extra = {}) {
 function oublierDossier(id) { majLocal(o => { delete o.dossiers[id]; if (o.statuts) delete o.statuts[id]; }); }
 function memoriserQuestion(id, q) { majLocal(o => { o.questions[id] = q; }); }
 function oublierQuestion(id) { majLocal(o => { delete o.questions[id]; }); }
-function estAncienneErreurAnalyse(message) {
-  const texte = String(message || '');
-  return !/question/i.test(texte) && /analyse|résumé|synthèse|workflow|n8n|webhook|exécution|délai prévu|connexion avec/i.test(texte);
-}
-function estAncienneErreurWebhookStatut(message) {
-  return /impossible de vérifier le statut|vérification n8n n'est pas autorisée|webhook de statut/i.test(String(message || ''));
-}
-function estMessageAnalyse(m) {
-  if (!['ai', 'assistant'].includes(m?.role)) return false;
-  const contenu = String(m.content || '');
-  return /vos documents ont été enregistrés[\s\S]{0,160}votre analyse est terminée/i.test(contenu) ||
-    /<u>\s*\*\*RÉSUMÉ DU BIEN\s*:/i.test(contenu);
-}
-function trouverAnalyseDansConversation(messages = [], baseline = 0) {
-  const reponses = messages.filter(m => ['ai', 'assistant'].includes(m.role));
-  const nouvelles = reponses.slice(Math.max(0, Number(baseline) || 0));
-  const marquee = nouvelles.find(estMessageAnalyse);
-  if (marquee) return marquee;
-  // Si le workflow n'a enregistré que le texte brut, la première réponse IA
-  // longue, sans question utilisateur avant elle, est le résumé initial.
-  const premiere = reponses[0];
-  const indexPremiere = premiere ? messages.indexOf(premiere) : -1;
-  const questionAvant = indexPremiere >= 0 && messages.slice(0, indexPremiere).some(m => m.role === 'user');
-  return Number(baseline) === 0 && premiere && !questionAvant && String(premiere.content || '').trim().length > 300
-    ? premiere : null;
-}
-function finaliserAnalyseDisponible(dossier, resume = '') {
-  if (!dossier) return;
-  const questionEnCours = !!(dossier._pending?.question || dossier.questionActive);
-  dossier.status = 'ready';
-  dossier.analysisComplete = true;
-  if (!questionEnCours) {
-    endPending(dossier);
-    dossier._liveStatus = 'analyse_done';
-  }
-  if (Array.isArray(dossier.messages)) {
-    dossier.messages = dossier.messages.filter(m => !(ROLES_ERREUR.includes(m.role) && estAncienneErreurAnalyse(m.content)));
-    const texteResume = String(resume || '').trim();
-    if (texteResume && !dossier.messages.some(m => ['ai', 'assistant'].includes(m.role) && String(m.content || '').includes(texteResume))) {
-      dossier.messages.push({ role: 'ai', content: texteResume });
-    }
-  }
-  memoriserDossier(dossier, { status: 'ready', analysisComplete: true, message: '', executionIds: [] });
-  if (!questionEnCours) persisterStatut(dossier, 'analyse_done');
-}
-
-async function recupererAnalysePersistante(dossier, baseline = 0) {
-  if (!dossier || dossier._supprime) return false;
-  try {
-    const [{ data: ligne }, { data: lignesMessages, error: erreurMessages }] = await Promise.all([
-      sb.from('dossiers').select('resume').eq('dossier_id', dossier.id).maybeSingle(),
-      sb.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true })
-    ]);
-    const messages = !erreurMessages ? normaliserConversation(lignesMessages || []) : [];
-    const reponseAnalyse = trouverAnalyseDansConversation(messages, baseline);
-    const resume = String(ligne?.resume || reponseAnalyse?.content || '').trim();
-    if (!resume) return false;
-    if (messages.length) appliquerConversationServeur(dossier, lignesMessages || []);
-    if (!Array.isArray(dossier.messages)) dossier.messages = [];
-    finaliserAnalyseDisponible(dossier, resume);
-    if (dossier === currentDossier) {
-      updateDocsStrip();
-      renderMessages();
-      actualiserChatPourDossier(dossier);
-    }
-    return true;
-  } catch (err) {
-    console.warn('Lecture de la synthèse enregistrée impossible :', err);
-    return false;
-  }
-}
 function persisterStatut(d, status) {
   majLocal(o => {
     o.statuts = o.statuts || {};
@@ -1284,6 +1231,7 @@ function statusLabel(dossier) {
   if (dossier._liveStatus === 'analyse_done') return '<span class="dossier-status status-ready">' + DOT + ' Analyse prête</span>';
   if (dossier._liveStatus === 'question_done') return '<span class="dossier-status status-ready">' + DOT + ' Question prête</span>';
   if (dossier._liveStatus === 'question_error') return '<span class="dossier-status status-error">' + ICON_ERR_SM + ' Erreur</span>';
+  if (dossier._liveStatus === 'question_interrupted') return '<span class="dossier-status" style="background:var(--surface2);color:var(--text-muted)">Question interrompue</span>';
   if (dossier.status === 'error') return '<span class="dossier-status status-error">' + ICON_ERR_SM + ' Erreur</span>';
   if (dossier.status === 'ready') return '<span class="dossier-status status-ready">' + DOT + ' Analyse prête</span>';
   return '<span class="dossier-status status-processing">' + LOADER_3D + ' Analyse en cours</span>';
@@ -1420,6 +1368,7 @@ async function showApp() {
   document.getElementById('recoveryOverlay').style.display = 'none';
   document.body.classList.remove('unauthenticated');
   renderAccount();
+  restaurerSnapshotDossiers();
   setView('accueil', false);
   renderDossiers();
   renderHome();
@@ -1609,19 +1558,17 @@ document.addEventListener('click', (e) => {
 // CHARGEMENT DOSSIERS
 // ==========================================
 function dossierVide(row, countMap) {
-  const resume = String(row.resume || '').trim();
   return {
     id: row.dossier_id,
     name: row.nom,
     date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
     docsCount: countMap[row.dossier_id] || 0,
-    status: resume ? 'ready' : 'processing',
-    resume,
-    analysisComplete: !!resume,
+    status: 'ready',
+    analysisComplete: !!String(row.resume || '').trim(),
     docs: [],
     messages: null,
     _loaded: false,
-    _liveStatus: resume ? 'analyse_done' : null,
+    _liveStatus: null,
     _pending: null,
     questionActive: false
   };
@@ -1661,6 +1608,11 @@ async function loadDossiers() {
     afficherErreurChargementListes('Impossible de charger les dossiers. Vérifiez la connexion puis réessayez.');
     return;
   }
+  if (!(data || []).length && (dossiers.length || dossiersSupprimes.length)) {
+    renderDossiers(); renderHome(); renderAllDossiers();
+    afficherErreurChargementListes("Supabase n'a renvoyé aucun dossier. La dernière liste connue est conservée ; réessayez dans un instant.");
+    return;
+  }
   effacerErreurChargementListes();
 
   const ids = (data || []).map(r => r.dossier_id);
@@ -1677,11 +1629,7 @@ async function loadDossiers() {
     if (!ancien) return nouveau;
     ancien.name = nouveau.name;
     ancien.date = nouveau.date;
-    ancien.resume = nouveau.resume || ancien.resume || '';
     ancien.analysisComplete = ancien.analysisComplete || nouveau.analysisComplete;
-    if (nouveau.analysisComplete && !ancien._pending?.question && !ancien.questionActive) {
-      finaliserAnalyseDisponible(ancien, nouveau.resume);
-    }
     if (!ancien._loaded) ancien.docsCount = nouveau.docsCount;
     return ancien;
   });
@@ -1710,19 +1658,11 @@ async function loadDossiers() {
     if (d._liveStatus || d._pending) return;
     const q = questionsLocales[d.id];
     if (q && q.erreur) d._liveStatus = 'question_error';
-    else if (statutsLocaux[d.id] && !(d.analysisComplete && statutsLocaux[d.id] === 'error')) d._liveStatus = statutsLocaux[d.id];
+    else if (statutsLocaux[d.id]) d._liveStatus = statutsLocaux[d.id];
   });
 
   const local = etatLocal.dossiers || {};
   Object.values(local).forEach(l => {
-    // Les anciennes versions transformaient parfois une panne du webhook de
-    // statut en échec du workflow. Reprend ces dossiers en observation si le
-    // délai normal d'analyse n'est pas dépassé.
-    if (l.status === 'error' && estAncienneErreurWebhookStatut(l.message) && Date.now() - (l.start || Date.now()) < DUREE_SUIVI_ANALYSE) {
-      l.status = 'processing';
-      l.executionIds = [];
-      memoriserDossier(l, { status: 'processing', message: '', executionIds: [] });
-    }
     if (l.status === 'processing' && Date.now() - l.start > DUREE_SUIVI_ANALYSE) {
       l.status = 'error';
       l.message = "L'analyse n'a pas abouti. Supprimez ce dossier et relancez-le.";
@@ -1730,18 +1670,20 @@ async function loadDossiers() {
     }
     const existant = dossiers.find(d => d.id === l.id);
     if (existant) {
-      if ((l.status === 'ready' && l.analysisComplete) || existant.analysisComplete) {
-        finaliserAnalyseDisponible(existant, existant.resume || '');
+      if (l.status === 'ready' && l.analysisComplete) {
+        existant.status = 'ready';
+        existant.analysisComplete = true;
+        existant._liveStatus = existant._liveStatus || 'analyse_done';
       } else if (l.status === 'error') {
         existant.status = 'error';
         existant._liveStatus = null;
       }
       else {
         existant.status = 'processing'; existant._liveStatus = existant._liveStatus || 'analyse';
-        if (!existant._pending) {
+        if (l.executionIds?.length && !existant._pending) {
           existant._pending = {
             label: 'Analyse en cours…', start: l.start || Date.now(), baseline: l.baseline || 0,
-            server: true, executionIds: l.executionIds || [], launchComplete: true
+            server: true, executionIds: l.executionIds, launchComplete: true
           };
         }
       }
@@ -1761,27 +1703,14 @@ async function loadDossiers() {
       id: l.id, name: l.name, date: l.date, docs: l.docs || [], docsCount: (l.docs || []).length,
       status: l.status, analysisComplete: !!l.analysisComplete, messages: [], _loaded: true,
       _liveStatus: l.status === 'processing' ? 'analyse' : l.analysisComplete ? 'analyse_done' : null,
-      _pending: l.status === 'processing' ? {
+      _pending: l.executionIds?.length ? {
         label: 'Analyse en cours…', start: l.start || Date.now(), baseline: l.baseline || 0,
-        server: true, executionIds: l.executionIds || [], launchComplete: true
+        server: true, executionIds: l.executionIds, launchComplete: true
       } : null,
       _local: true, questionActive: false
     });
   });
   dossiersSupprimes = convertir(supprimes);
-
-  // Un workflow peut échouer après avoir déjà enregistré la synthèse.
-  // Dans ce cas, le résultat persistant prime sur l'ancien statut local « erreur ».
-  const dossiersErreurSansResume = dossiers.filter(d => d.status === 'error' && !d.analysisComplete);
-  for (const d of dossiersErreurSansResume) {
-    try {
-      if (await recupererAnalysePersistante(d, (local[d.id] || {}).baseline || 0)) {
-        d._loaded = true;
-      }
-    } catch (err) {
-      console.warn('Vérification de la synthèse enregistrée impossible :', err);
-    }
-  }
 
   // Conserve l'état réel des dossiers dans la corbeille, même après rechargement.
   const idsSupprimes = dossiersSupprimes.map(d => d.id);
@@ -1809,7 +1738,7 @@ async function loadDossiers() {
       const roles = rolesParDossier[d.id] || [];
       const dernierRole = roles[roles.length - 1];
       if (['system', 'error', 'erreur'].includes(dernierRole)) d._liveStatus = 'question_error';
-      else if (dernierRole === 'user') d._liveStatus = 'question';
+      else if (dernierRole === 'user') d._liveStatus = 'question_interrupted';
       else if (dernierRole === 'ai' || dernierRole === 'assistant') {
         d._liveStatus = roles.includes('user') ? 'question_done' : 'analyse_done';
       }
@@ -1862,14 +1791,12 @@ async function loadDossierDetails(dossier) {
   dossier.docsCount = dossier.docs.length;
   dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
   if (!dossier.analysisComplete) {
-    dossier.analysisComplete = !!trouverAnalyseDansConversation(dossier.messages, 0);
-  }
-  const resumePersistant = String(dossier.resume || '').trim();
-  if (dossier.analysisComplete) {
-    finaliserAnalyseDisponible(dossier, resumePersistant);
+    dossier.analysisComplete = dossier.messages.some(m =>
+      ['ai', 'assistant'].includes(m.role) && /votre analyse est terminée|résumé du dossier/i.test(String(m.content || ''))
+    );
   }
   const etatLocalDossier = (lireLocal().dossiers || {})[dossier.id];
-  if (!dossier.analysisComplete && etatLocalDossier?.status === 'error' && !dossier.messages.some(m => ROLES_ERREUR.includes(m.role))) {
+  if (etatLocalDossier?.status === 'error' && !dossier.messages.some(m => ROLES_ERREUR.includes(m.role))) {
     dossier.messages.push({ role: 'system', content: etatLocalDossier.message || "L'analyse a échoué. Supprimez ce dossier et relancez-le." });
   }
   dossier._loaded = true;
@@ -1930,14 +1857,10 @@ function suivreAnalysesServeur() {
   dossiers.forEach(d => {
     if (d._pending) { besoin = true; return; }
     if (d.status === 'processing') {
-      const local = (lireLocal().dossiers || {})[d.id] || {};
-      d._pending = {
-        label: 'Analyse en cours…', start: local.start || Date.now(), baseline: local.baseline || 0,
-        server: true, executionIds: local.executionIds || [], launchComplete: true
-      };
-      d._liveStatus = 'analyse';
-      memoriserDossier(d, { status: 'processing', start: d._pending.start, baseline: d._pending.baseline, executionIds: d._pending.executionIds });
-      besoin = true;
+      const message = "Le suivi direct de cette exécution n8n a été perdu après le rechargement. Vérifiez son état dans n8n avant de relancer l'analyse.";
+      d.status = 'error';
+      d._liveStatus = null;
+      memoriserDossier(d, { status: 'error', message });
     }
   });
   if (besoin) {
@@ -1962,11 +1885,6 @@ function startPolling() {
       const attente = d._pending;
       const delaiMax = attente?.question ? DUREE_SUIVI_QUESTION : DUREE_SUIVI_ANALYSE;
       if (Date.now() - (attente?.start || Date.now()) >= delaiMax) {
-        if (!attente?.question && await recupererAnalysePersistante(d, attente?.baseline || 0)) {
-          if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
-          renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
-          continue;
-        }
         const message = attente?.question
           ? "n8n n'a pas renvoyé de réponse dans le délai prévu. Vérifiez l'exécution du workflow puis réessayez."
           : "n8n n'a pas renvoyé le résultat dans le délai prévu. Vérifiez l'exécution du workflow puis relancez l'analyse.";
@@ -1995,54 +1913,30 @@ function startPolling() {
           etats = await Promise.all(attente.executionIds.map(lireStatutExecutionN8n));
         } catch (err) {
           if (estErreurNonDefinitive(err, attente.start)) continue;
-          if (!attente.question && await recupererAnalysePersistante(d, attente.baseline || 0)) {
-            if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
-            renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
-            continue;
+          const message = err.status === 401 || err.status === 403
+            ? "La vérification n8n n'est pas autorisée. Vérifiez la connexion puis réessayez."
+            : "Impossible de vérifier le statut de l'exécution dans n8n. Vérifiez le webhook de statut puis réessayez.";
+          endPending(d);
+          d._questionEnAttente = null;
+          if (attente.question) {
+            d.questionActive = false;
+            memoriserQuestion(d.id, { question: attente.question, baseline: attente.baseline || 0, start: attente.start, erreur: message });
+            setLiveStatus(d, 'question_error');
+            addMessage('system', message, d);
+          } else {
+            d.status = 'error';
+            d._liveStatus = null;
+            memoriserDossier(d, { status: 'error', message });
+            addMessage('system', message, d);
           }
-          // Le webhook de statut peut être indisponible sans que le workflow
-          // soit en échec. On bascule alors sur la vérification des données
-          // persistées, au lieu d'afficher une fausse erreur immédiate.
-          attente.executionIds = [];
-          attente.statusFallback = true;
-          memoriserDossier(d, { status: 'processing', start: attente.start, baseline: attente.baseline || 0, executionIds: [] });
-          if (attente.question) memoriserQuestion(d.id, { question: attente.question, baseline: attente.baseline || 0, errorBaseline: attente.errorBaseline || [], start: attente.start });
+          if (!attente.question) d.analysisComplete = false;
+          if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); renderMessages(); }
+          renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
           continue;
         }
 
         const erreursN8n = etats.filter(e => ['error', 'failed', 'failure', 'crashed', 'canceled', 'cancelled'].includes(e.status));
         if (erreursN8n.length) {
-          let resultatDejaEnregistre = false;
-          if (!attente.question) {
-            resultatDejaEnregistre = await recupererAnalysePersistante(d, attente.baseline || 0);
-          } else {
-            const { data: lignesQuestion, error: erreurQuestion } = await sb.from('conversations')
-              .select('role, content, timestamp').eq('dossier_id', d.id).order('timestamp', { ascending: true });
-            if (!erreurQuestion) {
-              const messagesQuestion = normaliserConversation(lignesQuestion || []);
-              const nouvellesReponses = messagesQuestion.filter(m => m.role === 'ai').slice(attente.baseline || 0);
-              if (nouvellesReponses.length) {
-                appliquerConversationServeur(d, lignesQuestion || []);
-                endPending(d);
-                d._questionEnAttente = null;
-                d.questionActive = false;
-                questionResolvedSequence = questionSequence;
-                oublierQuestion(d.id);
-                setLiveStatus(d, 'question_done');
-                resultatDejaEnregistre = true;
-              }
-            }
-          }
-          if (resultatDejaEnregistre) {
-            if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
-            renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
-            continue;
-          }
-          attente.failureSince = attente.failureSince || Date.now();
-          if (Date.now() - attente.failureSince < 30000) {
-            // Laisse le temps à la dernière écriture Supabase de devenir visible.
-            continue;
-          }
           const message = "n8n indique que le workflow a échoué. Ouvrez l'exécution dans n8n pour voir le nœud en erreur.";
           endPending(d);
           d._questionEnAttente = null;
@@ -2139,25 +2033,12 @@ function startPolling() {
         continue;
       }
 
-      const requeteConversations = sb.from('conversations')
+      const { data, error } = await sb.from('conversations')
         .select('role, content, timestamp')
         .eq('dossier_id', d.id)
         .order('timestamp', { ascending: true });
-      const [conversationsRes, dossierRes] = await Promise.all([
-        requeteConversations,
-        d._pending?.question ? Promise.resolve({ data: null, error: null }) : sb.from('dossiers').select('resume').eq('dossier_id', d.id).maybeSingle()
-      ]);
-      const { data, error } = conversationsRes;
       if (error) continue;
       const messages = normaliserConversation(data || []);
-      const resumeEnregistre = String(dossierRes?.data?.resume || '').trim();
-      if (!d._pending?.question && resumeEnregistre) {
-        appliquerConversationServeur(d, data || []);
-        finaliserAnalyseDisponible(d, resumeEnregistre);
-        if (currentDossier?.id === d.id) { actualiserChatPourDossier(d); updateDocsStrip(); renderMessages(); }
-        renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
-        continue;
-      }
       const baseline = d._pending.baseline || 0;
       const nouvelleSynthese = compterReponsesIA(messages) > baseline;
 
@@ -2358,6 +2239,7 @@ function renderAllDossiers() {
   const compteurActifs = document.getElementById('activeDossiersCount');
   if (compteurActifs) compteurActifs.textContent = '(' + dossiers.length + ')';
   afficherCorbeille(afficherDossiersSupprimes);
+  sauvegarderSnapshotDossiers();
 }
 
 function searchFiltres() {
@@ -2371,41 +2253,28 @@ async function toggleDossier(id) {
 }
 
 async function openDossier(id) {
-  const dossierOuvert = dossiers.find(d => d.id === id);
-  currentDossier = dossierOuvert;
-  if (!dossierOuvert) return;
+  currentDossier = dossiers.find(d => d.id === id);
+  if (!currentDossier) return;
   const cleDossier = cleEtatUtilisateur('dossier-ouvert');
   if (cleDossier) { try { localStorage.setItem(cleDossier, id); } catch (e) {} }
-  actualiserChatPourDossier(dossierOuvert);
+  actualiserChatPourDossier(currentDossier);
   setView('chat');
-  document.getElementById('currentDossierName').textContent = dossierOuvert.name;
+  document.getElementById('currentDossierName').textContent = currentDossier.name;
   updateDocsStrip();
   renderMessages();
   renderDossiers();
   renderHome();
   renderAllDossiers();
-  if (!dossierOuvert._loaded) {
-    const charge = await loadDossierDetails(dossierOuvert);
+  if (!currentDossier._loaded) {
+    const charge = await loadDossierDetails(currentDossier);
     if (!charge) return;
-    if (currentDossier === dossierOuvert) {
+    if (currentDossier === dossiers.find(d => d.id === id)) {
       updateDocsStrip();
       renderMessages();
       renderDossiers();
       renderHome();
       renderAllDossiers();
       actualiserChatPourDossier(currentDossier);
-    }
-  }
-  // Un ancien statut local « erreur » ne doit pas bloquer une analyse déjà
-  // enregistrée. Revérifie le résultat serveur même si le dossier était déjà chargé.
-  if (dossierOuvert && !dossierOuvert._pending && (dossierOuvert.status === 'error' || !dossierOuvert.analysisComplete)) {
-    if (await recupererAnalysePersistante(dossierOuvert, 0) && currentDossier === dossierOuvert) {
-      updateDocsStrip();
-      renderMessages();
-      renderDossiers();
-      renderHome();
-      renderAllDossiers();
-      actualiserChatPourDossier(dossierOuvert);
     }
   }
 }
@@ -3020,7 +2889,7 @@ async function sendMessage() {
     const executionId = lancement?.executionId;
     if (!executionId) {
       const erreur = new Error("n8n n'a pas renvoyé l'identifiant d'exécution attendu.");
-      erreur.suiviIndisponible = true;
+      erreur.status = 422;
       throw erreur;
     }
     dossier._pending.executionIds = [String(executionId)];
@@ -3033,10 +2902,10 @@ async function sendMessage() {
 
     // Coupure d'un relais (502/504/524), délai dépassé ou panne réseau :
     // ce n'est pas un échec, l'analyse continue côté serveur.
-    if (estErreurNonDefinitive(err, debut) || err?.suiviIndisponible || !err.status) {
+    if (estErreurNonDefinitive(err, debut)) {
       startPendingServeurQuestion(dossier, msg, messagesAvant, debut, erreursAvant);
       setLiveStatus(dossier, 'question');
-      addMessage('system', "Je n'ai pas pu confirmer l'état de la demande. Elle peut encore être traitée ; je vérifie si sa réponse est enregistrée. Ne la renvoyez pas pendant cette vérification.", dossier);
+      addMessage('system', "Connexion interrompue avec le service : la demande peut encore aboutir. Je continue à surveiller la réponse ; ne la renvoyez pas avant la fin de cette vérification.", dossier);
       return;
     }
 
@@ -3265,7 +3134,7 @@ async function createDossier() {
       verifierErreurWebhook(lancement);
       if (!lancement?.executionId) {
         const e = new Error("n8n n'a pas renvoyé l'identifiant d'exécution attendu.");
-        e.suiviIndisponible = true;
+        e.status = 422;
         throw e;
       }
       executionIds.push(String(lancement.executionId));
@@ -3282,23 +3151,6 @@ async function createDossier() {
     // Dossier supprimé pendant l'envoi : plus rien à analyser ni à suivre.
     if (dossier._supprime) return;
     console.error(err);
-
-    // Une coupure, une réponse illisible ou un identifiant absent ne prouvent
-    // pas que n8n a arrêté le traitement. Surveille les écritures Supabase
-    // avant de présenter l'opération comme échouée.
-    if (estErreurNonDefinitive(err, creationDebut) || err?.suiviIndisponible || !err.status) {
-      dossier.status = 'processing';
-      dossier.analysisComplete = false;
-      dossier._liveStatus = 'analyse';
-      dossier._pending = {
-        label: 'Analyse en cours…', start: creationDebut, baseline: messagesAvantAnalyse,
-        server: true, executionIds: [], launchComplete: true
-      };
-      memoriserDossier(dossier, { status: 'processing', start: creationDebut, baseline: messagesAvantAnalyse, executionIds: [] });
-      addMessage('system', "La réponse de lancement n'a pas pu être confirmée. Je vérifie automatiquement si l'analyse est enregistrée ; ne relancez pas le dossier pendant cette vérification.", dossier);
-      startPolling();
-      return;
-    }
 
     dossier.status = 'error';
     dossier.analysisComplete = false;
