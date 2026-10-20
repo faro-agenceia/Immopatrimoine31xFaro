@@ -2061,14 +2061,14 @@ function startPolling() {
           oublierQuestion(d.id);
           setLiveStatus(d, 'question_done');
         } else {
-          const { data, error } = await sb.from('dossiers').select('resume').eq('dossier_id', d.id).maybeSingle();
+          const { data, error } = await attendreAvecDelai(sb.from('dossiers').select('resume').eq('dossier_id', d.id).maybeSingle(), 5000, 'Délai dépassé en récupérant le résumé.');
           let resume = !error ? String(data?.resume || '').trim() : '';
           let resumeDepuisConversation = false;
           if (!resume) {
-            const { data: conversations, error: erreurConversation } = await sb.from('conversations')
+            const { data: conversations, error: erreurConversation } = await attendreAvecDelai(sb.from('conversations')
               .select('role, content, timestamp')
               .eq('dossier_id', d.id)
-              .order('timestamp', { ascending: true });
+              .order('timestamp', { ascending: true }), 5000, 'Délai dépassé en récupérant la conversation.');
             if (!erreurConversation) {
               const nouvellesReponses = normaliserConversation(conversations || []).filter(m => m.role === 'ai').slice(attente.baseline || 0);
               if (nouvellesReponses.length) {
@@ -2941,13 +2941,13 @@ async function retrouverSynthesePersistante(dossier) {
   let resume = String(dossier.resume || trouverSyntheseInitiale(dossier.messages || [])?.content || '').trim();
   if (!resume) {
     try {
-      const { data, error } = await sb.from('dossiers').select('resume').eq('dossier_id', dossier.id).maybeSingle();
+      const { data, error } = await attendreAvecDelai(sb.from('dossiers').select('resume').eq('dossier_id', dossier.id).maybeSingle(), 5000, 'Délai dépassé en lisant le résumé.');
       if (!error) resume = String(data?.resume || '').trim();
     } catch (e) {}
   }
   let lignes = null;
   try {
-    const { data, error } = await sb.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true });
+    const { data, error } = await attendreAvecDelai(sb.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true}), 5000, 'Délai dépassé en lisant la conversation.');
     if (!error) lignes = data || [];
   } catch (e) {}
   const synthese = resume || trouverSyntheseInitiale(normaliserConversation(lignes || []))?.content || '';
