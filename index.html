@@ -963,7 +963,7 @@ function reprendreQuestion(dossier, q) {
     label: 'Recherche en cours…', start: q.start,
     errorBaseline: q.errorBaseline || instantaneErreursServeur(dossier.messages || []),
     baseline: q.baseline || 0, question: q.question,
-    server: executionIds.length > 0, executionIds, launchComplete: true
+    sequence, server: executionIds.length > 0, executionIds, launchComplete: true
   };
   dossier._liveStatus = 'question';
   if (executionIds.length) startPolling();
@@ -1564,6 +1564,7 @@ function dossierVide(row, countMap) {
     date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
     docsCount: countMap[row.dossier_id] || 0,
     status: 'ready',
+    resume: String(row.resume || '').trim(),
     analysisComplete: !!String(row.resume || '').trim(),
     docs: [],
     messages: null,
@@ -1629,7 +1630,9 @@ async function loadDossiers() {
     if (!ancien) return nouveau;
     ancien.name = nouveau.name;
     ancien.date = nouveau.date;
+    ancien.resume = nouveau.resume || ancien.resume || '';
     ancien.analysisComplete = ancien.analysisComplete || nouveau.analysisComplete;
+    if (nouveau.analysisComplete) finaliserAnalyseDepuisResume(ancien, nouveau.resume);
     if (!ancien._loaded) ancien.docsCount = nouveau.docsCount;
     return ancien;
   });
@@ -1670,6 +1673,19 @@ async function loadDossiers() {
     }
     const existant = dossiers.find(d => d.id === l.id);
     if (existant) {
+      if (existant.analysisComplete) {
+        const resumeExiste = existant.resume || trouverSyntheseInitiale(existant.messages || [])?.content || '';
+        if (resumeExiste) finaliserAnalyseDepuisResume(existant, resumeExiste);
+        else {
+          existant.status = 'ready';
+          if (!existant._pending?.question && !existant.questionActive) {
+            endPending(existant);
+            existant._liveStatus = 'analyse_done';
+          }
+          oublierDossier(existant.id);
+        }
+        return;
+      }
       if (l.status === 'ready' && l.analysisComplete) {
         existant.status = 'ready';
         existant.analysisComplete = true;
@@ -1791,19 +1807,22 @@ async function loadDossierDetails(dossier) {
   dossier.docsCount = dossier.docs.length;
   dossier.messages = (convRes.data || []).map(m => ({ role: m.role, content: m.content }));
   if (!dossier.analysisComplete) {
-    dossier.analysisComplete = dossier.messages.some(m =>
-      ['ai', 'assistant'].includes(m.role) && /votre analyse est terminée|résumé du dossier/i.test(String(m.content || ''))
-    );
+    const syntheseInitiale = trouverSyntheseInitiale(dossier.messages);
+    if (syntheseInitiale) finaliserAnalyseDepuisResume(dossier, syntheseInitiale.content);
   }
+  const resumeConfirme = dossier.resume || trouverSyntheseInitiale(dossier.messages)?.content || '';
+  if (dossier.analysisComplete && resumeConfirme) finaliserAnalyseDepuisResume(dossier, resumeConfirme);
   const etatLocalDossier = (lireLocal().dossiers || {})[dossier.id];
-  if (etatLocalDossier?.status === 'error' && !dossier.messages.some(m => ROLES_ERREUR.includes(m.role))) {
+  if (!dossier.analysisComplete && etatLocalDossier?.status === 'error' && !dossier.messages.some(m => ROLES_ERREUR.includes(m.role))) {
     dossier.messages.push({ role: 'system', content: etatLocalDossier.message || "L'analyse a échoué. Supprimez ce dossier et relancez-le." });
   }
   dossier._loaded = true;
   if (dossier === currentDossier) actualiserChatPourDossier(dossier);
   const q = (lireLocal().questions || {})[dossier.id];
   if (q) {
-    if (compterReponsesIA(dossier.messages) > q.baseline) oublierQuestion(dossier.id);
+    if (compterReponsesIA(dossier.messages) > q.baseline) {
+      finaliserQuestionDepuisMessages(dossier, dossier.messages, q);
+    }
     else {
       const dernier = [...dossier.messages].reverse().find(m => m.role === 'user');
       if (!dernier || dernier.content !== q.question) dossier.messages.push({ role: 'user', content: q.question });
@@ -1812,6 +1831,18 @@ async function loadDossierDetails(dossier) {
       else if (!dossier._pending) {
         oublierQuestion(dossier.id);
         dossier.messages.push({ role: 'system', content: "La réponse n'est jamais arrivée. Réessayez." });
+      }
+    }
+  } else if (dossier._liveStatus === 'question_error') {
+    // Si le statut local est resté sur « erreur » mais que la conversation
+    // contient la réponse après une question, la réponse enregistrée fait foi.
+    const synthese = trouverSyntheseInitiale(dossier.messages);
+    const indexSynthese = synthese ? dossier.messages.findIndex(m => m.role === 'ai' && m.content === synthese.content) : -1;
+    const indexQuestion = dossier.messages.findIndex((m, i) => i > indexSynthese && m.role === 'user');
+    if (indexQuestion >= 0) {
+      const baseline = compterReponsesIA(dossier.messages.slice(0, indexQuestion));
+      if (compterReponsesIA(dossier.messages.slice(indexQuestion + 1)) > 0) {
+        finaliserQuestionDepuisMessages(dossier, dossier.messages, { baseline });
       }
     }
   }
@@ -1885,6 +1916,14 @@ function startPolling() {
       const attente = d._pending;
       const delaiMax = attente?.question ? DUREE_SUIVI_QUESTION : DUREE_SUIVI_ANALYSE;
       if (Date.now() - (attente?.start || Date.now()) >= delaiMax) {
+        if (attente?.question && await retrouverReponseQuestionPersistante(d, attente)) {
+          renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+          continue;
+        }
+        if (!attente?.question && await retrouverSynthesePersistante(d)) {
+          renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+          continue;
+        }
         const message = attente?.question
           ? "n8n n'a pas renvoyé de réponse dans le délai prévu. Vérifiez l'exécution du workflow puis réessayez."
           : "n8n n'a pas renvoyé le résultat dans le délai prévu. Vérifiez l'exécution du workflow puis relancez l'analyse.";
@@ -1913,6 +1952,14 @@ function startPolling() {
           etats = await Promise.all(attente.executionIds.map(lireStatutExecutionN8n));
         } catch (err) {
           if (estErreurNonDefinitive(err, attente.start)) continue;
+          if (attente.question && await retrouverReponseQuestionPersistante(d, attente)) {
+            renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+            continue;
+          }
+          if (!attente.question && await retrouverSynthesePersistante(d)) {
+            renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+            continue;
+          }
           const message = err.status === 401 || err.status === 403
             ? "La vérification n8n n'est pas autorisée. Vérifiez la connexion puis réessayez."
             : "Impossible de vérifier le statut de l'exécution dans n8n. Vérifiez le webhook de statut puis réessayez.";
@@ -1937,6 +1984,23 @@ function startPolling() {
 
         const erreursN8n = etats.filter(e => ['error', 'failed', 'failure', 'crashed', 'canceled', 'cancelled'].includes(e.status));
         if (erreursN8n.length) {
+          if (attente.question) {
+            if (await retrouverReponseQuestionPersistante(d, attente)) {
+              if (currentDossier?.id === d.id) renderMessages();
+              renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+              continue;
+            }
+            attente.verificationReponseDepuisErreur = attente.verificationReponseDepuisErreur || Date.now();
+            if (Date.now() - attente.verificationReponseDepuisErreur < 5000) continue;
+          } else {
+            if (await retrouverSynthesePersistante(d)) {
+              if (currentDossier?.id === d.id) renderMessages();
+              renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+              continue;
+            }
+            attente.verificationResumeDepuisErreur = attente.verificationResumeDepuisErreur || Date.now();
+            if (Date.now() - attente.verificationResumeDepuisErreur < 5000) continue;
+          }
           const message = "n8n indique que le workflow a échoué. Ouvrez l'exécution dans n8n pour voir le nœud en erreur.";
           endPending(d);
           d._questionEnAttente = null;
@@ -2599,7 +2663,7 @@ function actualiserChatPourDossier(dossier) {
     setChatEnabled(false, 'Question en cours, veuillez patienter…');
   } else if (!dossier._loaded) {
     setChatEnabled(false, 'Chargement du dossier…');
-  } else if (dossier.status === 'error' || !dossier.analysisComplete) {
+  } else if (!dossier.analysisComplete) {
     setChatEnabled(false, 'L’analyse doit être terminée avant de poser une question.');
   } else {
     setChatEnabled(true);
@@ -2749,6 +2813,92 @@ function appliquerConversationServeur(dossier, messagesServeur) {
   if (dossier === currentDossier) renderMessages();
 }
 
+function trouverSyntheseInitiale(messages = []) {
+  const normalises = normaliserConversation(messages);
+  const candidates = normalises.filter(m => m.role === 'ai');
+  const explicite = candidates.find(m => /RÉSUMÉ DU BIEN|RÉSUMÉ DU DOSSIER|VOTRE ANALYSE EST TERMINÉE/i.test(String(m.content || '')));
+  if (explicite) return explicite;
+  const premiere = candidates[0];
+  if (!premiere || String(premiere.content || '').trim().length < 300) return null;
+  const index = normalises.indexOf(premiere);
+  return normalises.slice(0, index).some(m => m.role === 'user') ? null : premiere;
+}
+
+function finaliserAnalyseDepuisResume(dossier, resume = '', messagesServeur = null) {
+  if (!dossier || !String(resume || '').trim()) return false;
+  if (messagesServeur) appliquerConversationServeur(dossier, messagesServeur);
+  if (!Array.isArray(dossier.messages)) dossier.messages = [];
+  const texte = String(resume).trim();
+  if (!dossier.messages.some(m => m.role === 'ai' && String(m.content || '').includes(texte))) {
+    dossier.messages.push({ role: 'ai', content: texte });
+  }
+  const enQuestion = !!(dossier._pending?.question || dossier.questionActive);
+  dossier.status = 'ready';
+  dossier.analysisComplete = true;
+  if (!enQuestion) {
+    endPending(dossier);
+    dossier._liveStatus = 'analyse_done';
+  }
+  dossier.messages = dossier.messages.filter(m => !(ROLES_ERREUR.includes(m.role) && /analyse a échoué|n8n indique que le workflow a échoué|analyse.*workflow.*échoué|workflow.*analyse.*échoué/i.test(String(m.content || ''))));
+  oublierDossier(dossier.id);
+  persisterStatut(dossier, 'analyse_done');
+  if (dossier === currentDossier) {
+    updateDocsStrip();
+    renderMessages();
+    actualiserChatPourDossier(dossier);
+  }
+  return true;
+}
+
+function finaliserQuestionDepuisMessages(dossier, messages, attente = {}) {
+  const normalises = normaliserConversation(messages || []);
+  const baseline = Number(attente.baseline) || 0;
+  const reponses = normalises.filter(m => m.role === 'ai').slice(baseline);
+  if (!reponses.length) return false;
+  appliquerConversationServeur(dossier, normalises);
+  dossier.status = 'ready';
+  dossier.analysisComplete = true;
+  dossier._questionEnAttente = null;
+  dossier.questionActive = false;
+  if (dossier._pending?.question) endPending(dossier);
+  dossier.messages = dossier.messages.filter(m => !(ROLES_ERREUR.includes(m.role) && /question a échoué|n8n indique que le workflow a échoué|question.*n'apparaît pas dans supabase|réponse.*n'est jamais arrivée|n'a pas renvoyé de réponse/i.test(String(m.content || ''))));
+  if (attente.sequence && attente.sequence === questionSequence) questionResolvedSequence = attente.sequence;
+  oublierQuestion(dossier.id);
+  setLiveStatus(dossier, 'question_done');
+  if (dossier === currentDossier) { renderMessages(); actualiserChatPourDossier(dossier); }
+  return true;
+}
+
+async function retrouverReponseQuestionPersistante(dossier, attente) {
+  if (!dossier || !attente?.question) return false;
+  try {
+    const { data, error } = await sb.from('conversations')
+      .select('role, content, timestamp')
+      .eq('dossier_id', dossier.id)
+      .order('timestamp', { ascending: true });
+    if (error) return false;
+    return finaliserQuestionDepuisMessages(dossier, data || [], attente);
+  } catch (e) { return false; }
+}
+
+async function retrouverSynthesePersistante(dossier) {
+  if (!dossier) return false;
+  let resume = String(dossier.resume || trouverSyntheseInitiale(dossier.messages || [])?.content || '').trim();
+  if (!resume) {
+    try {
+      const { data, error } = await sb.from('dossiers').select('resume').eq('dossier_id', dossier.id).maybeSingle();
+      if (!error) resume = String(data?.resume || '').trim();
+    } catch (e) {}
+  }
+  let lignes = null;
+  try {
+    const { data, error } = await sb.from('conversations').select('role, content, timestamp').eq('dossier_id', dossier.id).order('timestamp', { ascending: true });
+    if (!error) lignes = data || [];
+  } catch (e) {}
+  const synthese = resume || trouverSyntheseInitiale(normaliserConversation(lignes || []))?.content || '';
+  return synthese ? finaliserAnalyseDepuisResume(dossier, synthese, lignes) : false;
+}
+
 async function attendreReponseServeur(dossier, messagesAvant, tentatives = 12) {
   for (let i = 0; i < tentatives; i++) {
     const { data, error } = await sb.from('conversations')
@@ -2858,7 +3008,7 @@ async function surveillerReponseQuestion(dossier, messagesAvant, sequence, debut
 async function sendMessage() {
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
-  if (!msg || !currentDossier || !currentDossier._loaded || currentDossier._pending || currentDossier.questionActive || !currentDossier.analysisComplete || currentDossier.status === 'error') return;
+  if (!msg || !currentDossier || !currentDossier._loaded || currentDossier._pending || currentDossier.questionActive || !currentDossier.analysisComplete) return;
   const dossier = currentDossier;
   const messagesAvant = compterReponsesIA(dossier.messages || []);
   const erreursAvant = instantaneErreursServeur(dossier.messages || []);
@@ -2867,7 +3017,7 @@ async function sendMessage() {
   let attenteConfirmationServeur = false;
   dossier._questionEnAttente = msg;
   dossier.questionActive = true;
-  memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, start: debut });
+  memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, start: debut, sequence });
   input.value = '';
   input.style.height = 'auto';
   addMessage('user', msg, dossier);
@@ -2875,7 +3025,7 @@ async function sendMessage() {
   startPending(dossier, 'Recherche en cours…');
   Object.assign(dossier._pending, {
     server: true, executionIds: [], launchComplete: false,
-    question: msg, baseline: messagesAvant, errorBaseline: erreursAvant
+    question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, sequence
   });
   setChatEnabled(false, 'Question en cours, veuillez patienter…');
 
@@ -2894,11 +3044,14 @@ async function sendMessage() {
     }
     dossier._pending.executionIds = [String(executionId)];
     dossier._pending.launchComplete = true;
-    memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, start: debut, executionId: String(executionId) });
+    memoriserQuestion(dossier.id, { question: msg, baseline: messagesAvant, errorBaseline: erreursAvant, start: debut, executionId: String(executionId), sequence });
     attenteConfirmationServeur = true;
     startPolling();
   } catch (err) {
     if (sequence !== questionSequence || questionResolvedSequence === sequence) return;
+
+    const attenteQuestion = { question: msg, baseline: messagesAvant, start: debut, sequence };
+    if (await retrouverReponseQuestionPersistante(dossier, attenteQuestion)) return;
 
     // Coupure d'un relais (502/504/524), délai dépassé ou panne réseau :
     // ce n'est pas un échec, l'analyse continue côté serveur.
@@ -2928,7 +3081,7 @@ async function sendMessage() {
 
 // Le suivi reprend via la boucle générale jusqu'à ce que n8n ait fini.
 function startPendingServeurQuestion(dossier, question, messagesAvant, debut, erreursAvant = []) {
-  dossier._pending = { label: 'Recherche en cours…', start: debut, server: true, baseline: messagesAvant, errorBaseline: erreursAvant, question };
+  dossier._pending = { label: 'Recherche en cours…', start: debut, server: true, baseline: messagesAvant, errorBaseline: erreursAvant, question, sequence: questionSequence };
   if (dossier === currentDossier) addTyping(dossier._pending.label, debut);
   startPolling();
   majOrbAccueil();
@@ -3150,6 +3303,10 @@ async function createDossier() {
     dossier._pendingCreation = false;
     // Dossier supprimé pendant l'envoi : plus rien à analyser ni à suivre.
     if (dossier._supprime) return;
+    if (await retrouverSynthesePersistante(dossier)) {
+      renderDossiers(); renderHome(); renderAllDossiers(); majOrbAccueil();
+      return;
+    }
     console.error(err);
 
     dossier.status = 'error';
