@@ -463,6 +463,7 @@ html[data-theme="light"] {
       <button type="button" class="pwd-toggle" onclick="togglePassword('authPassword', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
     </div>
     <button type="button" class="link-btn" id="forgotPasswordBtn" onclick="handleForgotPassword()">Mot de passe oublié ?</button>
+    <div class="auth-note" id="forgotPasswordNotice" role="status" style="display:none;">Pour réinitialiser votre mot de passe, veuillez contacter la personne qui gère votre compte.</div>
     <div class="auth-legal-checks">
       <div class="auth-legal-check"><input type="checkbox" id="authPrivacyAck" aria-label="Je confirme avoir pris connaissance de la politique de confidentialité" /><span>Je confirme avoir pris connaissance de la</span><button type="button" onclick="openLegalPage('confidentialite')">politique de confidentialité</button>.</div>
       <div class="auth-legal-check"><input type="checkbox" id="authTermsAccepted" aria-label="J'accepte les conditions d'utilisation" /><span>J'accepte les</span><button type="button" onclick="openLegalPage('conditions')">conditions d'utilisation</button>.</div>
@@ -487,6 +488,15 @@ html[data-theme="light"] {
       <button type="button" class="pwd-toggle" onclick="togglePassword('recoveryPasswordConfirm', this)" aria-label="Afficher le mot de passe" title="Afficher / masquer le mot de passe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
     </div>
     <button class="auth-btn" id="recoverySubmitBtn" onclick="handleRecoverySubmit()">Valider le nouveau mot de passe</button>
+  </div>
+</div>
+
+<div class="auth-overlay" id="inviteOverlay" style="display:none;">
+  <div class="auth-box">
+    <div class="auth-logo">ASSISTANT IA</div>
+    <div class="auth-logo-sub">Finalisez la création de votre compte</div>
+    <p class="auth-note" style="font-size:13px;">Le lien d’invitation confirme la création de votre compte, mais ne définit pas votre mot de passe. Retournez dans votre boîte mail et ouvrez le message de réinitialisation du mot de passe. Après avoir choisi votre mot de passe, revenez sur cette page et connectez-vous avec votre adresse e-mail et ce mot de passe.</p>
+    <button class="auth-btn" type="button" onclick="continuerApresInvitation()">Continuer vers la connexion</button>
   </div>
 </div>
 
@@ -669,6 +679,12 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let sb = null;
 let authStateRevision = 0;
 let authListenerRegistered = false;
+let invitationRedirectDetected = (() => {
+  const paramsUrl = new URLSearchParams(window.location.search);
+  const paramsHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  return paramsUrl.get('type') === 'invite' || paramsHash.get('type') === 'invite';
+})();
+let inviteHelpShown = false;
 
 // Coupures possibles d'un relais entre le site et n8n : l'analyse continue côté serveur.
 const STATUTS_COUPURE = [502, 504, 524];
@@ -1315,6 +1331,7 @@ async function initAuth() {
         authStateRevision++;
         session = nouvelleSession;
         if (event === 'PASSWORD_RECOVERY') { showRecoveryScreen(); return; }
+        if (invitationRedirectDetected && nouvelleSession) { void showInviteHelpScreen(); return; }
         if (nouvelleSession) void showApp(); else showAuthScreen();
       });
     }
@@ -1353,7 +1370,32 @@ function showAuthScreen(message = '') {
 function showRecoveryScreen() {
   document.getElementById('startupOverlay').style.display = 'none';
   document.getElementById('authOverlay').style.display = 'none';
+  document.getElementById('inviteOverlay').style.display = 'none';
   document.getElementById('recoveryOverlay').style.display = 'flex';
+}
+async function showInviteHelpScreen() {
+  if (inviteHelpShown) return;
+  inviteHelpShown = true;
+  try {
+    if (sb) await sb.auth.signOut();
+  } catch (err) {
+    console.warn('Déconnexion après invitation impossible :', err);
+  }
+  session = null;
+  appUserInitialise = null;
+  invitationRedirectDetected = false;
+  document.getElementById('startupOverlay').style.display = 'none';
+  document.getElementById('authOverlay').style.display = 'none';
+  document.getElementById('recoveryOverlay').style.display = 'none';
+  document.getElementById('inviteOverlay').style.display = 'flex';
+  document.body.classList.add('unauthenticated');
+  setView('empty', false);
+  try { window.history.replaceState({}, document.title, window.location.pathname); } catch (_) {}
+}
+function continuerApresInvitation() {
+  document.getElementById('inviteOverlay').style.display = 'none';
+  inviteHelpShown = false;
+  showAuthScreen();
 }
 async function showApp() {
   if (authInProgress) return;
@@ -1455,26 +1497,14 @@ async function handleAuthSubmit() {
   }
 }
 
-async function handleForgotPassword() {
-  const email = document.getElementById('authEmail').value.trim();
+function handleForgotPassword() {
   const errBox = document.getElementById('authError');
-  errBox.style.display = 'none';
-  if (!email) {
-    errBox.textContent = 'Saisissez votre adresse email pour recevoir le lien de réinitialisation.';
-    errBox.style.display = 'block';
-    return;
+  const notice = document.getElementById('forgotPasswordNotice');
+  if (errBox) errBox.style.display = 'none';
+  if (notice) {
+    notice.textContent = 'Pour réinitialiser votre mot de passe, veuillez contacter la personne qui gère votre compte.';
+    notice.style.display = 'block';
   }
-  const btn = document.getElementById('forgotPasswordBtn');
-  btn.disabled = true;
-  try {
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
-    if (error) throw error;
-    errBox.textContent = 'Si cette adresse correspond à un compte, un lien de réinitialisation va être envoyé.';
-    errBox.style.display = 'block';
-  } catch (err) {
-    errBox.textContent = messageErreurAuth(err, 'récupération');
-    errBox.style.display = 'block';
-  } finally { btn.disabled = false; }
 }
 
 async function handleRecoverySubmit() {
