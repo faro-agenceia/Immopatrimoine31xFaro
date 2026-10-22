@@ -1703,6 +1703,12 @@ async function loadDossiers() {
 
   const local = etatLocal.dossiers || {};
   Object.values(local).forEach(l => {
+    // Répare les dossiers déjà marqués à tort en erreur après un rechargement.
+    if (l.status === 'error' && /suivi direct de cette exécution n8n a été perdu après le rechargement/i.test(l.message || '')) {
+      l.status = 'processing';
+      l.message = '';
+      memoriserDossier(l, { status: 'processing', message: '' });
+    }
     if (l.status === 'processing' && Date.now() - l.start > DUREE_SUIVI_ANALYSE) {
       l.status = 'error';
       l.message = "L'analyse n'a pas abouti. Supprimez ce dossier et relancez-le.";
@@ -1727,18 +1733,26 @@ async function loadDossiers() {
         existant.status = 'ready';
         existant.analysisComplete = true;
         existant._liveStatus = existant._liveStatus || 'analyse_done';
-      } else if (l.status === 'error') {
+      } else if (l.status === 'error' && !/suivi direct de cette exécution n8n a été perdu après le rechargement/i.test(l.message || '')) {
         existant.status = 'error';
         existant._liveStatus = null;
       }
       else {
-        existant.status = 'processing'; existant._liveStatus = existant._liveStatus || 'analyse';
-        if (l.executionIds?.length && !existant._pending) {
+        // Après un rechargement, l'identifiant n8n peut ne pas encore avoir été
+        // reçu. On reprend le suivi via Supabase au lieu d'afficher une erreur.
+        existant.status = 'processing';
+        existant._liveStatus = 'analyse';
+        if (!existant._pending) {
           existant._pending = {
             label: 'Analyse en cours…', start: l.start || Date.now(), baseline: l.baseline || 0,
-            server: true, executionIds: l.executionIds, launchComplete: true
+            server: true, executionIds: l.executionIds || [], launchComplete: true,
+            repriseApresRechargement: !(l.executionIds || []).length
           };
         }
+        memoriserDossier(existant, {
+          status: 'processing', message: '', executionIds: l.executionIds || [],
+          start: l.start || Date.now(), baseline: l.baseline || 0
+        });
       }
       return;
     }
@@ -1925,10 +1939,20 @@ function suivreAnalysesServeur() {
   dossiers.forEach(d => {
     if (d._pending) { besoin = true; return; }
     if (d.status === 'processing') {
-      const message = "Le suivi direct de cette exécution n8n a été perdu après le rechargement. Vérifiez son état dans n8n avant de relancer l'analyse.";
-      d.status = 'error';
-      d._liveStatus = null;
-      memoriserDossier(d, { status: 'error', message });
+      const local = (lireLocal().dossiers || {})[d.id] || {};
+      const executionIds = local.executionIds || [];
+      d._pending = {
+        label: 'Analyse en cours…', start: local.start || Date.now(),
+        baseline: local.baseline || 0, server: true,
+        executionIds, launchComplete: true,
+        repriseApresRechargement: !executionIds.length
+      };
+      d._liveStatus = 'analyse';
+      memoriserDossier(d, {
+        status: 'processing', executionIds,
+        start: d._pending.start, baseline: d._pending.baseline
+      });
+      besoin = true;
     }
   });
   if (besoin) {
