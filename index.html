@@ -2381,6 +2381,33 @@ async function toggleDossier(id) {
   await openDossier(id);
 }
 
+function restaurerIndicateurAnalyse(dossier) {
+  if (!dossier || dossier !== currentDossier || dossier.analysisComplete || dossier._pending?.question) return;
+
+  // Après un rechargement, le statut peut être restauré avant l'objet de suivi.
+  // Recrée alors l'état temporaire qui permet au chat d'afficher l'orbe.
+  if (!dossier._pending && (dossier.status === 'processing' || dossier._liveStatus === 'analyse')) {
+    const local = (lireLocal().dossiers || {})[dossier.id] || {};
+    dossier._pending = {
+      label: 'Analyse en cours…', start: local.start || Date.now(),
+      baseline: local.baseline || 0, server: true,
+      executionIds: local.executionIds || [], launchComplete: true,
+      repriseApresRechargement: !(local.executionIds || []).length
+    };
+    dossier.status = 'processing';
+    dossier._liveStatus = 'analyse';
+    memoriserDossier(dossier, {
+      status: 'processing', executionIds: dossier._pending.executionIds,
+      start: dossier._pending.start, baseline: dossier._pending.baseline
+    });
+  }
+
+  if (dossier._pending && !dossier._pending.question) {
+    addTyping(dossier._pending.label || 'Analyse en cours…', dossier._pending.start);
+    if (dossier._pending.server) startPolling();
+  }
+}
+
 async function openDossier(id) {
   currentDossier = dossiers.find(d => d.id === id);
   if (!currentDossier) return;
@@ -2391,6 +2418,7 @@ async function openDossier(id) {
   document.getElementById('currentDossierName').textContent = currentDossier.name;
   updateDocsStrip();
   renderMessages();
+  restaurerIndicateurAnalyse(currentDossier);
   renderDossiers();
   renderHome();
   renderAllDossiers();
@@ -2404,6 +2432,7 @@ async function openDossier(id) {
       renderHome();
       renderAllDossiers();
       actualiserChatPourDossier(currentDossier);
+      restaurerIndicateurAnalyse(currentDossier);
     }
   }
 }
